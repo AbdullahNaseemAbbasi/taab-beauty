@@ -35,7 +35,7 @@ export const site = {
   },
 
   shipping: {
-    freeShippingThreshold: 3000,
+    freeShippingThreshold: 7000,
     standardFee: 250,
     estimatedDays: "2 to 4 business days",
     expressCities: ["Karachi"],
@@ -62,7 +62,7 @@ export const site = {
   },
 
   announcement: {
-    message: "Free delivery on orders over Rs. 3,000. Cash on delivery across Pakistan.",
+    message: "Free delivery on orders over Rs. 7,000. Cash on delivery across Pakistan.",
     link: { label: "Shop new arrivals", to: "/new-arrivals" },
   },
 

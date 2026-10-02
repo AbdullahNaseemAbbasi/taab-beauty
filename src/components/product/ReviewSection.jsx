@@ -6,7 +6,9 @@ import { Badge } from "../ui/Typography.jsx";
 import { CheckIcon } from "../ui/Icons.jsx";
 import { imageProps } from "../../lib/images.js";
 import { formatDate } from "../../lib/format.js";
-import { reviewsForProduct, ratingBreakdown } from "../../data/reviews.js";
+import { reviewsForProduct, ratingBreakdown } from "../../lib/catalog.js";
+import { submitReview } from "../../api/catalog.js";
+import { useCatalog } from "../../catalog/CatalogProvider.jsx";
 import { useStore } from "../../store/StoreProvider.jsx";
 import { track } from "../../analytics/tracking.js";
 import { EVENTS } from "../../analytics/events.js";
@@ -17,7 +19,7 @@ function ReviewCard({ review }) {
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <RatingStars rating={review.rating} size="size-4" />
         <span className="text-[14px] font-semibold text-navy">{review.author}</span>
-        <span className="text-[13px] text-ink-light">{review.city}</span>
+        {review.city && <span className="text-[13px] text-ink-light">{review.city}</span>}
         {review.verified && (
           <Badge tone="success" className="gap-1">
             <CheckIcon className="size-3" /> Verified purchase
@@ -25,34 +27,42 @@ function ReviewCard({ review }) {
         )}
         <span className="ml-auto text-[13px] text-ink-light">{formatDate(review.date)}</span>
       </div>
-      <h4 className="mt-2 font-display text-[16px] font-extrabold text-navy">{review.title}</h4>
+      {review.title && <h4 className="mt-2 font-display text-[16px] font-extrabold text-navy">{review.title}</h4>}
       <p className="mt-1.5 text-[15px] leading-[1.65] text-ink">{review.body}</p>
       {review.photo && <img {...imageProps(review.photo, { width: 240, sizes: "96px", alt: `Photo from ${review.author}` })} className="mt-3 size-24 rounded-xl object-cover" />}
-      {review.helpful != null && <p className="mt-3 text-[12px] text-ink-light">{review.helpful} people found this helpful</p>}
+      {review.helpful > 0 && <p className="mt-3 text-[12px] text-ink-light">{review.helpful} people found this helpful</p>}
     </li>
   );
 }
 
 export default function ReviewSection({ product }) {
   const { toast } = useStore();
-  const [reviews, setReviews] = useState(() => reviewsForProduct(product.id));
+  const { reviews: allReviews } = useCatalog();
+  const reviews = reviewsForProduct(allReviews, product.id);
+  const breakdown = ratingBreakdown(allReviews, product.id);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ rating: 5, name: "", title: "", body: "" });
-  const breakdown = ratingBreakdown(product.id);
+  const [busy, setBusy] = useState(false);
+  const [form, setForm] = useState({ rating: 5, name: "", city: "", title: "", body: "" });
 
-  function submit(event) {
+  async function submit(event) {
     event.preventDefault();
-    const review = { id: `local-${Date.now()}`, productId: product.id, author: form.name, city: "", rating: form.rating, date: new Date().toISOString(), verified: false, title: form.title, body: form.body, helpful: 0 };
-    setReviews((current) => [review, ...current]);
-    track(EVENTS.REVIEW_SUBMIT, { item_id: product.sku, rating: form.rating });
-    toast("Thanks! Your review is awaiting moderation.");
-    setShowForm(false);
-    setForm({ rating: 5, name: "", title: "", body: "" });
+    setBusy(true);
+    try {
+      await submitReview({ productId: product.id, author: form.name, city: form.city, rating: form.rating, title: form.title, body: form.body });
+      track(EVENTS.REVIEW_SUBMIT, { item_id: product.sku, rating: form.rating });
+      toast("Thanks! Your review will appear once our team approves it.", { duration: 5000 });
+      setShowForm(false);
+      setForm({ rating: 5, name: "", city: "", title: "", body: "" });
+    } catch (error) {
+      toast(error.message, { type: "error" });
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
     <section id="reviews" className="mt-16">
-      <div className="grid gap-8 rounded-2xl border border-line bg-white p-6 sm:p-8 lg:grid-cols-[280px_1fr]">
+      <div className="grid gap-8 rounded-2xl border border-line bg-white p-5 sm:p-8 lg:grid-cols-[280px_1fr]">
         <div>
           <p className="font-display text-[48px] font-extrabold leading-none text-navy">{product.rating.toFixed(1)}</p>
           <RatingStars rating={product.rating} size="size-5" className="mt-2" />
@@ -85,7 +95,10 @@ export default function ReviewSection({ product }) {
                 <Field label="Name" required>
                   <Input required value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} />
                 </Field>
-                <Field label="Review title" required>
+                <Field label="City">
+                  <Input value={form.city} onChange={(event) => setForm({ ...form, city: event.target.value })} />
+                </Field>
+                <Field label="Review title" required className="sm:col-span-2">
                   <Input required value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} />
                 </Field>
               </div>
@@ -93,8 +106,8 @@ export default function ReviewSection({ product }) {
                 <Textarea required value={form.body} onChange={(event) => setForm({ ...form, body: event.target.value })} />
               </Field>
               <div className="mt-4 flex gap-3">
-                <Button type="submit" size="sm">
-                  Submit review
+                <Button type="submit" size="sm" disabled={busy}>
+                  {busy ? "Submitting…" : "Submit review"}
                 </Button>
                 <Button type="button" variant="ghost" size="sm" onClick={() => setShowForm(false)}>
                   Cancel

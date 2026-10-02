@@ -8,12 +8,13 @@ import CartItem from "../components/commerce/CartItem.jsx";
 import OrderSummary from "../components/commerce/OrderSummary.jsx";
 import FreeShippingBar from "../components/commerce/FreeShippingBar.jsx";
 import { ProductCarousel } from "../components/product/ProductGrid.jsx";
-import { products } from "../data/products.js";
+import { useCatalog } from "../catalog/CatalogProvider.jsx";
 import { useStore } from "../store/StoreProvider.jsx";
 import { ecommerce } from "../analytics/ecommerce.js";
 
 export default function CartPage() {
   const { cart, clearCart } = useStore();
+  const { products } = useCatalog();
   useSeo({ title: "Your Bag", path: "/cart", noindex: true });
 
   useEffect(() => {
@@ -26,14 +27,14 @@ export default function CartPage() {
   return (
     <>
       <PageHeader title={`Your Bag (${cart.totals.itemCount})`} description="Review your items, add a code and head to checkout. Cash on delivery is available on every order." />
-      <section className="wrap py-10">
+      <section className="wrap py-8 sm:py-10">
         {cart.lines.length === 0 ? (
           <EmptyState icon={BagIcon} title="Your bag is empty" text="Browse the best sellers or pick up where you left off." action={{ label: "Shop best sellers", to: "/best-sellers" }} secondary={{ label: "View wishlist", to: "/wishlist" }} />
         ) : (
           <div className="grid gap-8 lg:grid-cols-[1fr_380px] lg:items-start">
             <div>
               <FreeShippingBar remaining={cart.totals.freeShippingRemaining} />
-              <ul className="mt-4 divide-y divide-line rounded-2xl border border-line bg-white px-5">
+              <ul className="mt-4 divide-y divide-line rounded-2xl border border-line bg-white px-4 sm:px-5">
                 {cart.lines.map((line) => (
                   <CartItem key={line.key} line={line} />
                 ))}

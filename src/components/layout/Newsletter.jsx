@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { Input } from "../ui/Form.jsx";
 import { MailIcon } from "../ui/Icons.jsx";
+import { subscribeNewsletter } from "../../api/forms.js";
 import { track } from "../../analytics/tracking.js";
 import { EVENTS } from "../../analytics/events.js";
 
-/* Submits to Netlify Forms ("newsletter"); falls back gracefully in local dev. */
 export default function Newsletter({ source = "footer", compact = false }) {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState("idle");
@@ -13,9 +13,7 @@ export default function Newsletter({ source = "footer", compact = false }) {
     event.preventDefault();
     setStatus("sending");
     try {
-      const body = new URLSearchParams({ "form-name": "newsletter", email, source }).toString();
-      const response = await fetch("/", { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body });
-      if (!response.ok && import.meta.env.PROD) throw new Error(`Newsletter signup failed: ${response.status}`);
+      await subscribeNewsletter(email, source);
       track(EVENTS.NEWSLETTER_SIGNUP, { source });
       setStatus("done");
       setEmail("");
@@ -33,9 +31,9 @@ export default function Newsletter({ source = "footer", compact = false }) {
   }
 
   return (
-    <form onSubmit={submit} className={`flex ${compact ? "flex-col gap-2 sm:flex-row" : "flex-col gap-3 sm:flex-row"}`}>
-      <Input type="email" required value={email} onChange={(event) => setEmail(event.target.value)} placeholder="Your email address" aria-label="Email address" autoComplete="email" />
-      <button type="submit" disabled={status === "sending"} className="h-[50px] shrink-0 rounded-xl bg-coral px-6 text-[15px] font-semibold text-white hover:bg-coral-600 disabled:opacity-60">
+    <form onSubmit={submit} className={`flex flex-wrap ${compact ? "gap-2" : "gap-3"} sm:flex-nowrap`}>
+      <Input type="email" required value={email} onChange={(event) => setEmail(event.target.value)} placeholder="Your email address" aria-label="Email address" autoComplete="email" className="min-w-0 flex-1 basis-full sm:basis-auto" />
+      <button type="submit" disabled={status === "sending"} className="h-[50px] w-full shrink-0 rounded-xl bg-coral px-6 text-[15px] font-semibold text-white hover:bg-coral-600 disabled:opacity-60 sm:w-auto">
         {status === "sending" ? "Joining…" : "Get 10% off"}
       </button>
       {status === "error" && (

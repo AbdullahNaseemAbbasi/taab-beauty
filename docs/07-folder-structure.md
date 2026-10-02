@@ -2,48 +2,55 @@
 
 ```
 taab-beauty/
-├── index.html                 Fonts, meta, hidden Netlify forms, #root
+├── index.html                 Fonts, meta, hidden Netlify forms (fallback), #root
 ├── netlify.toml               Build command and publish folder
-├── .env.example               Tracking IDs and payment flags
+├── .env.example               Supabase keys, tracking IDs, payment flags
 ├── public/
 │   ├── _redirects             SPA fallback for client-side routing
 │   ├── favicon.svg
 │   ├── robots.txt
 │   └── sitemap.xml
+├── supabase/
+│   ├── config.toml            Supabase CLI config
+│   └── migrations/            SQL schema, functions, RLS (applied with npm run db:push)
+├── scripts/
+│   └── seed.mjs               Loads src/data into the database (npm run seed)
 ├── docs/                      This architecture pack
 └── src/
-    ├── main.jsx               Router + StoreProvider
-    ├── App.jsx                Route table
+    ├── main.jsx               Router → CatalogProvider → StoreProvider → App
+    ├── App.jsx                Route table (lazy-loaded pages)
     ├── index.css              Tailwind theme tokens and base styles
     ├── config/
-    │   └── site.js            Brand, contact, social, shipping, payments, analytics IDs, nav
+    │   └── site.js            Brand, contact, social, payments, nav (static config)
+    ├── api/                   The only modules that talk to Supabase; each falls back to mock data
+    │   ├── client.js          createClient() or null; isLive flag
+    │   ├── catalog.js         fetchCatalog(), fetchProductBySlug(), submitReview()
+    │   ├── orders.js          validateCoupon(), placeOrder(), getOrder(), getMyOrders()
+    │   ├── forms.js           subscribeNewsletter(), sendContactMessage()
+    │   └── events.js          Batched insert of analytics events
+    ├── catalog/
+    │   └── CatalogProvider.jsx  Loads the dataset once; useCatalog() exposes products, categories, settings…
     ├── analytics/
     │   ├── events.js          Event names and vendor mapping
     │   ├── tracking.js        initAnalytics(), track(), trackPageView()
     │   ├── attribution.js     UTM / ref capture, first and last touch
     │   ├── ecommerce.js       Typed ecommerce helpers
     │   └── experiments.js     A/B assignment
-    ├── data/
+    ├── data/                  Mock dataset (also the seed source)
     │   ├── images.js          Photo slug map
-    │   ├── categories.js      Categories and collections
-    │   ├── brands.js
-    │   ├── concerns.js
-    │   ├── products.js        30 products, variants, related and bundle rules
-    │   ├── reviews.js         Reviews and testimonials
-    │   ├── journal.js         Articles
-    │   ├── faqs.js
-    │   ├── policies.js
+    │   ├── categories.js · brands.js · concerns.js · products.js · reviews.js · journal.js · faqs.js · policies.js
     │   └── misc.js            Coupons, sample orders, order statuses, cities, Instagram
     ├── lib/
     │   ├── images.js          CDN URL and srcset builders
     │   ├── format.js          Price, date, slug helpers
-    │   ├── catalog.js         Search, filter, sort, facets, stock
-    │   ├── cart.js            Totals, coupons, order creation and lookup
+    │   ├── catalog.js         Search, filter, sort, facets, stock, related, reviews helpers
+    │   ├── cart.js            Line enrichment, totals, order hydration (pure functions)
+    │   ├── collections.js     New arrivals / best sellers / sale definitions
     │   └── schema.js          JSON-LD builders
     ├── hooks/
     │   └── useSeo.js
     ├── store/
-    │   └── StoreProvider.jsx  Cart, wishlist, compare, recent, UI, toasts
+    │   └── StoreProvider.jsx  Cart, wishlist, compare, recent, UI, toasts (localStorage)
     ├── components/
     │   ├── Logo.jsx
     │   ├── ui/                Button, Typography, Form, Feedback, RatingStars, Modal, Navigation, Icons
@@ -54,13 +61,15 @@ taab-beauty/
     └── pages/                 One file per route (18 pages)
 ```
 
-## Where things will move when the backend arrives
+## Data flow
 
-| Today | Tomorrow |
-|-------|----------|
-| `src/data/products.js` | `GET /api/products` (same shape) |
-| `lib/cart.js createOrder()` | `POST /api/orders` (returns the same order object) |
-| `lib/cart.js getOrder()` | `GET /api/orders/:id?phone=` |
-| Netlify Forms (contact, newsletter) | Keep, or route to the CRM |
-| `experiments.js` localStorage assignment | Server-side assignment with the same `useVariant()` API |
-| Review form (local state) | `POST /api/reviews` with moderation queue |
+```
+Supabase (Postgres)  ──fetchCatalog()──▶  CatalogProvider  ──useCatalog()──▶  pages & components
+        ▲                                                        │
+        │ place_order / get_order / validate_coupon (RPC)        │ cart state
+        └──────────────────────── api/orders.js ◀──────── StoreProvider
+        ▲
+        └── events (batched inserts) ◀── analytics/tracking.js ◀── every tracked interaction
+```
+
+Mock mode (no Supabase keys): `api/*` return the data in `src/data` and keep orders in localStorage, so the UI code never branches on the data source.

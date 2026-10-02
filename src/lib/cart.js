@@ -1,16 +1,11 @@
-import { site } from "../config/site.js";
-import { productById, productBySlug } from "../data/products.js";
-import { findCoupon, sampleOrders } from "../data/misc.js";
-import { attributionForOrder } from "../analytics/attribution.js";
-
-const ORDERS_KEY = "taab:orders";
+/* Pure cart maths. No data access here: callers pass the product index and shipping settings in. */
 
 export function lineKey(productId, variantId) {
   return variantId ? `${productId}:${variantId}` : productId;
 }
 
-/* Attaches product objects and prices to the compact stored lines. */
-export function enrichLines(lines) {
+/* Attaches product objects and prices to the compact stored lines; drops lines whose product no longer exists. */
+export function enrichLines(lines, productById) {
   return lines
     .map((line) => {
       const product = productById[line.productId];
@@ -28,104 +23,47 @@ export function enrichLines(lines) {
     .filter(Boolean);
 }
 
-export function evaluateCoupon(code, subtotal) {
-  const coupon = findCoupon(code);
-  if (!coupon) return { coupon: null, discount: 0, error: "That code is not valid." };
-  if (subtotal < coupon.minOrder) {
-    return { coupon: null, discount: 0, error: `This code needs a minimum order of ${site.currency.symbol} ${coupon.minOrder.toLocaleString()}.` };
-  }
-  let discount = 0;
-  if (coupon.type === "percent") discount = Math.round((subtotal * coupon.value) / 100);
-  if (coupon.type === "fixed") discount = Math.min(coupon.value, subtotal);
-  return { coupon, discount, error: null };
+export function couponDiscount(coupon, subtotal) {
+  if (!coupon) return 0;
+  if (coupon.minOrder && subtotal < coupon.minOrder) return 0;
+  if (coupon.type === "percent") return Math.round((subtotal * coupon.value) / 100);
+  if (coupon.type === "fixed") return Math.min(coupon.value, subtotal);
+  return 0;
 }
 
-export function computeTotals(enrichedLines, coupon = null) {
+const defaultShipping = { freeShippingThreshold: 7000, shippingFee: 250 };
+
+export function computeTotals(enrichedLines, coupon = null, shipping = defaultShipping) {
   const subtotal = enrichedLines.reduce((sum, line) => sum + line.lineTotal, 0);
-  const { discount } = coupon ? evaluateCoupon(coupon.code, subtotal) : { discount: 0 };
+  const discount = couponDiscount(coupon, subtotal);
   const afterDiscount = Math.max(subtotal - discount, 0);
-  const freeShipping = afterDiscount >= site.shipping.freeShippingThreshold || coupon?.type === "shipping";
-  const shipping = enrichedLines.length === 0 || freeShipping ? 0 : site.shipping.standardFee;
+  const freeShipping = afterDiscount >= shipping.freeShippingThreshold || coupon?.type === "shipping";
+  const fee = enrichedLines.length === 0 || freeShipping ? 0 : shipping.shippingFee;
   return {
     subtotal,
     discount,
-    shipping,
-    total: afterDiscount + shipping,
+    shipping: fee,
+    total: afterDiscount + fee,
     itemCount: enrichedLines.reduce((sum, line) => sum + line.quantity, 0),
-    freeShippingRemaining: freeShipping ? 0 : Math.max(site.shipping.freeShippingThreshold - afterDiscount, 0),
+    freeShippingRemaining: freeShipping ? 0 : Math.max(shipping.freeShippingThreshold - afterDiscount, 0),
   };
 }
 
-function readOrders() {
-  try {
-    return JSON.parse(localStorage.getItem(ORDERS_KEY) || "[]");
-  } catch {
-    return [];
-  }
-}
-
-function orderId(date = new Date()) {
-  const stamp = date.toISOString().slice(2, 10).replace(/-/g, "");
-  const serial = String(Math.floor(Math.random() * 9000) + 1000);
-  return `TB-${stamp}-${serial}`;
-}
-
-/* Creates an order record (stored locally in this static build) and returns it. */
-export function createOrder({ customer, lines, coupon, payment, notes }) {
-  const enriched = enrichLines(lines);
-  const totals = computeTotals(enriched, coupon);
-  const now = new Date();
-  const order = {
-    id: orderId(now),
-    placedAt: now.toISOString(),
-    status: payment === "cod" ? "confirmed" : "created",
-    payment,
-    notes: notes || "",
-    customer,
-    phone: customer.phone,
-    coupon: coupon ? { code: coupon.code, creatorId: coupon.creatorId } : null,
-    lines: enriched.map((line) => ({ productId: line.productId, slug: line.product.slug, variant: line.variant?.name || null, quantity: line.quantity, unitPrice: line.unitPrice })),
-    totals,
-    attribution: attributionForOrder(),
-    timeline: [
-      { status: "created", label: "Order placed", at: now.toISOString() },
-      ...(payment === "cod" ? [{ status: "confirmed", label: "Order confirmed (cash on delivery)", at: now.toISOString() }] : []),
-    ],
-  };
-  try {
-    localStorage.setItem(ORDERS_KEY, JSON.stringify([order, ...readOrders()]));
-  } catch {
-    /* ignore */
-  }
-  return order;
-}
-
-function normalizeOrder(order) {
+/* Attaches catalogue products to an order's lines so summaries can show images and names. */
+export function hydrateOrder(order, { productById = {}, productBySlug = {} } = {}) {
+  if (!order) return null;
   return {
     ...order,
-    lines: order.lines.map((line) => {
-      const product = line.slug ? productBySlug[line.slug] : productById[line.productId];
-      return { ...line, product, unitPrice: line.unitPrice ?? product?.price ?? 0 };
+    lines: (order.lines || []).map((line) => {
+      const product = (line.productId && productById[line.productId]) || (line.slug && productBySlug[line.slug]) || null;
+      const unitPrice = line.unitPrice ?? product?.price ?? 0;
+      return {
+        ...line,
+        key: lineKey(line.productId || line.slug, line.variantId),
+        product: product || { id: line.productId, slug: line.slug, name: line.name || "Product", images: [], price: unitPrice },
+        unitPrice,
+        lineTotal: line.lineTotal ?? unitPrice * line.quantity,
+      };
     }),
   };
-}
-
-export function getOrder(id) {
-  const wanted = String(id || "").trim().toUpperCase();
-  const local = readOrders().find((order) => order.id === wanted);
-  const sample = sampleOrders.find((order) => order.id === wanted);
-  const order = local || sample;
-  return order ? normalizeOrder(order) : null;
-}
-
-export function getOrdersByPhone(phone) {
-  const digits = String(phone || "").replace(/\D/g, "").slice(-10);
-  if (!digits) return [];
-  return [...readOrders(), ...sampleOrders]
-    .filter((order) => String(order.phone || order.customer?.phone || "").replace(/\D/g, "").endsWith(digits))
-    .map(normalizeOrder);
-}
-
-export function allLocalOrders() {
-  return [...readOrders(), ...sampleOrders].map(normalizeOrder);
 }

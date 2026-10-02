@@ -13,13 +13,13 @@ import ProductCard from "../components/product/ProductCard.jsx";
 import { ProductCarousel } from "../components/product/ProductGrid.jsx";
 import { Section } from "../components/sections/Sections.jsx";
 import { whatsappLink } from "../components/layout/WhatsAppButton.jsx";
-import { getProduct, relatedProducts, frequentlyBoughtTogether } from "../data/products.js";
-import { categoryBySlug } from "../data/categories.js";
-import { reviewsForProduct } from "../data/reviews.js";
+import { useCatalog } from "../catalog/CatalogProvider.jsx";
+import { fetchProductBySlug } from "../api/catalog.js";
+import { isLive } from "../api/client.js";
 import { site } from "../config/site.js";
 import { formatPrice } from "../lib/format.js";
 import { img } from "../lib/images.js";
-import { variantStock } from "../lib/catalog.js";
+import { variantStock, relatedProducts, frequentlyBoughtTogether, reviewsForProduct } from "../lib/catalog.js";
 import { productSchema, breadcrumbSchema } from "../lib/schema.js";
 import { useStore } from "../store/StoreProvider.jsx";
 import { ecommerce } from "../analytics/ecommerce.js";
@@ -70,15 +70,17 @@ function StockStatus({ stock }) {
 
 export default function ProductPage() {
   const { slug } = useParams();
-  const product = getProduct(slug);
   const navigate = useNavigate();
+  const { products, productBySlug, categoryBySlug, reviews, settings, updateProduct } = useCatalog();
+  const product = productBySlug[slug] || null;
   const { addToCart, isWishlisted, toggleWishlist, toggleCompare, isCompared, addRecent, recent, toast, setUI } = useStore();
   const [variantId, setVariantId] = useState(() => product?.variants?.options.find((option) => option.stock > 0)?.id || null);
   const [quantity, setQuantity] = useState(1);
 
   const category = product ? categoryBySlug[product.category] : null;
-  const reviews = product ? reviewsForProduct(product.id) : [];
-  const crumbs = product ? [{ label: "Shop", to: "/shop" }, { label: category.name, to: `/shop/${category.slug}` }, { label: product.name, to: `/product/${product.slug}` }] : [];
+  const productReviews = product ? reviewsForProduct(reviews, product.id) : [];
+  const crumbs = product ? [{ label: "Shop", to: "/shop" }, { label: category?.name || product.category, to: `/shop/${product.category}` }, { label: product.name, to: `/product/${product.slug}` }] : [];
+  const threshold = formatPrice(settings.shipping.freeShippingThreshold);
 
   useSeo({
     title: product ? `${product.name} by ${product.brand}` : "Product",
@@ -86,7 +88,7 @@ export default function ProductPage() {
     path: `/product/${slug}`,
     type: "product",
     image: product ? img(product.images[0], 1200) : undefined,
-    jsonLd: product ? [productSchema(product, reviews), breadcrumbSchema(crumbs)] : [],
+    jsonLd: product ? [productSchema(product, productReviews), breadcrumbSchema(crumbs)] : [],
   });
 
   useEffect(() => {
@@ -95,6 +97,11 @@ export default function ProductPage() {
     addRecent(product.id);
     setQuantity(1);
     setVariantId(product.variants?.options.find((option) => option.stock > 0)?.id || null);
+    if (isLive) {
+      fetchProductBySlug(product.slug)
+        .then((fresh) => fresh && updateProduct(fresh))
+        .catch(() => {});
+    }
   }, [product?.id]);
 
   useEffect(() => {
@@ -103,8 +110,8 @@ export default function ProductPage() {
   }, [setUI]);
 
   const stock = product ? variantStock(product, variantId) : 0;
-  const bundle = useMemo(() => (product ? frequentlyBoughtTogether(product) : []), [product?.id]);
-  const related = useMemo(() => (product ? relatedProducts(product) : []), [product?.id]);
+  const bundle = useMemo(() => (product ? frequentlyBoughtTogether(productBySlug, product) : []), [product?.id, productBySlug]);
+  const related = useMemo(() => (product ? relatedProducts(products, product) : []), [product?.id, products]);
   const recentOthers = recent.filter((entry) => entry.id !== product?.id).slice(0, 4);
 
   if (!product) return <NotFoundPage />;
@@ -134,7 +141,7 @@ export default function ProductPage() {
     }
   };
   const addBundle = () => {
-    add(false);
+    if (!add(false)) return;
     bundle.forEach((item) => addToCart(item, { openDrawer: false, silent: true }));
     toast("Bundle added to your bag.", { action: { label: "View bag", to: "/cart" } });
   };
@@ -147,32 +154,32 @@ export default function ProductPage() {
     {
       title: "Specifications",
       content: (
-        <dl className="grid grid-cols-[120px_1fr] gap-y-2">
+        <dl className="grid grid-cols-[110px_1fr] gap-y-2">
           <dt className="font-semibold text-navy">Size</dt><dd>{product.size}</dd>
           <dt className="font-semibold text-navy">SKU</dt><dd>{product.sku}</dd>
           <dt className="font-semibold text-navy">Brand</dt><dd>{product.brand}</dd>
-          <dt className="font-semibold text-navy">Category</dt><dd>{category.name} / {product.subcategory}</dd>
+          <dt className="font-semibold text-navy">Category</dt><dd>{category?.name || product.category} / {product.subcategory}</dd>
         </dl>
       ),
     },
     { title: "Authenticity", content: <p>Sourced directly from {product.brand} or its authorised distributor. Every unit ships sealed with an intact batch code, and we can share the batch certificate on request.</p> },
-    { title: "Shipping & returns", content: <p>Dispatched the same day on orders before 2pm. {site.shipping.estimatedDays} across Pakistan, next business day in Karachi. Free delivery over {formatPrice(site.shipping.freeShippingThreshold)}. Unopened products can be returned within 7 days.</p> },
+    { title: "Shipping & returns", content: <p>Dispatched the same day on orders before 2pm. {settings.shipping.estimatedDays} across Pakistan, next business day in Karachi. Free delivery over {threshold}. Unopened products can be returned within 7 days.</p> },
   ];
 
   return (
     <>
-      <div className="wrap pt-6">
+      <div className="wrap pt-5 sm:pt-6">
         <Breadcrumbs items={crumbs} />
       </div>
 
-      <section className="wrap grid gap-10 py-8 lg:grid-cols-2 lg:gap-14">
+      <section className="wrap grid gap-8 py-6 sm:py-8 lg:grid-cols-2 lg:gap-14">
         <ProductGallery product={product} />
 
         <div>
           <Link to={`/shop?brand=${encodeURIComponent(product.brand)}`} className="text-[12px] font-bold uppercase tracking-[0.2em] text-teal hover:underline">
             {product.brand}
           </Link>
-          <h1 className="mt-2 font-display text-[30px] font-extrabold leading-[1.1] tracking-[-0.02em] text-navy sm:text-[38px]">{product.name}</h1>
+          <h1 className="mt-2 font-display text-[28px] font-extrabold leading-[1.1] tracking-[-0.02em] text-navy sm:text-[38px]">{product.name}</h1>
           <a href="#reviews" className="mt-3 inline-flex">
             <RatingStars rating={product.rating} count={product.reviewCount} showValue size="size-4" />
           </a>
@@ -186,10 +193,10 @@ export default function ProductPage() {
             <VariantSelector product={product} value={variantId} onChange={setVariantId} />
             <div className="flex flex-wrap items-center gap-3">
               <QuantityStepper value={quantity} min={1} max={Math.max(stock, 1)} onChange={setQuantity} />
-              <Button variant="navy" onClick={() => add(true)} disabled={stock <= 0} className="flex-1 sm:flex-none sm:min-w-[200px]">
+              <Button variant="navy" onClick={() => add(true)} disabled={stock <= 0} className="flex-1 sm:min-w-[200px] sm:flex-none">
                 {stock <= 0 ? "Sold out" : "Add to bag"}
               </Button>
-              <Button onClick={buyNow} disabled={stock <= 0} className="flex-1 sm:flex-none sm:min-w-[160px]">
+              <Button onClick={buyNow} disabled={stock <= 0} className="w-full sm:w-auto sm:min-w-[160px]">
                 Buy now
               </Button>
             </div>
@@ -216,7 +223,7 @@ export default function ProductPage() {
           </div>
 
           <ul className="mt-7 grid gap-3 rounded-2xl bg-tint p-4 text-[13px] text-navy sm:grid-cols-3">
-            <li className="flex items-center gap-2"><TruckIcon className="size-5 shrink-0 text-teal" /> {site.shipping.estimatedDays}, free over {formatPrice(site.shipping.freeShippingThreshold)}</li>
+            <li className="flex items-center gap-2"><TruckIcon className="size-5 shrink-0 text-teal" /> {settings.shipping.estimatedDays}, free over {threshold}</li>
             <li className="flex items-center gap-2"><ShieldIcon className="size-5 shrink-0 text-teal" /> 100% authentic, sealed</li>
             <li className="flex items-center gap-2"><RefreshIcon className="size-5 shrink-0 text-teal" /> 7-day easy returns</li>
           </ul>
@@ -237,7 +244,7 @@ export default function ProductPage() {
             <div className="rounded-2xl border border-line bg-white p-5">
               <p className="text-[14px] text-ink">Bundle price</p>
               <p className="font-display text-[28px] font-extrabold text-navy">{formatPrice(bundleTotal)}</p>
-              <p className="mt-1 text-[13px] text-ink">{bundle.length + 1} items, {bundleTotal >= site.shipping.freeShippingThreshold ? "free delivery included" : "delivery calculated at checkout"}</p>
+              <p className="mt-1 text-[13px] text-ink">{bundle.length + 1} items, {bundleTotal >= settings.shipping.freeShippingThreshold ? "free delivery included" : "delivery calculated at checkout"}</p>
               <Button variant="navy" className="mt-4 w-full" onClick={addBundle} disabled={stock <= 0}>
                 Add all {bundle.length + 1} to bag
               </Button>
@@ -250,9 +257,11 @@ export default function ProductPage() {
         <ReviewSection product={product} />
       </div>
 
-      <Section eyebrow="You may also like" title={`More from ${category.name}.`} action={{ label: `All ${category.name}`, to: `/shop/${category.slug}` }} align="left" bg="white">
-        <ProductCarousel products={related} listName="related_products" />
-      </Section>
+      {related.length > 0 && (
+        <Section eyebrow="You may also like" title={`More from ${category?.name || product.category}.`} action={{ label: `All ${category?.name || product.category}`, to: `/shop/${product.category}` }} align="left" bg="white">
+          <ProductCarousel products={related} listName="related_products" />
+        </Section>
+      )}
 
       {recentOthers.length > 0 && (
         <Section eyebrow="Recently viewed" title="Still thinking about these?" bg="tint" align="left">

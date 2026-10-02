@@ -5,6 +5,7 @@ import { SearchIcon, ArrowIcon } from "../ui/Icons.jsx";
 import { Price } from "../ui/Typography.jsx";
 import { searchProducts } from "../../lib/catalog.js";
 import { imageProps } from "../../lib/images.js";
+import { useCatalog } from "../../catalog/CatalogProvider.jsx";
 import { useStore } from "../../store/StoreProvider.jsx";
 import { ecommerce } from "../../analytics/ecommerce.js";
 
@@ -12,10 +13,11 @@ const popular = ["lipstick", "vitamin c serum", "foundation", "hair oil", "perfu
 
 export default function SearchOverlay() {
   const { ui, setUI } = useStore();
+  const { products } = useCatalog();
   const [query, setQuery] = useState("");
   const navigate = useNavigate();
   const close = () => setUI({ searchOpen: false });
-  const results = useMemo(() => (query.trim().length >= 2 ? searchProducts(query).slice(0, 6) : []), [query]);
+  const results = useMemo(() => (query.trim().length >= 2 ? searchProducts(query, products).slice(0, 6) : []), [query, products]);
 
   useEffect(() => {
     if (!ui.searchOpen) setQuery("");
@@ -25,7 +27,7 @@ export default function SearchOverlay() {
     event.preventDefault();
     const term = query.trim();
     if (!term) return;
-    ecommerce.search(term, searchProducts(term).length);
+    ecommerce.search(term, searchProducts(term, products).length);
     close();
     navigate(`/search?q=${encodeURIComponent(term)}`);
   }
@@ -42,9 +44,9 @@ export default function SearchOverlay() {
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search products, brands, concerns"
             aria-label="Search products"
-            className="h-14 w-full rounded-full border border-line bg-tint pr-32 pl-13 text-[16px] text-navy outline-none focus:border-teal focus:bg-white focus:ring-2 focus:ring-teal/20"
+            className="h-14 w-full rounded-full border border-line bg-tint pr-24 pl-13 text-[16px] text-navy outline-none focus:border-teal focus:bg-white focus:ring-2 focus:ring-teal/20 sm:pr-32"
           />
-          <button type="submit" className="absolute top-1/2 right-2 h-10 -translate-y-1/2 rounded-full bg-navy px-5 text-[14px] font-semibold text-white">
+          <button type="submit" className="absolute top-1/2 right-2 h-10 -translate-y-1/2 rounded-full bg-navy px-4 text-[14px] font-semibold text-white sm:px-5">
             Search
           </button>
         </form>

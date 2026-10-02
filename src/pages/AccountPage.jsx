@@ -1,15 +1,17 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import useSeo from "../hooks/useSeo.js";
 import Button from "../components/ui/Button.jsx";
 import { Field, Input } from "../components/ui/Form.jsx";
 import { Badge } from "../components/ui/Typography.jsx";
-import { EmptyState } from "../components/ui/Feedback.jsx";
+import { EmptyState, Skeleton } from "../components/ui/Feedback.jsx";
 import { PackageIcon, HeartIcon, PinIcon, UserIcon } from "../components/ui/Icons.jsx";
 import { PageHeader } from "../components/sections/Sections.jsx";
-import { allLocalOrders } from "../lib/cart.js";
+import { getMyOrders } from "../api/orders.js";
+import { hydrateOrder } from "../lib/cart.js";
 import { formatDate, formatPrice } from "../lib/format.js";
 import { orderStatuses, terminalStatuses } from "../data/misc.js";
+import { useCatalog } from "../catalog/CatalogProvider.jsx";
 import { useStore } from "../store/StoreProvider.jsx";
 
 const ACCOUNT_KEY = "taab:account";
@@ -35,9 +37,22 @@ function statusLabel(status) {
 export default function AccountPage() {
   useSeo({ title: "My Account", path: "/account", noindex: true });
   const { wishlist } = useStore();
+  const { productById, productBySlug } = useCatalog();
   const [account, setAccount] = useState(loadAccount);
   const [form, setForm] = useState({ name: "", email: "", phone: "" });
   const [tab, setTab] = useState("orders");
+  const [orders, setOrders] = useState(null);
+
+  useEffect(() => {
+    if (!account) return;
+    let cancelled = false;
+    getMyOrders()
+      .then((list) => !cancelled && setOrders(list.map((order) => hydrateOrder(order, { productById, productBySlug }))))
+      .catch(() => !cancelled && setOrders([]));
+    return () => {
+      cancelled = true;
+    };
+  }, [account, productById, productBySlug]);
 
   function signIn(event) {
     event.preventDefault();
@@ -49,22 +64,23 @@ export default function AccountPage() {
   function signOut() {
     localStorage.removeItem(ACCOUNT_KEY);
     setAccount(null);
+    setOrders(null);
   }
 
   if (!account) {
     return (
       <>
         <PageHeader title="My account" description="Save addresses, see your orders and keep your wishlist across devices." />
-        <section className="wrap py-10">
-          <form onSubmit={signIn} className="mx-auto max-w-md rounded-2xl border border-line bg-white p-6 sm:p-8">
+        <section className="wrap py-8 sm:py-10">
+          <form onSubmit={signIn} className="mx-auto max-w-md rounded-2xl border border-line bg-white p-5 sm:p-8">
             <h2 className="font-display text-[22px] font-extrabold text-navy">Sign in or create an account</h2>
-            <p className="mt-1 text-[14px] text-ink">Demo mode: enter any details to see the account area. Real sign-in with OTP is wired up when the backend goes live.</p>
+            <p className="mt-1 text-[14px] text-ink">Demo mode: enter any details to see the account area. Real sign-in with OTP is wired up when phone verification goes live.</p>
             <div className="mt-5 grid gap-4">
               <Field label="Full name" required>
                 <Input required value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} autoComplete="name" />
               </Field>
               <Field label="Mobile number" required>
-                <Input required type="tel" value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} autoComplete="tel" placeholder="0300 1234567" />
+                <Input required type="tel" inputMode="tel" value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} autoComplete="tel" placeholder="0300 1234567" />
               </Field>
               <Field label="Email">
                 <Input type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} autoComplete="email" />
@@ -79,8 +95,7 @@ export default function AccountPage() {
     );
   }
 
-  const orders = allLocalOrders();
-  const addresses = Array.from(new Map(orders.filter((order) => order.customer?.address).map((order) => [order.customer.address, order.customer])).values());
+  const addresses = orders ? Array.from(new Map(orders.filter((order) => order.customer?.address).map((order) => [order.customer.address, order.customer])).values()) : [];
   const tabs = [
     { id: "orders", label: "Orders", Icon: PackageIcon },
     { id: "addresses", label: "Addresses", Icon: PinIcon },
@@ -94,8 +109,8 @@ export default function AccountPage() {
           Sign out
         </button>
       </PageHeader>
-      <section className="wrap grid gap-8 py-10 lg:grid-cols-[240px_1fr] lg:items-start">
-        <nav className="flex gap-2 overflow-x-auto lg:flex-col">
+      <section className="wrap grid gap-8 py-8 sm:py-10 lg:grid-cols-[240px_1fr] lg:items-start">
+        <nav className="no-scrollbar flex gap-2 overflow-x-auto lg:flex-col">
           {tabs.map(({ id, label, Icon }) => (
             <button key={id} type="button" onClick={() => setTab(id)} className={`flex shrink-0 items-center gap-2 rounded-full px-4 py-2.5 text-[14px] font-semibold ${tab === id ? "bg-navy text-white" : "bg-tint text-navy hover:bg-line"}`}>
               <Icon className="size-4" /> {label}
@@ -108,7 +123,12 @@ export default function AccountPage() {
 
         <div>
           {tab === "orders" &&
-            (orders.length ? (
+            (orders === null ? (
+              <div className="space-y-4" aria-busy="true">
+                <Skeleton className="h-28" />
+                <Skeleton className="h-28" />
+              </div>
+            ) : orders.length ? (
               <ul className="space-y-4">
                 {orders.map((order) => (
                   <li key={order.id} className="rounded-2xl border border-line bg-white p-5">
@@ -119,7 +139,7 @@ export default function AccountPage() {
                       </div>
                       <Badge tone={statusTone(order.status)}>{statusLabel(order.status)}</Badge>
                     </div>
-                    <p className="mt-3 text-[14px] text-ink">{order.lines.map((line) => `${line.quantity} × ${line.product?.name}`).join(", ")}</p>
+                    <p className="mt-3 text-[14px] text-ink">{order.lines.map((line) => `${line.quantity} × ${line.product?.name || line.name}`).join(", ")}</p>
                     <Link to={`/order/${order.id}`} className="mt-3 inline-block text-[14px] font-semibold text-teal hover:underline">
                       View order
                     </Link>
@@ -127,7 +147,7 @@ export default function AccountPage() {
                 ))}
               </ul>
             ) : (
-              <EmptyState icon={PackageIcon} title="No orders yet" text="Your orders will appear here after checkout." action={{ label: "Start shopping", to: "/shop" }} />
+              <EmptyState icon={PackageIcon} title="No orders yet" text="Orders you place on this device will appear here. Use Track Order for orders placed elsewhere." action={{ label: "Start shopping", to: "/shop" }} secondary={{ label: "Track an order", to: "/track-order" }} />
             ))}
 
           {tab === "addresses" &&
@@ -147,7 +167,7 @@ export default function AccountPage() {
             ))}
 
           {tab === "profile" && (
-            <div className="rounded-2xl border border-line bg-white p-6">
+            <div className="rounded-2xl border border-line bg-white p-5 sm:p-6">
               <dl className="grid gap-4 text-[15px] sm:grid-cols-2">
                 <div><dt className="text-[12px] font-bold uppercase tracking-wide text-ink-light">Name</dt><dd className="mt-1 text-navy">{account.name}</dd></div>
                 <div><dt className="text-[12px] font-bold uppercase tracking-wide text-ink-light">Phone</dt><dd className="mt-1 text-navy">{account.phone}</dd></div>

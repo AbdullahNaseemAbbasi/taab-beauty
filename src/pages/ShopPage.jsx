@@ -10,9 +10,7 @@ import { ProductGrid } from "../components/product/ProductGrid.jsx";
 import FilterSidebar from "../components/product/FilterSidebar.jsx";
 import { PageHero, PageHeader } from "../components/sections/Sections.jsx";
 import NotFoundPage from "./NotFoundPage.jsx";
-import { products } from "../data/products.js";
-import { categoryBySlug, collections } from "../data/categories.js";
-import { images } from "../data/images.js";
+import { useCatalog } from "../catalog/CatalogProvider.jsx";
 import { filterProducts, sortProducts, sortOptions } from "../lib/catalog.js";
 import { breadcrumbSchema } from "../lib/schema.js";
 import { track } from "../analytics/tracking.js";
@@ -54,20 +52,22 @@ export default function ShopPage({ mode = "all", collection }) {
   const { category: categorySlug } = useParams();
   const [params, setParams] = useSearchParams();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const { products, categoryBySlug, collections } = useCatalog();
 
   const category = mode === "category" ? categoryBySlug[categorySlug] : null;
   const collectionDef = mode === "collection" ? collections[collection] : null;
   const sort = params.get("sort") || "featured";
   const page = Math.max(1, Number(params.get("page") || 1));
   const filters = filtersFromParams(params, category?.slug);
+  const filterKey = JSON.stringify(filters);
 
   const base = useMemo(() => {
     if (category) return products.filter((product) => product.category === category.slug);
     if (collectionDef) return products.filter(collectionDef.filter);
     return products;
-  }, [category, collectionDef]);
+  }, [products, category, collectionDef]);
 
-  const filtered = useMemo(() => sortProducts(filterProducts(base, { ...filters, category: category ? null : filters.category }), sort), [base, JSON.stringify(filters), sort, category]);
+  const filtered = useMemo(() => sortProducts(filterProducts(base, { ...filters, category: category ? null : filters.category }), sort), [base, filterKey, sort, category]);
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const visible = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
@@ -113,13 +113,13 @@ export default function ShopPage({ mode = "all", collection }) {
           <p className="text-[14px] text-ink">
             Showing <strong className="text-navy">{visible.length}</strong> of <strong className="text-navy">{filtered.length}</strong> products
           </p>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <button type="button" onClick={() => setDrawerOpen(true)} className="inline-flex h-11 items-center gap-2 rounded-full border border-line px-4 text-[14px] font-semibold text-navy lg:hidden">
               <FilterIcon className="size-4" /> Filters
             </button>
             <label className="flex items-center gap-2 text-[14px] text-ink">
               <span className="hidden sm:inline">Sort by</span>
-              <Select value={sort} onChange={(event) => updateSort(event.target.value)} aria-label="Sort products" className="h-11 w-44 py-0">
+              <Select value={sort} onChange={(event) => updateSort(event.target.value)} aria-label="Sort products" className="h-11 w-40 py-0 sm:w-44">
                 {sortOptions.map((option) => (
                   <option key={option.id} value={option.id}>
                     {option.label}

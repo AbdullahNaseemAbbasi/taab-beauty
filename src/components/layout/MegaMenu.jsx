@@ -1,14 +1,15 @@
 import { Link } from "react-router-dom";
-import { categories } from "../../data/categories.js";
+import { useCatalog } from "../../catalog/CatalogProvider.jsx";
 import { images } from "../../data/images.js";
 import { imageProps } from "../../lib/images.js";
 import { ArrowIcon } from "../ui/Icons.jsx";
 
 export default function MegaMenu({ open, onClose }) {
+  const { categories } = useCatalog();
   if (!open) return null;
   return (
     <div className="absolute top-full left-1/2 z-40 w-[880px] -translate-x-1/2 pt-5" onMouseLeave={onClose}>
-      <div className="grid grid-cols-[1fr_1fr_1fr_1fr_1fr_220px] gap-6 rounded-2xl border border-line bg-white p-7 shadow-float">
+      <div className="grid grid-cols-[repeat(5,1fr)_220px] gap-6 rounded-2xl border border-line bg-white p-7 shadow-float">
         {categories.map((category) => (
           <div key={category.slug}>
             <Link to={`/shop/${category.slug}`} onClick={onClose} className="font-display text-[15px] font-extrabold text-navy hover:text-coral">

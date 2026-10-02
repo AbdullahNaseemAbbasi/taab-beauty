@@ -8,6 +8,7 @@ import { PageHero } from "../components/sections/Sections.jsx";
 import { whatsappLink } from "../components/layout/WhatsAppButton.jsx";
 import { site } from "../config/site.js";
 import { images } from "../data/images.js";
+import { sendContactMessage } from "../api/forms.js";
 import { track } from "../analytics/tracking.js";
 import { EVENTS } from "../analytics/events.js";
 import { ecommerce } from "../analytics/ecommerce.js";
@@ -21,11 +22,11 @@ export default function ContactPage() {
   async function submit(event) {
     event.preventDefault();
     const form = event.currentTarget;
+    const data = Object.fromEntries(new FormData(form));
     setStatus("sending");
     try {
-      const response = await fetch("/", { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: new URLSearchParams(new FormData(form)).toString() });
-      if (!response.ok && import.meta.env.PROD) throw new Error(`Contact form failed: ${response.status}`);
-      track(EVENTS.CONTACT_FORM_SUBMIT, { topic: form.topic.value });
+      await sendContactMessage({ name: data.name, email: data.email, phone: data.phone, topic: data.topic, message: data.message });
+      track(EVENTS.CONTACT_FORM_SUBMIT, { topic: data.topic });
       form.reset();
       setStatus("sent");
     } catch {

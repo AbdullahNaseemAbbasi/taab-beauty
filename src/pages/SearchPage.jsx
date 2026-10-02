@@ -6,14 +6,15 @@ import { ProductGrid } from "../components/product/ProductGrid.jsx";
 import { EmptyState } from "../components/ui/Feedback.jsx";
 import { SearchIcon } from "../components/ui/Icons.jsx";
 import { searchProducts } from "../lib/catalog.js";
-import { products } from "../data/products.js";
+import { useCatalog } from "../catalog/CatalogProvider.jsx";
 import { ecommerce } from "../analytics/ecommerce.js";
 import { useStore } from "../store/StoreProvider.jsx";
 
 export default function SearchPage() {
   const [params] = useSearchParams();
   const query = (params.get("q") || "").trim();
-  const results = useMemo(() => searchProducts(query), [query]);
+  const { products } = useCatalog();
+  const results = useMemo(() => searchProducts(query, products), [query, products]);
   const { setUI } = useStore();
   useSeo({ title: query ? `Search results for “${query}”` : "Search", path: `/search?q=${encodeURIComponent(query)}`, noindex: true });
 

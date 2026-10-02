@@ -2,13 +2,14 @@ import { Link } from "react-router-dom";
 import Overlay from "../ui/Modal.jsx";
 import Logo from "../Logo.jsx";
 import { ChevronRightIcon, HeartIcon, PackageIcon, UserIcon, WhatsAppIcon } from "../ui/Icons.jsx";
-import { categories, collections } from "../../data/categories.js";
+import { useCatalog } from "../../catalog/CatalogProvider.jsx";
 import { site } from "../../config/site.js";
 import { useStore } from "../../store/StoreProvider.jsx";
 import { ecommerce } from "../../analytics/ecommerce.js";
 
 export default function MobileMenu() {
   const { ui, setUI } = useStore();
+  const { categories, collections } = useCatalog();
   const close = () => setUI({ menuOpen: false });
 
   return (

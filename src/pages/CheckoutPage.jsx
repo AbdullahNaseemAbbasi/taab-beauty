@@ -4,13 +4,16 @@ import useSeo from "../hooks/useSeo.js";
 import Button from "../components/ui/Button.jsx";
 import { Field, Input, Select, Textarea, Radio } from "../components/ui/Form.jsx";
 import { EmptyState } from "../components/ui/Feedback.jsx";
-import { BagIcon, ShieldIcon, WhatsAppIcon } from "../components/ui/Icons.jsx";
+import { BagIcon, ShieldIcon, WhatsAppIcon, InfoIcon } from "../components/ui/Icons.jsx";
 import { PageHeader } from "../components/sections/Sections.jsx";
 import OrderSummary from "../components/commerce/OrderSummary.jsx";
 import { whatsappLink } from "../components/layout/WhatsAppButton.jsx";
 import { site } from "../config/site.js";
 import { cities } from "../data/misc.js";
-import { createOrder } from "../lib/cart.js";
+import { placeOrder } from "../api/orders.js";
+import { isLive } from "../api/client.js";
+import { hydrateOrder } from "../lib/cart.js";
+import { useCatalog } from "../catalog/CatalogProvider.jsx";
 import { useStore } from "../store/StoreProvider.jsx";
 import { ecommerce } from "../analytics/ecommerce.js";
 
@@ -27,12 +30,16 @@ function loadSavedCustomer() {
 
 export default function CheckoutPage() {
   const { cart, clearCart } = useStore();
+  const { settings, productById, productBySlug, reload } = useCatalog();
   const navigate = useNavigate();
   useSeo({ title: "Checkout", path: "/checkout", noindex: true });
 
-  const enabledMethods = site.payments.methods.filter((method) => method.enabled);
+  const enabledMethods = site.payments.methods.filter(
+    (method) => (method.id === "cod" && settings.store.codEnabled) || (method.id === "bank" && settings.store.bankTransferEnabled) || (method.id === "card" && settings.store.cardEnabled)
+  );
   const [form, setForm] = useState(() => ({ name: "", phone: "", email: "", address: "", city: "Karachi", province: "Sindh", postalCode: "", instructions: "", notes: "", payment: enabledMethods[0]?.id || "cod", ...loadSavedCustomer() }));
   const [errors, setErrors] = useState({});
+  const [submitError, setSubmitError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -52,24 +59,42 @@ export default function CheckoutPage() {
     return Object.keys(next).length === 0;
   }
 
-  async function placeOrder(event) {
+  async function submit(event) {
     event.preventDefault();
+    setSubmitError("");
     if (!validate()) {
       document.querySelector("[aria-invalid='true']")?.focus();
       return;
     }
     setSubmitting(true);
     ecommerce.addPaymentInfo(cart.lines, form.payment);
-    const customer = { name: form.name.trim(), phone: form.phone.replace(/[\s-]/g, ""), email: form.email.trim(), address: form.address.trim(), city: form.city, province: form.province, postalCode: form.postalCode.trim(), instructions: form.instructions.trim() };
+    const customer = {
+      name: form.name.trim(),
+      phone: form.phone.replace(/[\s-]/g, ""),
+      email: form.email.trim(),
+      address: form.address.trim(),
+      city: form.city,
+      province: form.province,
+      postalCode: form.postalCode.trim(),
+      instructions: form.instructions.trim(),
+    };
     try {
       localStorage.setItem(CUSTOMER_KEY, JSON.stringify({ ...customer, payment: form.payment }));
     } catch {
       /* ignore */
     }
-    const order = createOrder({ customer, lines: cart.lines.map(({ productId, variantId, quantity }) => ({ productId, variantId, quantity })), coupon: cart.coupon, payment: form.payment, notes: form.notes });
-    ecommerce.purchase(order);
-    clearCart();
-    navigate(`/order/${order.id}`, { state: { justPlaced: true } });
+    try {
+      const placed = await placeOrder({ customer, lines: cart.lines, coupon: cart.coupon, payment: form.payment, notes: form.notes, totals: cart.totals });
+      const order = hydrateOrder(placed, { productById, productBySlug });
+      ecommerce.purchase(order);
+      clearCart();
+      if (isLive) reload(); // refresh stock counts in the background
+      navigate(`/order/${order.id}`, { state: { justPlaced: true, order } });
+    } catch (error) {
+      setSubmitError(error.message || "We could not place your order. Please try again.");
+      setSubmitting(false);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
   }
 
   if (cart.lines.length === 0) {
@@ -86,25 +111,31 @@ export default function CheckoutPage() {
   return (
     <>
       <PageHeader title="Checkout" description="Guest checkout, no account needed. We only ask for what the courier requires." />
-      <form onSubmit={placeOrder} noValidate className="wrap grid gap-8 py-10 lg:grid-cols-[1fr_400px] lg:items-start">
-        <div className="space-y-8">
-          <fieldset className="rounded-2xl border border-line bg-white p-5 sm:p-6">
-            <legend className="font-display text-[20px] font-extrabold text-navy">1. Contact</legend>
+      <form onSubmit={submit} noValidate className="wrap grid gap-8 py-8 sm:py-10 lg:grid-cols-[1fr_400px] lg:items-start">
+        <div className="space-y-6 sm:space-y-8">
+          {submitError && (
+            <p role="alert" className="flex items-start gap-3 rounded-2xl border border-coral/40 bg-coral-50 p-4 text-[14px] text-navy">
+              <InfoIcon className="mt-0.5 size-5 shrink-0 text-coral" /> {submitError}
+            </p>
+          )}
+
+          <fieldset className="rounded-2xl border border-line bg-white p-4 sm:p-6">
+            <legend className="px-1 font-display text-[20px] font-extrabold text-navy">1. Contact</legend>
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               <Field label="Full name" required error={errors.name}>
                 <Input value={form.name} onChange={update("name")} autoComplete="name" aria-invalid={Boolean(errors.name)} />
               </Field>
               <Field label="Mobile number" required error={errors.phone} hint="We send order updates by SMS and WhatsApp.">
-                <Input type="tel" value={form.phone} onChange={update("phone")} autoComplete="tel" placeholder="0300 1234567" aria-invalid={Boolean(errors.phone)} />
+                <Input type="tel" value={form.phone} onChange={update("phone")} autoComplete="tel" inputMode="tel" placeholder="0300 1234567" aria-invalid={Boolean(errors.phone)} />
               </Field>
               <Field label="Email (optional)" error={errors.email} className="sm:col-span-2">
-                <Input type="email" value={form.email} onChange={update("email")} autoComplete="email" aria-invalid={Boolean(errors.email)} />
+                <Input type="email" value={form.email} onChange={update("email")} autoComplete="email" inputMode="email" aria-invalid={Boolean(errors.email)} />
               </Field>
             </div>
           </fieldset>
 
-          <fieldset className="rounded-2xl border border-line bg-white p-5 sm:p-6">
-            <legend className="font-display text-[20px] font-extrabold text-navy">2. Delivery address</legend>
+          <fieldset className="rounded-2xl border border-line bg-white p-4 sm:p-6">
+            <legend className="px-1 font-display text-[20px] font-extrabold text-navy">2. Delivery address</legend>
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               <Field label="Street address" required error={errors.address} className="sm:col-span-2">
                 <Input value={form.address} onChange={update("address")} autoComplete="street-address" placeholder="House, street, area" aria-invalid={Boolean(errors.address)} />
@@ -131,12 +162,12 @@ export default function CheckoutPage() {
               </Field>
             </div>
             <p className="mt-4 rounded-xl bg-tint px-4 py-3 text-[13px] text-navy">
-              {form.city === "Karachi" ? `Karachi: ${site.shipping.expressDays.toLowerCase()} delivery.` : `${form.city}: ${site.shipping.estimatedDays}.`} Orders before 2pm ship the same day.
+              {form.city === "Karachi" ? `Karachi: ${site.shipping.expressDays.toLowerCase()} delivery.` : `${form.city}: ${settings.shipping.estimatedDays}.`} Orders before 2pm ship the same day.
             </p>
           </fieldset>
 
-          <fieldset className="rounded-2xl border border-line bg-white p-5 sm:p-6">
-            <legend className="font-display text-[20px] font-extrabold text-navy">3. Payment</legend>
+          <fieldset className="rounded-2xl border border-line bg-white p-4 sm:p-6">
+            <legend className="px-1 font-display text-[20px] font-extrabold text-navy">3. Payment</legend>
             <div className="mt-4 grid gap-3">
               {enabledMethods.map((method) => (
                 <Radio key={method.id} name="payment" value={method.id} label={method.label} description={method.description} checked={form.payment === method.id} onChange={() => { setForm({ ...form, payment: method.id }); ecommerce.addPaymentInfo(cart.lines, method.id); }} />
@@ -162,8 +193,10 @@ export default function CheckoutPage() {
             {submitting ? "Placing order…" : `Place order · ${site.currency.symbol} ${cart.totals.total.toLocaleString()}`}
           </Button>
           <p className="mt-3 flex items-start gap-2 text-[12px] text-ink-light">
-            <ShieldIcon className="mt-0.5 size-4 shrink-0 text-teal" /> Your details are used only to deliver this order. By placing it you agree to our{" "}
-            <Link to="/terms" className="underline">terms</Link>.
+            <ShieldIcon className="mt-0.5 size-4 shrink-0 text-teal" />
+            <span>
+              Your details are used only to deliver this order. By placing it you agree to our <Link to="/terms" className="underline">terms</Link>.
+            </span>
           </p>
           <a href={whatsappLink("Hi TAAB, I need help with my checkout.")} target="_blank" rel="noreferrer" onClick={() => ecommerce.whatsapp("checkout_help")} className="mt-4 flex items-center justify-center gap-2 rounded-full border border-line py-3 text-[14px] font-semibold text-navy hover:border-navy">
             <WhatsAppIcon className="size-4 text-[#25D366]" /> Need help? Chat with us

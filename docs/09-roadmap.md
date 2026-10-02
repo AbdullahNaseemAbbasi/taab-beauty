@@ -1,17 +1,17 @@
 # Roadmap · from static storefront to full platform
 
-## Phase 0 (this repository)
+## Phase 0 (this repository) · done
 
-Static storefront with the complete customer-facing experience: catalogue, search, filters, product pages, bag, guest checkout, order confirmation and tracking (local records plus samples), wishlist, compare, account shell, journal, trust pages, analytics layer, attribution, A/B scaffold, SEO. Deployed on Netlify; forms via Netlify Forms.
+Storefront with the complete customer-facing experience on a Supabase backend: catalogue, search, filters, product pages, bag, guest checkout (server-validated `place_order`), order confirmation and tracking (`get_order` by order id + phone), wishlist, compare, account shell, journal, trust pages, analytics events stored in the database, attribution, A/B scaffold, SEO. Mock data seeded; the same frontend runs on local mock data when no keys are present.
 
-## Phase 1 · Orders for real (2 to 3 weeks)
+## Phase 1 · Operations (2 to 3 weeks)
 
-- Backend: Supabase (Postgres + Auth + Storage) or a small Node/Nest API on Railway.
-- Tables from `docs/05-data-model.md`: products, variants, inventory, orders, order_items, customers, coupons, reviews.
-- `POST /api/orders` replaces `createOrder()`; SMS confirmation via a local gateway; WhatsApp template message.
-- Courier integration: TCS / Leopards API for booking and tracking numbers.
-- Stock reservation on order, decrement on dispatch; "In stock" driven by the inventory table.
-- Payments: COD and bank transfer first; add a card gateway (e.g. a local PSP) behind the existing `payments.methods` config.
+- Replace the seeded mock data with real products, photography, prices and stock (dashboard Table editor until the admin exists).
+- SMS confirmation via a local gateway and a WhatsApp template message, triggered by a database webhook on `orders` insert (Supabase Edge Function).
+- Courier integration: TCS / Leopards API for booking and tracking numbers, written back to `orders.courier` and `orders.tracking_code`; status updates append to `timeline`.
+- Phone OTP sign-in (Supabase Auth) so the account page lists all of a customer's orders, not only those placed on the device.
+- Payments: COD and bank transfer are live; add a card gateway behind `settings.store.card_enabled` and `payments.methods`.
+- Recompute `products.rating` / `review_count` from approved reviews with a trigger once real reviews start arriving.
 
 ## Phase 2 · Measurement (1 to 2 weeks, parallel)
 

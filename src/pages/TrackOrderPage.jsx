@@ -6,44 +6,54 @@ import { Field, Input } from "../components/ui/Form.jsx";
 import { PageHeader } from "../components/sections/Sections.jsx";
 import OrderTimeline from "../components/commerce/OrderTimeline.jsx";
 import OrderSummary from "../components/commerce/OrderSummary.jsx";
-import { getOrder } from "../lib/cart.js";
+import { getOrder, rememberPlacedOrder } from "../api/orders.js";
+import { hydrateOrder } from "../lib/cart.js";
+import { useCatalog } from "../catalog/CatalogProvider.jsx";
 import { track } from "../analytics/tracking.js";
 import { EVENTS } from "../analytics/events.js";
 
 export default function TrackOrderPage() {
   useSeo({ title: "Track Your Order", description: "Enter your TAAB order number and phone number to see delivery progress.", path: "/track-order" });
+  const { productById, productBySlug } = useCatalog();
   const [form, setForm] = useState({ id: "", phone: "" });
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
 
-  function submit(event) {
+  async function submit(event) {
     event.preventDefault();
-    const order = getOrder(form.id);
-    const digits = form.phone.replace(/\D/g, "").slice(-10);
-    const matches = order && String(order.phone || order.customer?.phone || "").replace(/\D/g, "").endsWith(digits);
-    track(EVENTS.TRACK_ORDER, { found: Boolean(matches) });
-    if (!matches) {
-      setResult(null);
-      setError("No order matches that number and phone. Check the confirmation SMS or message us on WhatsApp.");
-      return;
-    }
+    setBusy(true);
     setError("");
-    setResult(order);
+    try {
+      const order = await getOrder(form.id, form.phone);
+      track(EVENTS.TRACK_ORDER, { found: Boolean(order) });
+      if (!order) {
+        setResult(null);
+        setError("No order matches that number and phone. Check the confirmation SMS or message us on WhatsApp.");
+      } else {
+        rememberPlacedOrder(order.id, form.phone);
+        setResult(hydrateOrder(order, { productById, productBySlug }));
+      }
+    } catch (fetchError) {
+      setError(fetchError.message);
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
     <>
       <PageHeader title="Track your order" description="Enter the order number from your confirmation message and the phone number used at checkout." />
-      <section className="wrap py-10">
-        <form onSubmit={submit} className="mx-auto grid max-w-2xl gap-4 rounded-2xl border border-line bg-white p-6 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+      <section className="wrap py-8 sm:py-10">
+        <form onSubmit={submit} className="mx-auto grid max-w-2xl gap-4 rounded-2xl border border-line bg-white p-5 sm:grid-cols-[1fr_1fr_auto] sm:items-end sm:p-6">
           <Field label="Order number" required>
-            <Input value={form.id} onChange={(event) => setForm({ ...form, id: event.target.value.toUpperCase() })} placeholder="TB-240912-0148" required />
+            <Input value={form.id} onChange={(event) => setForm({ ...form, id: event.target.value.toUpperCase() })} placeholder="TB-241001-0211" required />
           </Field>
           <Field label="Phone number" required>
-            <Input type="tel" value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} placeholder="0300 1234567" required />
+            <Input type="tel" inputMode="tel" value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} placeholder="0300 1234567" required />
           </Field>
-          <Button type="submit" variant="navy" className="h-[50px]">
-            Track
+          <Button type="submit" variant="navy" className="h-[50px]" disabled={busy}>
+            {busy ? "Checking…" : "Track"}
           </Button>
           {error && (
             <p role="alert" className="text-[13px] font-medium text-danger sm:col-span-3">
@@ -57,7 +67,7 @@ export default function TrackOrderPage() {
 
         {result && (
           <div className="mx-auto mt-10 grid max-w-5xl gap-8 lg:grid-cols-[1fr_360px] lg:items-start">
-            <div className="rounded-2xl border border-line bg-white p-6">
+            <div className="rounded-2xl border border-line bg-white p-5 sm:p-6">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <h2 className="font-display text-[22px] font-extrabold text-navy">Order {result.id}</h2>
                 <Link to={`/order/${result.id}`} className="text-[14px] font-semibold text-teal hover:underline">

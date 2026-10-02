@@ -3,7 +3,7 @@ export const faqs = [
     category: "Orders & Delivery",
     items: [
       { question: "How long does delivery take?", answer: "Orders placed before 2pm ship the same day. Karachi deliveries arrive the next business day. Lahore, Islamabad and other major cities take 2 to 3 business days; remote areas can take up to 5." },
-      { question: "How much is delivery?", answer: "Delivery is free on orders over Rs. 3,000. Below that, a flat Rs. 250 applies anywhere in Pakistan." },
+      { question: "How much is delivery?", answer: "Delivery is free on orders over Rs. 7,000. Below that, a flat Rs. 250 applies anywhere in Pakistan." },
       { question: "Can I track my order?", answer: "Yes. You receive a tracking number by SMS and email as soon as the courier collects your parcel. You can also enter your order number on the Track Order page." },
       { question: "Can I change or cancel my order?", answer: "You can cancel or change an order any time before it is packed, usually within 2 hours of ordering. Message us on WhatsApp with your order number." },
     ],

@@ -6,9 +6,7 @@ import { trustIcons, InstagramIcon, ClockIcon, ArrowIcon } from "../ui/Icons.jsx
 import { imageProps } from "../../lib/images.js";
 import { formatDate } from "../../lib/format.js";
 import { site } from "../../config/site.js";
-import { categories } from "../../data/categories.js";
-import { concerns } from "../../data/concerns.js";
-import { brands } from "../../data/brands.js";
+import { useCatalog } from "../../catalog/CatalogProvider.jsx";
 import { testimonials } from "../../data/reviews.js";
 import { instagramPosts } from "../../data/misc.js";
 import { journalTopics } from "../../data/journal.js";
@@ -66,7 +64,7 @@ export function PageHeader({ title, description, children }) {
 /* ---------- Trust signals ---------- */
 export function TrustSignals({ compact = false }) {
   return (
-    <ul className={`grid gap-4 ${compact ? "grid-cols-2" : "grid-cols-2 lg:grid-cols-4"}`}>
+    <ul className={`grid gap-3 sm:gap-4 ${compact ? "grid-cols-2" : "grid-cols-1 min-[400px]:grid-cols-2 lg:grid-cols-4"}`}>
       {site.trustSignals.map((item) => {
         const Icon = trustIcons[item.icon];
         return (
@@ -87,6 +85,7 @@ export function TrustSignals({ compact = false }) {
 
 /* ---------- Categories ---------- */
 export function CategoryGrid() {
+  const { categories } = useCatalog();
   return (
     <div className="grid grid-cols-2 gap-4 sm:gap-5 lg:grid-cols-4">
       {categories.map((category, index) => (
@@ -109,6 +108,7 @@ export function CategoryGrid() {
 
 /* ---------- Concerns ---------- */
 export function ConcernGrid() {
+  const { concerns } = useCatalog();
   return (
     <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
       {concerns.map((concern) => (
@@ -126,6 +126,7 @@ export function ConcernGrid() {
 
 /* ---------- Brands ---------- */
 export function BrandStrip() {
+  const { brands } = useCatalog();
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
       {brands.map((brand) => (

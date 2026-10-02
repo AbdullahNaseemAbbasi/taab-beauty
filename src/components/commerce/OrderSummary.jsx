@@ -9,17 +9,20 @@ export function CouponInput() {
   const { cart, applyCoupon, removeCoupon } = useStore();
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
 
-  function submit(event) {
+  async function submit(event) {
     event.preventDefault();
-    const result = applyCoupon(code);
-    setError(result.error || "");
-    if (result.coupon) setCode("");
+    setBusy(true);
+    const result = await applyCoupon(code);
+    setBusy(false);
+    setError(result.valid ? "" : result.error || "That code is not valid.");
+    if (result.valid) setCode("");
   }
 
   if (cart.coupon) {
     return (
-      <div className="flex items-center justify-between rounded-xl bg-mint/40 px-4 py-3 text-[14px] text-navy">
+      <div className="flex w-full items-center justify-between rounded-xl bg-mint/40 px-4 py-3 text-[14px] text-navy">
         <span className="flex items-center gap-2 font-semibold">
           <TagIcon className="size-4 text-teal" /> {cart.coupon.code} applied
         </span>
@@ -31,10 +34,10 @@ export function CouponInput() {
   }
 
   return (
-    <form onSubmit={submit} className="flex gap-2">
-      <Input value={code} onChange={(event) => setCode(event.target.value.toUpperCase())} placeholder="Discount or creator code" aria-label="Coupon code" aria-invalid={Boolean(error)} />
-      <button type="submit" className="h-[50px] shrink-0 rounded-xl bg-navy px-5 text-[14px] font-semibold text-white disabled:opacity-50" disabled={!code.trim()}>
-        Apply
+    <form onSubmit={submit} className="flex w-full flex-wrap gap-2">
+      <Input value={code} onChange={(event) => setCode(event.target.value.toUpperCase())} placeholder="Discount or creator code" aria-label="Coupon code" aria-invalid={Boolean(error)} className="min-w-0 flex-1" />
+      <button type="submit" className="h-[50px] shrink-0 rounded-xl bg-navy px-5 text-[14px] font-semibold text-white disabled:opacity-50" disabled={!code.trim() || busy}>
+        {busy ? "…" : "Apply"}
       </button>
       {error && (
         <p role="alert" className="basis-full text-[12px] font-medium text-danger">
@@ -43,6 +46,11 @@ export function CouponInput() {
       )}
     </form>
   );
+}
+
+function LineImage({ product }) {
+  if (!product?.images?.length) return <span className="grid size-14 place-items-center rounded-lg bg-tint text-[10px] text-ink-light">No image</span>;
+  return <img {...imageProps(product.images[0], { width: 120, sizes: "56px", alt: product.name })} className="size-14 rounded-lg object-cover" />;
 }
 
 export default function OrderSummary({ lines, totals, coupon, showItems = true, editable = true, title = "Order summary" }) {
@@ -54,20 +62,20 @@ export default function OrderSummary({ lines, totals, coupon, showItems = true, 
           {lines.map((line) => (
             <li key={line.key || line.slug} className="flex items-center gap-3 py-3">
               <span className="relative shrink-0">
-                <img {...imageProps(line.product.images[0], { width: 120, sizes: "56px", alt: line.product.name })} className="size-14 rounded-lg object-cover" />
+                <LineImage product={line.product} />
                 <span className="absolute -top-1.5 -right-1.5 grid min-w-5 place-items-center rounded-full bg-navy px-1 text-[11px] font-bold text-white">{line.quantity}</span>
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-[14px] font-semibold text-navy">{line.product.name}</span>
+                <span className="block truncate text-[14px] font-semibold text-navy">{line.product?.name || line.name}</span>
                 {(line.variant?.name || line.variant) && <span className="block text-[12px] text-ink">{line.variant?.name || line.variant}</span>}
               </span>
-              <span className="text-[14px] font-semibold text-navy">{formatPrice((line.unitPrice ?? line.product.price) * line.quantity)}</span>
+              <span className="text-[14px] font-semibold text-navy">{formatPrice((line.unitPrice ?? line.product?.price ?? 0) * line.quantity)}</span>
             </li>
           ))}
         </ul>
       )}
       {editable && (
-        <div className="mt-4 flex flex-wrap">
+        <div className="mt-4">
           <CouponInput />
         </div>
       )}

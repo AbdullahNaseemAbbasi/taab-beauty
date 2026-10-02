@@ -1,7 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef } from "react";
-import { productById } from "../data/products.js";
-import { enrichLines, computeTotals, evaluateCoupon, lineKey } from "../lib/cart.js";
+import { useCatalog } from "../catalog/CatalogProvider.jsx";
+import { enrichLines, computeTotals, lineKey } from "../lib/cart.js";
 import { variantStock } from "../lib/catalog.js";
+import { validateCoupon } from "../api/orders.js";
 import { ecommerce } from "../analytics/ecommerce.js";
 
 const STORAGE_KEY = "taab:store:v1";
@@ -13,7 +14,7 @@ const initialState = {
   wishlist: [],
   compare: [],
   recent: [],
-  ui: { cartOpen: false, searchOpen: false, menuOpen: false, toasts: [] },
+  ui: { cartOpen: false, searchOpen: false, menuOpen: false, stickyBar: false, toasts: [] },
 };
 
 function loadState() {
@@ -82,6 +83,7 @@ function reducer(state, action) {
 const StoreContext = createContext(null);
 
 export function StoreProvider({ children }) {
+  const { productById, settings } = useCatalog();
   const [state, dispatch] = useReducer(reducer, undefined, loadState);
   const toastTimers = useRef({});
 
@@ -108,8 +110,8 @@ export function StoreProvider({ children }) {
   const setUI = useCallback((patch) => dispatch({ type: "ui/set", patch }), []);
   const addRecent = useCallback((productId) => dispatch({ type: "recent/add", productId }), []);
 
-  const lines = useMemo(() => enrichLines(state.cart.lines), [state.cart.lines]);
-  const totals = useMemo(() => computeTotals(lines, state.cart.coupon), [lines, state.cart.coupon]);
+  const lines = useMemo(() => enrichLines(state.cart.lines, productById), [state.cart.lines, productById]);
+  const totals = useMemo(() => computeTotals(lines, state.cart.coupon, settings.shipping), [lines, state.cart.coupon, settings.shipping]);
 
   const addToCart = useCallback(
     (product, { quantity = 1, variantId = null, openDrawer = true, silent = false } = {}) => {
@@ -159,14 +161,18 @@ export function StoreProvider({ children }) {
   );
 
   const applyCoupon = useCallback(
-    (code) => {
-      const result = evaluateCoupon(code, totals.subtotal);
-      ecommerce.coupon(code, Boolean(result.coupon), result.discount);
-      if (result.coupon) {
-        dispatch({ type: "cart/coupon", coupon: result.coupon });
-        toast(`Code ${result.coupon.code} applied.`);
+    async (code) => {
+      try {
+        const result = await validateCoupon(code, totals.subtotal);
+        ecommerce.coupon(code, Boolean(result.valid), result.discount || 0);
+        if (result.valid) {
+          dispatch({ type: "cart/coupon", coupon: { code: result.code, type: result.type, value: result.value, minOrder: result.minOrder || 0, creatorId: result.creatorId || null } });
+          toast(`Code ${result.code} applied.`);
+        }
+        return result;
+      } catch (error) {
+        return { valid: false, error: error.message };
       }
-      return result;
     },
     [totals.subtotal, toast]
   );
@@ -209,7 +215,7 @@ export function StoreProvider({ children }) {
       toast,
       dismissToast,
     }),
-    [state, lines, totals, addToCart, updateQuantity, removeLine, applyCoupon, toast, dismissToast, setUI, addRecent]
+    [state, lines, totals, productById, addToCart, updateQuantity, removeLine, applyCoupon, toast, dismissToast, setUI, addRecent]
   );
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;

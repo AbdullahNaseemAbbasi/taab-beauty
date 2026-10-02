@@ -32,17 +32,7 @@ export const reviews = [
   { id: "r-24", productId: "p-021", author: "Nida P.", city: "Karachi", rating: 5, date: "2026-09-02", verified: true, title: "Blowout at home", body: "Takes some practice but I can get a smooth, bouncy blow-dry now and I have stopped going to the salon every week.", helpful: 17 },
 ];
 
-export function reviewsForProduct(productId) {
-  return reviews.filter((review) => review.productId === productId).sort((a, b) => new Date(b.date) - new Date(a.date));
-}
-
-export function ratingBreakdown(productId) {
-  const list = reviewsForProduct(productId);
-  const counts = [5, 4, 3, 2, 1].map((stars) => ({ stars, count: list.filter((review) => review.rating === stars).length }));
-  return { total: list.length, counts };
-}
-
-/* Homepage testimonials: short, with faces. */
+/* Homepage testimonials: curated marketing content, kept static. */
 export const testimonials = [
   { name: "Zainab K.", city: "Karachi", avatar: images.avatars[0], rating: 5, quote: "The eyeshadow palette shows up on brown skin exactly like the pan. I have never had that before.", product: "Karachi Sunset Palette" },
   { name: "Ayesha T.", city: "Lahore", avatar: images.avatars[1], rating: 5, quote: "Three weeks of the vitamin C serum and my acne marks are visibly lighter. No stinging, no smell.", product: "Glow Boost Serum" },

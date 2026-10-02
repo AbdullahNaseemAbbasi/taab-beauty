@@ -4,11 +4,12 @@ import { EmptyState } from "../components/ui/Feedback.jsx";
 import { HeartIcon } from "../components/ui/Icons.jsx";
 import { PageHeader } from "../components/sections/Sections.jsx";
 import { ProductGrid } from "../components/product/ProductGrid.jsx";
-import { productById } from "../data/products.js";
+import { useCatalog } from "../catalog/CatalogProvider.jsx";
 import { useStore } from "../store/StoreProvider.jsx";
 
 export default function WishlistPage() {
   const { wishlist, addToCart, toast } = useStore();
+  const { productById } = useCatalog();
   useSeo({ title: "Wishlist", path: "/wishlist", noindex: true });
   const items = wishlist.map((id) => productById[id]).filter(Boolean);
   const addable = items.filter((product) => product.stock > 0 && !product.variants);
@@ -27,7 +28,7 @@ export default function WishlistPage() {
           </Button>
         )}
       </PageHeader>
-      <section className="wrap py-10">
+      <section className="wrap py-8 sm:py-10">
         {items.length ? (
           <ProductGrid products={items} listName="wishlist" />
         ) : (

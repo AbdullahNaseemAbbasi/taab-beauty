@@ -1,8 +1,6 @@
 import { Checkbox, Input } from "../ui/Form.jsx";
 import { ChevronDownIcon } from "../ui/Icons.jsx";
-import { brands } from "../../data/brands.js";
-import { concerns } from "../../data/concerns.js";
-import { categories } from "../../data/categories.js";
+import { useCatalog } from "../../catalog/CatalogProvider.jsx";
 import { facetCounts } from "../../lib/catalog.js";
 import { site } from "../../config/site.js";
 
@@ -19,6 +17,7 @@ function Group({ title, children }) {
 }
 
 export default function FilterSidebar({ baseProducts, filters, onChange, showCategory = true, category }) {
+  const { categories, brands, concerns } = useCatalog();
   const brandCounts = facetCounts(baseProducts, "brand");
   const concernCounts = facetCounts(baseProducts, "concerns");
   const subCounts = facetCounts(baseProducts, "subcategory");

@@ -3,11 +3,13 @@ import useSeo from "../hooks/useSeo.js";
 import { PageHero, JournalCard } from "../components/sections/Sections.jsx";
 import { EmptyState } from "../components/ui/Feedback.jsx";
 import { SparkleIcon } from "../components/ui/Icons.jsx";
-import { articles, journalTopics } from "../data/journal.js";
+import { journalTopics } from "../data/journal.js";
 import { images } from "../data/images.js";
+import { useCatalog } from "../catalog/CatalogProvider.jsx";
 
 export default function JournalPage() {
   const [params, setParams] = useSearchParams();
+  const { articles } = useCatalog();
   const topic = params.get("topic") || "";
   const list = (topic ? articles.filter((article) => article.topic === topic) : articles).slice().sort((a, b) => new Date(b.date) - new Date(a.date));
   const [featured, ...rest] = list;
@@ -18,13 +20,13 @@ export default function JournalPage() {
   return (
     <>
       <PageHero eyebrow="Beauty Journal" title="Learn before you buy." description="Guides and tutorials written by our makeup artists and dermatologists. No fluff, no sponsored opinions." image={images.hero.journal} imageAlt="Applying makeup in a mirror" compact />
-      <section className="wrap py-12">
-        <div className="flex flex-wrap gap-2">
-          <button type="button" onClick={() => setParams({})} className={`rounded-full px-4 py-2 text-[14px] font-semibold ${!topic ? "bg-navy text-white" : "border border-line text-navy hover:border-navy"}`}>
+      <section className="wrap py-8 sm:py-12">
+        <div className="no-scrollbar -mx-5 flex gap-2 overflow-x-auto px-5 sm:mx-0 sm:flex-wrap sm:px-0">
+          <button type="button" onClick={() => setParams({})} className={`shrink-0 rounded-full px-4 py-2 text-[14px] font-semibold ${!topic ? "bg-navy text-white" : "border border-line text-navy hover:border-navy"}`}>
             All
           </button>
           {journalTopics.map((entry) => (
-            <button key={entry.id} type="button" onClick={() => setParams({ topic: entry.id })} className={`rounded-full px-4 py-2 text-[14px] font-semibold ${topic === entry.id ? "bg-navy text-white" : "border border-line text-navy hover:border-navy"}`}>
+            <button key={entry.id} type="button" onClick={() => setParams({ topic: entry.id })} className={`shrink-0 rounded-full px-4 py-2 text-[14px] font-semibold ${topic === entry.id ? "bg-navy text-white" : "border border-line text-navy hover:border-navy"}`}>
               {entry.name}
             </button>
           ))}

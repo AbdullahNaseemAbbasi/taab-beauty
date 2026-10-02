@@ -4,17 +4,19 @@ import { Accordion } from "../components/ui/Navigation.jsx";
 import { WhatsAppIcon } from "../components/ui/Icons.jsx";
 import { PageHeader } from "../components/sections/Sections.jsx";
 import { whatsappLink } from "../components/layout/WhatsAppButton.jsx";
-import { faqs, allFaqs } from "../data/faqs.js";
+import { useCatalog } from "../catalog/CatalogProvider.jsx";
 import { faqSchema } from "../lib/schema.js";
 import { ecommerce } from "../analytics/ecommerce.js";
 
 export default function FaqPage() {
+  const { faqs } = useCatalog();
+  const allFaqs = faqs.flatMap((group) => group.items);
   useSeo({ title: "Frequently Asked Questions", description: "Delivery times, cash on delivery, returns, authenticity and shade help at TAAB.", path: "/faq", jsonLd: [faqSchema(allFaqs)] });
 
   return (
     <>
       <PageHeader title="Frequently asked questions" description="Delivery, payments, products and returns. If your question is not here, WhatsApp us." />
-      <section className="wrap grid gap-10 py-12 lg:grid-cols-[1fr_320px] lg:items-start">
+      <section className="wrap grid gap-10 py-8 sm:py-12 lg:grid-cols-[1fr_320px] lg:items-start">
         <div className="space-y-10">
           {faqs.map((group) => (
             <div key={group.category}>

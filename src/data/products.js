@@ -820,29 +820,3 @@ export const products = [
 
 export const productBySlug = Object.fromEntries(products.map((product) => [product.slug, product]));
 export const productById = Object.fromEntries(products.map((product) => [product.id, product]));
-
-export function getProduct(slug) {
-  return productBySlug[slug] || null;
-}
-
-export function relatedProducts(product, limit = 4) {
-  return products
-    .filter((candidate) => candidate.id !== product.id && candidate.category === product.category)
-    .sort((a, b) => b.rating - a.rating)
-    .slice(0, limit);
-}
-
-/* Simple "frequently bought together" rules until real order data exists. */
-export function frequentlyBoughtTogether(product, limit = 3) {
-  const pairings = {
-    makeup: ["essential-12-piece-brush-set", "airbrush-loose-setting-powder", "glass-shine-lip-gloss"],
-    skincare: ["gentle-gel-cleanser", "glow-boost-vitamin-c-serum", "overnight-recovery-cream"],
-    haircare: ["argan-and-amla-hair-oil", "neem-wood-detangling-comb", "ceramic-round-blow-dry-brush"],
-    fragrance: ["bath-bomb-trio", "sandalwood-spa-candle-set", "rich-repair-hand-and-body-cream"],
-    tools: ["skin-fit-serum-foundation", "soft-flush-blush-duo", "glow-boost-vitamin-c-serum"],
-  };
-  return (pairings[product.category] || [])
-    .map((slug) => productBySlug[slug])
-    .filter((candidate) => candidate && candidate.id !== product.id)
-    .slice(0, limit);
-}

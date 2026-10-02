@@ -6,8 +6,8 @@ import { JournalCard } from "../components/sections/Sections.jsx";
 import { Breadcrumbs } from "../components/ui/Navigation.jsx";
 import { Badge } from "../components/ui/Typography.jsx";
 import { ClockIcon, ShareIcon, SparkleIcon } from "../components/ui/Icons.jsx";
-import { articleBySlug, articles, journalTopics } from "../data/journal.js";
-import { productBySlug } from "../data/products.js";
+import { journalTopics } from "../data/journal.js";
+import { useCatalog } from "../catalog/CatalogProvider.jsx";
 import { imageProps, img } from "../lib/images.js";
 import { formatDate } from "../lib/format.js";
 import { articleSchema, breadcrumbSchema } from "../lib/schema.js";
@@ -16,7 +16,7 @@ import { useStore } from "../store/StoreProvider.jsx";
 import { track } from "../analytics/tracking.js";
 import { EVENTS } from "../analytics/events.js";
 
-function Block({ block }) {
+function Block({ block, productBySlug }) {
   switch (block.type) {
     case "h2":
       return <h2>{block.text}</h2>;
@@ -53,6 +53,7 @@ function Block({ block }) {
 
 export default function ArticlePage() {
   const { slug } = useParams();
+  const { articles, articleBySlug, productBySlug } = useCatalog();
   const article = articleBySlug[slug];
   const { toast } = useStore();
   const topic = article ? journalTopics.find((entry) => entry.id === article.topic) : null;
@@ -81,8 +82,8 @@ export default function ArticlePage() {
   return (
     <>
       <article>
-        <div className="wrap pt-6">
-          <Breadcrumbs items={crumbs} />
+        <div className="wrap pt-5 sm:pt-6">
+          <Breadcrumbs items={[crumbs[0], { label: "Article" }]} />
         </div>
         <header className="wrap mt-6 max-w-3xl">
           <div className="flex flex-wrap items-center gap-3 text-[13px] text-ink-light">
@@ -90,11 +91,11 @@ export default function ArticlePage() {
             <span className="flex items-center gap-1"><ClockIcon className="size-4" /> {article.readTime} min read</span>
             <span>{formatDate(article.date)}</span>
           </div>
-          <h1 className="mt-4 font-display text-[32px] font-extrabold leading-[1.1] tracking-[-0.02em] text-navy sm:text-[44px]">{article.title}</h1>
-          <p className="mt-4 text-[18px] leading-[1.6] text-ink">{article.excerpt}</p>
+          <h1 className="mt-4 font-display text-[30px] font-extrabold leading-[1.1] tracking-[-0.02em] text-navy sm:text-[44px]">{article.title}</h1>
+          <p className="mt-4 text-[17px] leading-[1.6] text-ink sm:text-[18px]">{article.excerpt}</p>
           <div className="mt-5 flex items-center justify-between gap-4 border-y border-line py-3 text-[14px]">
             <span className="text-ink">By <strong className="text-navy">{article.author}</strong></span>
-            <button type="button" onClick={share} className="inline-flex items-center gap-2 font-semibold text-teal hover:underline">
+            <button type="button" onClick={share} className="inline-flex shrink-0 items-center gap-2 font-semibold text-teal hover:underline">
               <ShareIcon className="size-4" /> Share
             </button>
           </div>
@@ -104,7 +105,7 @@ export default function ArticlePage() {
         </div>
         <div className="wrap prose-brand mt-6 max-w-3xl pb-12">
           {article.content.map((block, index) => (
-            <Block key={index} block={block} />
+            <Block key={index} block={block} productBySlug={productBySlug} />
           ))}
         </div>
       </article>

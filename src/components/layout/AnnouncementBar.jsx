@@ -1,12 +1,19 @@
 import { Link } from "react-router-dom";
 import { site } from "../../config/site.js";
+import { formatPrice } from "../../lib/format.js";
+import { useCatalog } from "../../catalog/CatalogProvider.jsx";
 import { useVariant } from "../../analytics/experiments.js";
 import { track } from "../../analytics/tracking.js";
 import { EVENTS } from "../../analytics/events.js";
 
 export default function AnnouncementBar() {
   const variant = useVariant("freeShippingBanner");
-  const message = variant === "B" ? "Order today, delivered in 2 to 4 days. Free delivery over Rs. 3,000." : site.announcement.message;
+  const { settings } = useCatalog();
+  const threshold = formatPrice(settings.shipping.freeShippingThreshold);
+  const message =
+    variant === "B"
+      ? `Order today, delivered in ${settings.shipping.estimatedDays}. Free delivery over ${threshold}.`
+      : `Free delivery on orders over ${threshold}. Cash on delivery across Pakistan.`;
   return (
     <div className="bg-navy text-white">
       <div className="wrap flex h-10 items-center justify-center gap-3 text-[13px]">

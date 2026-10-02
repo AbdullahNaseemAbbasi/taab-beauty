@@ -1,4 +1,4 @@
-import { products } from "../data/products.js";
+/* Search, filter, sort and recommendation helpers. All functions take the data they operate on. */
 
 const tokenize = (text) =>
   String(text || "")
@@ -13,9 +13,9 @@ function haystack(product) {
 }
 
 /* Scores products by how many query tokens they match; name matches rank higher. */
-export function searchProducts(query, list = products) {
+export function searchProducts(query, list) {
   const tokens = tokenize(query);
-  if (!tokens.length) return [];
+  if (!tokens.length || !list) return [];
   return list
     .map((product) => {
       const text = haystack(product);
@@ -87,12 +87,6 @@ export function sortProducts(list, sort = "featured") {
   }
 }
 
-export function priceBounds(list) {
-  if (!list.length) return { min: 0, max: 0 };
-  const prices = list.map((product) => product.price);
-  return { min: Math.min(...prices), max: Math.max(...prices) };
-}
-
 export function facetCounts(list, key) {
   const counts = {};
   list.forEach((product) => {
@@ -113,4 +107,37 @@ export function variantStock(product, variantId) {
   if (!product.variants || !variantId) return product.stock;
   const option = product.variants.options.find((entry) => entry.id === variantId);
   return option ? option.stock : product.stock;
+}
+
+export function relatedProducts(products, product, limit = 4) {
+  return products
+    .filter((candidate) => candidate.id !== product.id && candidate.category === product.category)
+    .sort((a, b) => b.rating - a.rating)
+    .slice(0, limit);
+}
+
+/* Simple "frequently bought together" rules until real co-purchase data exists. */
+const bundleRules = {
+  makeup: ["essential-12-piece-brush-set", "airbrush-loose-setting-powder", "glass-shine-lip-gloss"],
+  skincare: ["gentle-gel-cleanser", "glow-boost-vitamin-c-serum", "overnight-recovery-cream"],
+  haircare: ["argan-and-amla-hair-oil", "neem-wood-detangling-comb", "ceramic-round-blow-dry-brush"],
+  fragrance: ["bath-bomb-trio", "sandalwood-spa-candle-set", "rich-repair-hand-and-body-cream"],
+  tools: ["skin-fit-serum-foundation", "soft-flush-blush-duo", "glow-boost-vitamin-c-serum"],
+};
+
+export function frequentlyBoughtTogether(productBySlug, product, limit = 3) {
+  return (bundleRules[product.category] || [])
+    .map((slug) => productBySlug[slug])
+    .filter((candidate) => candidate && candidate.id !== product.id && candidate.stock > 0 && !candidate.variants)
+    .slice(0, limit);
+}
+
+export function reviewsForProduct(reviews, productId) {
+  return reviews.filter((review) => review.productId === productId).sort((a, b) => new Date(b.date) - new Date(a.date));
+}
+
+export function ratingBreakdown(reviews, productId) {
+  const list = reviewsForProduct(reviews, productId);
+  const counts = [5, 4, 3, 2, 1].map((stars) => ({ stars, count: list.filter((review) => review.rating === stars).length }));
+  return { total: list.length, counts };
 }

@@ -8,6 +8,7 @@
 import { site } from "../config/site.js";
 import { EVENTS, VENDOR_EVENTS } from "./events.js";
 import { getAttribution } from "./attribution.js";
+import { queueEvent } from "../api/events.js";
 
 const { analytics } = site;
 let initialized = false;
@@ -90,6 +91,7 @@ export function track(event, payload = {}) {
   window.dataLayer = window.dataLayer || [];
   window.dataLayer.push(record);
   forwardToVendors(event, payload);
+  queueEvent(record); // first-party copy in the database (no-op in mock mode)
 
   if (analytics.debug) {
     // eslint-disable-next-line no-console

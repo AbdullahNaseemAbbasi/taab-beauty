@@ -1,26 +1,68 @@
-import { useLocation, useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useLocation, useParams } from "react-router-dom";
 import useSeo from "../hooks/useSeo.js";
 import Button from "../components/ui/Button.jsx";
-import { ErrorState } from "../components/ui/Feedback.jsx";
+import { ErrorState, Skeleton } from "../components/ui/Feedback.jsx";
 import { CheckIcon, WhatsAppIcon } from "../components/ui/Icons.jsx";
 import OrderSummary from "../components/commerce/OrderSummary.jsx";
 import OrderTimeline from "../components/commerce/OrderTimeline.jsx";
 import { whatsappLink } from "../components/layout/WhatsAppButton.jsx";
-import { getOrder } from "../lib/cart.js";
+import { getOrder, phoneForOrder } from "../api/orders.js";
+import { isLive } from "../api/client.js";
+import { hydrateOrder } from "../lib/cart.js";
 import { formatDate } from "../lib/format.js";
 import { site } from "../config/site.js";
+import { useCatalog } from "../catalog/CatalogProvider.jsx";
 import { ecommerce } from "../analytics/ecommerce.js";
 
 export default function OrderConfirmationPage() {
   const { id } = useParams();
   const { state } = useLocation();
-  const order = getOrder(id);
+  const { productById, productBySlug } = useCatalog();
+  const initial = state?.order && state.order.id === id ? state.order : null;
+  const [order, setOrder] = useState(initial);
+  const [status, setStatus] = useState(initial ? "ready" : "loading");
   useSeo({ title: order ? `Order ${order.id}` : "Order", path: `/order/${id}`, noindex: true });
 
-  if (!order) {
+  useEffect(() => {
+    if (initial) return;
+    const phone = phoneForOrder(id);
+    if (isLive && !phone) {
+      setStatus("needs-phone");
+      return;
+    }
+    let cancelled = false;
+    getOrder(id, phone)
+      .then((found) => {
+        if (cancelled) return;
+        setOrder(found ? hydrateOrder(found, { productById, productBySlug }) : null);
+        setStatus(found ? "ready" : "missing");
+      })
+      .catch(() => !cancelled && setStatus("missing"));
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  if (status === "loading") {
+    return (
+      <section className="wrap py-10 lg:py-14" aria-busy="true">
+        <div className="mx-auto max-w-5xl space-y-6">
+          <Skeleton className="h-56 rounded-3xl" />
+          <Skeleton className="h-80 rounded-2xl" />
+        </div>
+      </section>
+    );
+  }
+
+  if (status === "needs-phone" || status === "missing" || !order) {
     return (
       <section className="wrap py-16">
-        <ErrorState title="We could not find that order" text="Check the order number from your confirmation SMS, or track it with your phone number." action={{ label: "Track an order", to: "/track-order" }} />
+        <ErrorState
+          title={status === "needs-phone" ? "Verify this order with your phone number" : "We could not find that order"}
+          text={status === "needs-phone" ? "For your privacy, orders can only be viewed with the phone number used at checkout." : "Check the order number from your confirmation SMS, or track it with your phone number."}
+          action={{ label: "Track an order", to: "/track-order" }}
+        />
       </section>
     );
   }
@@ -29,13 +71,13 @@ export default function OrderConfirmationPage() {
   const method = site.payments.methods.find((entry) => entry.id === order.payment);
 
   return (
-    <section className="wrap py-10 lg:py-14">
+    <section className="wrap py-8 sm:py-10 lg:py-14">
       <div className="mx-auto max-w-5xl">
-        <div className="rounded-3xl bg-tint p-6 sm:p-10">
+        <div className="rounded-3xl bg-tint p-5 sm:p-10">
           <span className="grid size-14 place-items-center rounded-full bg-mint text-navy">
             <CheckIcon className="size-7" />
           </span>
-          <h1 className="mt-5 font-display text-[30px] font-extrabold tracking-[-0.02em] text-navy sm:text-[38px]">
+          <h1 className="mt-5 font-display text-[28px] font-extrabold tracking-[-0.02em] text-navy sm:text-[38px]">
             {justPlaced ? "Shukriya! Your order is confirmed." : `Order ${order.id}`}
           </h1>
           <p className="mt-3 text-[16px] text-ink">
@@ -63,14 +105,14 @@ export default function OrderConfirmationPage() {
         </div>
 
         <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_380px] lg:items-start">
-          <div className="space-y-8">
-            <div className="rounded-2xl border border-line bg-white p-6">
+          <div className="space-y-6 sm:space-y-8">
+            <div className="rounded-2xl border border-line bg-white p-5 sm:p-6">
               <h2 className="font-display text-[20px] font-extrabold text-navy">Order progress</h2>
               <div className="mt-5">
                 <OrderTimeline order={order} />
               </div>
             </div>
-            <div className="grid gap-6 rounded-2xl border border-line bg-white p-6 sm:grid-cols-2">
+            <div className="grid gap-6 rounded-2xl border border-line bg-white p-5 sm:grid-cols-2 sm:p-6">
               <div>
                 <h3 className="text-[12px] font-bold uppercase tracking-[0.2em] text-teal">Delivering to</h3>
                 <p className="mt-2 text-[15px] font-semibold text-navy">{order.customer?.name}</p>
@@ -84,6 +126,9 @@ export default function OrderConfirmationPage() {
                 <p className="text-[14px] text-ink">{method?.description}</p>
               </div>
             </div>
+            <p className="text-[13px] text-ink-light">
+              Need to change something? <Link to="/contact" className="font-semibold text-teal hover:underline">Contact us</Link> within 2 hours of ordering.
+            </p>
           </div>
           <OrderSummary lines={order.lines} totals={order.totals} coupon={order.coupon} editable={false} title="Items" />
         </div>

@@ -6,12 +6,13 @@ import { Price } from "../components/ui/Typography.jsx";
 import { EmptyState } from "../components/ui/Feedback.jsx";
 import { CompareIcon, CloseIcon } from "../components/ui/Icons.jsx";
 import { PageHeader } from "../components/sections/Sections.jsx";
-import { productById } from "../data/products.js";
+import { useCatalog } from "../catalog/CatalogProvider.jsx";
 import { imageProps } from "../lib/images.js";
 import { useStore } from "../store/StoreProvider.jsx";
 
 export default function ComparePage() {
   const { compare, toggleCompare, clearCompare, addToCart } = useStore();
+  const { productById } = useCatalog();
   useSeo({ title: "Compare Products", path: "/compare", noindex: true });
   const items = compare.map((id) => productById[id]).filter(Boolean);
 
@@ -35,15 +36,15 @@ export default function ComparePage() {
           </button>
         )}
       </PageHeader>
-      <section className="wrap py-10">
+      <section className="wrap py-8 sm:py-10">
         {items.length === 0 ? (
           <EmptyState icon={CompareIcon} title="Nothing to compare yet" text="Use the compare icon on any product card to add it here." action={{ label: "Browse products", to: "/shop" }} />
         ) : (
           <div className="overflow-x-auto rounded-2xl border border-line bg-white">
-            <table className="w-full min-w-[720px] border-collapse text-left text-[14px]">
+            <table className="w-full min-w-[640px] border-collapse text-left text-[14px]">
               <thead>
                 <tr className="align-top">
-                  <th className="w-40 border-b border-line p-4 text-[12px] font-bold uppercase tracking-wide text-ink-light">Product</th>
+                  <th className="w-36 border-b border-line p-4 text-[12px] font-bold uppercase tracking-wide text-ink-light">Product</th>
                   {items.map((product) => (
                     <th key={product.id} className="border-b border-l border-line p-4 font-normal">
                       <div className="relative">

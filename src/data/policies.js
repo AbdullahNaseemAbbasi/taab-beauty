@@ -6,7 +6,7 @@ export const policies = {
     sections: [
       { heading: "Delivery areas", body: ["We deliver to every city and town in Pakistan through TCS, Leopards and M&P. International shipping is not available yet; join the newsletter to be notified when it launches."] },
       { heading: "Delivery times", body: ["Orders placed before 2pm (Monday to Saturday) are dispatched the same day. Orders placed after 2pm, on Sundays or on public holidays are dispatched the next working day.", "Karachi: next business day. Lahore, Islamabad, Rawalpindi, Faisalabad, Multan, Peshawar, Hyderabad: 2 to 3 business days. Other areas: 3 to 5 business days."] },
-      { heading: "Delivery charges", body: ["Free delivery on orders of Rs. 3,000 or more. A flat Rs. 250 applies to orders below that amount."] },
+      { heading: "Delivery charges", body: ["Free delivery on orders of Rs. 7,000 or more. A flat Rs. 250 applies to orders below that amount."] },
       { heading: "Tracking", body: ["A tracking number is sent by SMS and email once the courier collects your parcel. You can check the status on the Track Order page or directly with the courier."] },
       { heading: "Failed deliveries", body: ["Couriers attempt delivery twice. If both attempts fail, the parcel returns to us and we contact you to reschedule. Repeated failed cash-on-delivery orders may require advance payment on future orders."] },
     ],

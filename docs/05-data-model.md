@@ -1,6 +1,6 @@
 # Step 6 · Data model
 
-The static build keeps data in `src/data/*.js`. Each shape below is written so it maps one-to-one onto a database table (Postgres/Supabase, or a headless commerce API) later.
+The database is Supabase (Postgres); the schema is in `supabase/migrations/20261003000001_schema.sql` and `src/data/*.js` holds the seed (mock) dataset in the same shape, mapped to camelCase by `src/api/catalog.js`. Column names in the database are snake_case versions of the fields below.
 
 ## Product
 
