@@ -1,0 +1,144 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Plus Jakarta Sans", "Inter", system-ui, sans-serif;
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-script: "Caveat", "Segoe Print", "Bradley Hand", cursive;
+
+  /* Brand palette (shared design system) */
+  --color-navy: #072b4b;
+  --color-navy-800: #143450;
+  --color-navy-900: #0e2e48;
+  --color-navy-950: #0b2740;
+  --color-coral: #f3685e;
+  --color-coral-600: #e4574d;
+  --color-coral-100: #fcbfb8;
+  --color-coral-50: #fdf0ee;
+  --color-teal: #1f8da6;
+  --color-teal-700: #16768c;
+  --color-mint: #97eae2;
+  --color-mint-strong: #5ee0da;
+  --color-cyan: #51dbdf;
+  --color-sky: #bfe1f7;
+  --color-aqua: #b8ebf6;
+  --color-lavender: #e3d8f8;
+  --color-ink: #5e6776;
+  --color-ink-mid: #58687b;
+  --color-ink-light: #8c949e;
+  --color-script: #4d5c73;
+  --color-tint: #f3f8fb;
+  --color-line: #e6eef3;
+  --color-gold: #fdaa20;
+  --color-success: #1f9d6a;
+  --color-danger: #d64545;
+
+  --shadow-card: 0 8px 24px rgba(20, 57, 81, 0.05);
+  --shadow-float: 0 16px 40px rgba(20, 57, 81, 0.12);
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    background: #ffffff;
+    color: var(--color-navy);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  section[id],
+  [data-scroll-target] {
+    scroll-margin-top: 120px;
+  }
+  img {
+    display: block;
+  }
+  ::selection {
+    background: var(--color-coral-100);
+  }
+}
+
+@layer components {
+  .wrap {
+    margin-inline: auto;
+    width: 100%;
+    padding-inline: 20px;
+  }
+  @media (min-width: 640px) {
+    .wrap {
+      padding-inline: clamp(32px, 5vw, 120px);
+    }
+  }
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .prose-brand h2 {
+    margin-top: 2rem;
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    color: var(--color-navy);
+  }
+  .prose-brand h3 {
+    margin-top: 1.5rem;
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--color-navy);
+  }
+  .prose-brand p,
+  .prose-brand li {
+    margin-top: 0.9rem;
+    font-size: 1.02rem;
+    line-height: 1.75;
+    color: var(--color-ink);
+  }
+  .prose-brand ul {
+    list-style: disc;
+    padding-left: 1.4rem;
+  }
+  .prose-brand strong {
+    color: var(--color-navy);
+  }
+}
+
+/* Very large screens: scale the whole page so proportions match a ~1536px layout. */
+@media (min-width: 1800px) {
+  body {
+    zoom: 1.08;
+  }
+}
+@media (min-width: 1920px) {
+  body {
+    zoom: 1.15;
+  }
+}
+@media (min-width: 2200px) {
+  body {
+    zoom: 1.3;
+  }
+}
+@media (min-width: 2560px) {
+  body {
+    zoom: 1.5;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -600px 0;
+  }
+  100% {
+    background-position: 600px 0;
+  }
+}
+.skeleton {
+  background: linear-gradient(90deg, #eef3f7 25%, #f7fafc 50%, #eef3f7 75%);
+  background-size: 1200px 100%;
+  animation: shimmer 1.4s infinite linear;
+}

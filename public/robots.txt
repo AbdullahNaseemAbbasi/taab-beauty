@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Disallow: /cart
+Disallow: /checkout
+Disallow: /order/
+Disallow: /account
+Disallow: /wishlist
+Disallow: /compare
+Disallow: /search
+
+Sitemap: https://taab.co/sitemap.xml
