@@ -37,7 +37,14 @@ npm run seed                             # loads the mock catalogue (idempotent)
 
 Schema: `supabase/migrations/20261003000001_schema.sql`. Tables: settings, categories, brands, concerns, products, reviews, articles, faqs, coupons, customers, orders, order_items, events, newsletter_subscribers, contact_messages. Public access is read-only on the catalogue and insert-only on reviews (forced to pending), events and forms. Orders are created through the `place_order` function, which prices every line from the database, checks and decrements stock (including shade variants), validates the coupon, computes shipping from `settings`, upserts the customer and stores the attribution snapshot. `get_order` returns an order only when the phone number matches.
 
-To change products, prices or stock before an admin UI exists: edit the rows in the Supabase dashboard (Table editor) or update `src/data/*` and run `npm run seed` again.
+To change products, prices or stock before an admin UI exists: edit the rows in the Supabase dashboard (Table editor) or update `src/data/*` and run `npm run seed` again. Day-to-day operations are listed in `docs/10-launch-checklist.md`.
+
+### Notifications and reports
+
+- New orders and contact messages are pushed to the owner's phone via [ntfy](https://ntfy.sh) (database trigger, no account needed). The topic name is stored in the `settings` table under `notifications` and in the gitignored `.env.supabase.local`.
+- Customers can send their order summary to the store's WhatsApp from the confirmation page.
+- Reports are database views: `report_daily_sales`, `report_product_performance`, `report_sources`, `report_funnel_daily`, `report_customers`, `report_abandoned_checkouts`.
+- `node scripts/smoke-test.mjs` exercises the whole backend (catalogue, coupons, order placement, stock, lookups, notifications, RLS) with the public key and cleans up after itself.
 
 ## Deploy (Netlify)
 
@@ -47,7 +54,8 @@ To change products, prices or stock before an admin UI exists: edit the rows in 
 
 - Add products to the bag, apply code `WELCOME10` or creator code `HIRA15`, and check out with cash on delivery. The order is written to Supabase and stock is decremented.
 - Track the sample order `TB-241001-0211` with phone `0300 1234567`.
-- Land on any page with `?utm_source=instagram&utm_campaign=test&ref=creator123` and watch the attribution appear on the events in the console and on the order you place.
+- Land on any page with `?utm_source=instagram&utm_campaign=test&ref=hira` and watch the attribution appear on the events in the console and on the order you place. The `ref=hira` creator link shows a banner and auto-applies `HIRA15` at checkout.
+- Open `/track-order?id=TB-241001-0211&phone=03001234567` to see the link format used in SMS and WhatsApp messages.
 
 ## Documentation
 
@@ -62,6 +70,7 @@ To change products, prices or stock before an admin UI exists: edit the rows in 
 | `docs/07-folder-structure.md` | Folder map and backend migration points |
 | `docs/08-design-system.md` | Tokens, components, states, accessibility, performance |
 | `docs/09-roadmap.md` | Phases from static storefront to full platform |
+| `docs/10-launch-checklist.md` | What is done, what the owner must do, daily operations until the admin panel |
 
 ## Images
 

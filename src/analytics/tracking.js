@@ -77,6 +77,7 @@ export function track(event, payload = {}) {
   const attribution = getAttribution();
   const record = {
     event,
+    event_id: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`, // for server-side (Conversions API) deduplication later
     ...payload,
     currency: payload.currency || site.currency.code,
     session_id: attribution.session?.id || null,

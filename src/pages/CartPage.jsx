@@ -10,15 +10,18 @@ import FreeShippingBar from "../components/commerce/FreeShippingBar.jsx";
 import { ProductCarousel } from "../components/product/ProductGrid.jsx";
 import { useCatalog } from "../catalog/CatalogProvider.jsx";
 import { useStore } from "../store/StoreProvider.jsx";
+import { cachedCreatorOffer } from "../api/orders.js";
 import { ecommerce } from "../analytics/ecommerce.js";
 
 export default function CartPage() {
-  const { cart, clearCart } = useStore();
+  const { cart, clearCart, applyCoupon } = useStore();
   const { products } = useCatalog();
   useSeo({ title: "Your Bag", path: "/cart", noindex: true });
 
   useEffect(() => {
     if (cart.lines.length) ecommerce.viewCart(cart.lines);
+    const offer = cachedCreatorOffer();
+    if (offer && !cart.coupon && cart.lines.length) applyCoupon(offer.code);
   }, []);
 
   const inCart = new Set(cart.lines.map((line) => line.productId));

@@ -12,7 +12,7 @@ export const isLive = Boolean(url && anonKey);
 
 export const supabase = isLive
   ? createClient(url, anonKey, {
-      auth: { persistSession: false, autoRefreshToken: false },
+      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false },
       global: { headers: { "x-client-info": "taab-web" } },
     })
   : null;

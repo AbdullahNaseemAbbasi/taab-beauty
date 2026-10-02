@@ -30,12 +30,15 @@ export default function OrderTimeline({ order }) {
               </span>
               <p className={`text-[15px] font-semibold ${done ? "text-navy" : "text-ink-light"}`}>{entry?.label || step.label}</p>
               {entry && (
-                <p className="text-[13px] text-ink">
-                  {formatDate(entry.at, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
-                  {entry.tracking && (
-                    <span className="ml-2 rounded-full bg-tint px-2 py-0.5 text-[12px] font-semibold text-navy">Tracking {entry.tracking}</span>
-                  )}
-                </p>
+                <>
+                  <p className="text-[13px] text-ink">
+                    {formatDate(entry.at, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                    {entry.tracking && (
+                      <span className="ml-2 rounded-full bg-tint px-2 py-0.5 text-[12px] font-semibold text-navy">Tracking {entry.tracking}</span>
+                    )}
+                  </p>
+                  {entry.note && <p className="mt-1 text-[13px] text-ink-light">{entry.note}</p>}
+                </>
               )}
             </li>
           );

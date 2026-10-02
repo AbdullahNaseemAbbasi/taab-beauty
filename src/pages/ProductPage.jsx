@@ -9,6 +9,8 @@ import { Breadcrumbs, QuantityStepper, Accordion } from "../components/ui/Naviga
 import { HeartIcon, ShareIcon, WhatsAppIcon, TruckIcon, ShieldIcon, RefreshIcon, CompareIcon, CheckIcon } from "../components/ui/Icons.jsx";
 import ProductGallery from "../components/product/ProductGallery.jsx";
 import ReviewSection from "../components/product/ReviewSection.jsx";
+import StockAlertForm from "../components/product/StockAlertForm.jsx";
+import DispatchCountdown from "../components/commerce/DispatchCountdown.jsx";
 import ProductCard from "../components/product/ProductCard.jsx";
 import { ProductCarousel } from "../components/product/ProductGrid.jsx";
 import { Section } from "../components/sections/Sections.jsx";
@@ -42,11 +44,11 @@ function VariantSelector({ product, value, onChange }) {
             <button
               key={option.id}
               type="button"
-              onClick={() => !out && onChange(option.id)}
+              onClick={() => onChange(option.id)}
               aria-pressed={active}
               aria-label={`${option.name}${out ? " (sold out)" : ""}`}
-              title={option.name}
-              className={`relative size-10 rounded-full border-2 transition-transform ${active ? "scale-110 border-navy" : "border-white"} ${out ? "cursor-not-allowed opacity-40" : "hover:scale-105"} shadow-card`}
+              title={out ? `${option.name} (sold out, tap to get notified)` : option.name}
+              className={`relative size-10 rounded-full border-2 transition-transform ${active ? "scale-110 border-navy" : "border-white"} ${out ? "opacity-40" : ""} hover:scale-105 shadow-card`}
               style={{ backgroundColor: option.hex }}
             >
               {out && <span className="absolute inset-0 grid place-items-center text-white">✕</span>}
@@ -191,6 +193,8 @@ export default function ProductPage() {
 
           <div className="mt-6 space-y-5">
             <VariantSelector product={product} value={variantId} onChange={setVariantId} />
+            {stock <= 0 && <StockAlertForm product={product} variant={product.variants?.options.find((option) => option.id === variantId) || null} />}
+            {stock > 0 && <DispatchCountdown />}
             <div className="flex flex-wrap items-center gap-3">
               <QuantityStepper value={quantity} min={1} max={Math.max(stock, 1)} onChange={setQuantity} />
               <Button variant="navy" onClick={() => add(true)} disabled={stock <= 0} className="flex-1 sm:min-w-[200px] sm:flex-none">

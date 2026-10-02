@@ -136,6 +136,63 @@ export async function getOrder(id, phone) {
   return data || null;
 }
 
+/* -------------------------------------------------- creator / affiliate */
+const OFFER_KEY = "taab:creatorOffer";
+
+export async function fetchCreatorOffer(ref) {
+  if (!ref) return null;
+  try {
+    const cached = JSON.parse(sessionStorage.getItem(OFFER_KEY) || "null");
+    if (cached && cached.ref === ref) return cached.offer;
+  } catch {
+    /* ignore */
+  }
+  let offer = null;
+  if (!isLive) {
+    const { coupons } = await import("../data/misc.js");
+    const match = coupons.find((coupon) => coupon.creatorId && coupon.creatorId.toLowerCase() === ref.toLowerCase());
+    offer = match ? { code: match.code, description: match.description, type: match.type, value: match.value, minOrder: match.minOrder, creatorId: match.creatorId } : null;
+  } else {
+    const { data } = await supabase.rpc("creator_offer", { p_ref: ref });
+    offer = data || null;
+  }
+  try {
+    sessionStorage.setItem(OFFER_KEY, JSON.stringify({ ref, offer }));
+  } catch {
+    /* ignore */
+  }
+  return offer;
+}
+
+export function cachedCreatorOffer() {
+  try {
+    return JSON.parse(sessionStorage.getItem(OFFER_KEY) || "null")?.offer || null;
+  } catch {
+    return null;
+  }
+}
+
+/* ------------------------------------------------------- stock alerts */
+export async function subscribeStockAlert({ productId, variantId = null, contact }) {
+  const value = contact.trim();
+  const channel = value.includes("@") ? "email" : "phone";
+  if (channel === "phone" && !/^(\+92|0)?3\d{9}$/.test(value.replace(/[\s-]/g, ""))) throw new Error("Enter a valid Pakistani mobile number or an email address.");
+  if (channel === "email" && !/^\S+@\S+\.\S+$/.test(value)) throw new Error("That email does not look right.");
+  if (!isLive) return;
+  const { error } = await supabase.from("stock_alerts").insert({ product_id: productId, variant_id: variantId, contact: channel === "phone" ? value.replace(/[\s-]/g, "") : value.toLowerCase(), channel });
+  if (error) throw toError(error, "Could not save your alert right now.");
+}
+
+/* -------------------------------------------------- abandoned checkout */
+export async function saveCheckout(payload) {
+  if (!isLive) return;
+  try {
+    await supabase.rpc("save_checkout", { p_payload: payload });
+  } catch {
+    /* best effort */
+  }
+}
+
 /* Orders placed from this device (account page). */
 export async function getMyOrders() {
   if (!isLive) {

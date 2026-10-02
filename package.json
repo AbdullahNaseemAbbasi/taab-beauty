@@ -8,7 +8,10 @@
     "build": "vite build",
     "preview": "vite preview",
     "seed": "node scripts/seed.mjs",
-    "db:push": "supabase db push"
+    "db:push": "supabase db push",
+    "prebuild": "node scripts/sitemap.mjs",
+    "create-admin": "node scripts/create-admin.mjs",
+    "smoke-test": "node scripts/smoke-test.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.2",

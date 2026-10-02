@@ -7,5 +7,6 @@ Disallow: /account
 Disallow: /wishlist
 Disallow: /compare
 Disallow: /search
+Disallow: /admin
 
 Sitemap: https://taab.co/sitemap.xml

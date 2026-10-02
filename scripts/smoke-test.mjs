@@ -5,8 +5,9 @@
 import { readFileSync, existsSync } from "node:fs";
 import { createClient } from "@supabase/supabase-js";
 
-if (existsSync(".env")) {
-  readFileSync(".env", "utf8").split(/\r?\n/).forEach((line) => {
+for (const file of [".env", ".env.supabase.local"]) {
+  if (!existsSync(file)) continue;
+  readFileSync(file, "utf8").split(/\r?\n/).forEach((line) => {
     const match = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/);
     if (match && !process.env[match[1]]) process.env[match[1]] = match[2];
   });
@@ -85,6 +86,34 @@ check("review insert allowed (goes to pending)", !reviewError, reviewError?.mess
 const { error: newsletterError } = await db.from("newsletter_subscribers").insert({ email: "smoke@example.com", source: "test" });
 check("newsletter insert allowed", !newsletterError || newsletterError.code === "23505", newsletterError?.message);
 
+const { data: offer } = await db.rpc("creator_offer", { p_ref: "hira" });
+check("creator_offer for ref=hira", offer?.code === "HIRA15", JSON.stringify(offer));
+const { data: noOffer } = await db.rpc("creator_offer", { p_ref: "nobody" });
+check("creator_offer unknown ref returns null", noOffer === null);
+
+const { error: checkoutError } = await db.rpc("save_checkout", { p_payload: { sessionId: "smoke-session", phone: "0300 9998877", name: "Smoke", city: "Karachi", subtotal: 1900, lines: [{ sku: simple.sku, quantity: 1 }], attribution: { source: "smoke" } } });
+check("save_checkout (abandoned cart) works", !checkoutError, checkoutError?.message);
+const { data: checkoutLeak, error: checkoutReadError } = await db.from("checkout_sessions").select("session_id").limit(1);
+check("checkout_sessions not readable by public", Boolean(checkoutReadError) || (checkoutLeak || []).length === 0);
+
+const { error: alertError } = await db.from("stock_alerts").insert({ product_id: simple.id, contact: "03009998877", channel: "phone" });
+check("stock alert insert allowed", !alertError, alertError?.message);
+const { data: alertLeak, error: alertReadError } = await db.from("stock_alerts").select("id").limit(1);
+check("stock_alerts not readable by public", Boolean(alertReadError) || (alertLeak || []).length === 0);
+
+const { data: reportLeak, error: reportError } = await db.from("report_daily_sales").select("*").limit(1);
+check("report views hidden from public", Boolean(reportError) || (reportLeak || []).length === 0);
+
+if (process.env.NTFY_TOPIC && order) {
+  await new Promise((resolve) => setTimeout(resolve, 8000));
+  try {
+    const feed = await fetch(`https://ntfy.sh/${process.env.NTFY_TOPIC}/json?poll=1&since=3m`).then((response) => response.text());
+    check("ntfy push notification delivered for new order", feed.includes(order.id), feed.includes(order.id) ? "message found" : "not found in last 3 minutes");
+  } catch (fetchError) {
+    check("ntfy push notification delivered for new order", false, fetchError.message);
+  }
+}
+
 /* Clean up the test rows when the service key is available (never from the browser). */
 if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
   const admin = createClient(process.env.VITE_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
@@ -93,6 +122,8 @@ if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
   await admin.from("reviews").delete().eq("author", "Smoke");
   await admin.from("events").delete().eq("event", "smoke_test");
   await admin.from("newsletter_subscribers").delete().eq("email", "smoke@example.com");
+  await admin.from("checkout_sessions").delete().eq("session_id", "smoke-session");
+  await admin.from("stock_alerts").delete().eq("contact", "03009998877");
   if (order) {
     await admin.from("products").update({ stock: simple.stock }).eq("id", simple.id);
     await admin.from("products").update({ stock: variantProduct.stock, variants: variantProduct.variants }).eq("id", variantProduct.id);

@@ -10,9 +10,12 @@ import OrderSummary from "../components/commerce/OrderSummary.jsx";
 import { whatsappLink } from "../components/layout/WhatsAppButton.jsx";
 import { site } from "../config/site.js";
 import { cities } from "../data/misc.js";
-import { placeOrder } from "../api/orders.js";
+import { placeOrder, saveCheckout, cachedCreatorOffer } from "../api/orders.js";
 import { isLive } from "../api/client.js";
 import { hydrateOrder } from "../lib/cart.js";
+import { estimateDelivery, formatDeliveryRange } from "../lib/shipping.js";
+import { getAttribution, attributionForOrder } from "../analytics/attribution.js";
+import DispatchCountdown from "../components/commerce/DispatchCountdown.jsx";
 import { useCatalog } from "../catalog/CatalogProvider.jsx";
 import { useStore } from "../store/StoreProvider.jsx";
 import { ecommerce } from "../analytics/ecommerce.js";
@@ -28,8 +31,21 @@ function loadSavedCustomer() {
   }
 }
 
+function checkoutSnapshot(form, cart) {
+  return {
+    sessionId: getAttribution().session?.id || null,
+    phone: form.phone,
+    name: form.name,
+    email: form.email,
+    city: form.city,
+    subtotal: cart.totals.subtotal,
+    lines: cart.lines.map((line) => ({ sku: line.product.sku, name: line.product.name, variant: line.variant?.name || null, quantity: line.quantity, price: line.unitPrice })),
+    attribution: attributionForOrder(),
+  };
+}
+
 export default function CheckoutPage() {
-  const { cart, clearCart } = useStore();
+  const { cart, clearCart, applyCoupon } = useStore();
   const { settings, productById, productBySlug, reload } = useCatalog();
   const navigate = useNavigate();
   useSeo({ title: "Checkout", path: "/checkout", noindex: true });
@@ -44,9 +60,19 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     if (cart.lines.length) ecommerce.beginCheckout(cart.lines, cart.coupon);
+    const offer = cachedCreatorOffer();
+    if (offer && !cart.coupon && cart.lines.length) applyCoupon(offer.code);
   }, []);
 
+  /* Save the checkout (phone + bag) once the number is valid, so abandoned carts can be followed up. */
+  useEffect(() => {
+    if (!cart.lines.length || !phonePattern.test(form.phone.replace(/[\s-]/g, ""))) return undefined;
+    const timer = setTimeout(() => saveCheckout(checkoutSnapshot(form, cart)), 1200);
+    return () => clearTimeout(timer);
+  }, [form.phone, form.name, form.city, cart.totals.subtotal]);
+
   const update = (field) => (event) => setForm({ ...form, [field]: event.target.value });
+  const delivery = estimateDelivery(form.city);
 
   function validate() {
     const next = {};
@@ -87,6 +113,7 @@ export default function CheckoutPage() {
       const placed = await placeOrder({ customer, lines: cart.lines, coupon: cart.coupon, payment: form.payment, notes: form.notes, totals: cart.totals });
       const order = hydrateOrder(placed, { productById, productBySlug });
       ecommerce.purchase(order);
+      saveCheckout({ ...checkoutSnapshot(form, cart), converted: true, orderId: order.id });
       clearCart();
       if (isLive) reload(); // refresh stock counts in the background
       navigate(`/order/${order.id}`, { state: { justPlaced: true, order } });
@@ -161,9 +188,12 @@ export default function CheckoutPage() {
                 <Input value={form.instructions} onChange={update("instructions")} />
               </Field>
             </div>
-            <p className="mt-4 rounded-xl bg-tint px-4 py-3 text-[13px] text-navy">
-              {form.city === "Karachi" ? `Karachi: ${site.shipping.expressDays.toLowerCase()} delivery.` : `${form.city}: ${settings.shipping.estimatedDays}.`} Orders before 2pm ship the same day.
-            </p>
+            <div className="mt-4 space-y-2 rounded-xl bg-tint px-4 py-3 text-[13px] text-navy">
+              <p>
+                {form.city === "Karachi" ? `Karachi: ${site.shipping.expressDays.toLowerCase()} delivery.` : `${form.city}: ${settings.shipping.estimatedDays}.`} Expected <strong>{formatDeliveryRange(delivery)}</strong>.
+              </p>
+              <DispatchCountdown />
+            </div>
           </fieldset>
 
           <fieldset className="rounded-2xl border border-line bg-white p-4 sm:p-6">

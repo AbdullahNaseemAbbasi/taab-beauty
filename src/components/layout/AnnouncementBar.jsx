@@ -15,7 +15,7 @@ export default function AnnouncementBar() {
       ? `Order today, delivered in ${settings.shipping.estimatedDays}. Free delivery over ${threshold}.`
       : `Free delivery on orders over ${threshold}. Cash on delivery across Pakistan.`;
   return (
-    <div className="bg-navy text-white">
+    <div className="bg-navy text-white print:hidden">
       <div className="wrap flex h-10 items-center justify-center gap-3 text-[13px]">
         <span className="truncate">{message}</span>
         <Link

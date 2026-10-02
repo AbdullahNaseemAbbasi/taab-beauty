@@ -27,7 +27,7 @@ function LinkColumn({ title, links }) {
 
 export default function Footer() {
   return (
-    <footer className="relative bg-navy-900 text-white">
+    <footer className="relative bg-navy-900 text-white print:hidden">
       <svg className="absolute inset-x-0 top-0 h-5 w-full text-white" viewBox="0 0 1440 20" preserveAspectRatio="none" aria-hidden="true">
         <path d="M0 0 H1440 V3 C1200 18 760 16 0 8 Z" fill="currentColor" />
       </svg>
