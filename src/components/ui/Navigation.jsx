@@ -35,7 +35,7 @@ export function Pagination({ page, pageCount, onChange, className = "" }) {
   const base = "grid size-10 place-items-center rounded-full text-[14px] font-semibold transition-colors";
   return (
     <nav aria-label="Pagination" className={`flex items-center justify-center gap-2 ${className}`}>
-      <button type="button" aria-label="Previous page" disabled={page === 1} onClick={() => onChange(page - 1)} className={`${base} border border-line text-navy disabled:opacity-40`}>
+      <button type="button" aria-label="Previous page" title="Previous page" disabled={page === 1} onClick={() => onChange(page - 1)} className={`${base} border border-line text-navy disabled:opacity-40`}>
         <ChevronLeftIcon className="size-4" />
       </button>
       {pages.map((number) => (
@@ -49,7 +49,7 @@ export function Pagination({ page, pageCount, onChange, className = "" }) {
           {number}
         </button>
       ))}
-      <button type="button" aria-label="Next page" disabled={page === pageCount} onClick={() => onChange(page + 1)} className={`${base} border border-line text-navy disabled:opacity-40`}>
+      <button type="button" aria-label="Next page" title="Next page" disabled={page === pageCount} onClick={() => onChange(page + 1)} className={`${base} border border-line text-navy disabled:opacity-40`}>
         <ChevronRightIcon className="size-4" />
       </button>
     </nav>
@@ -61,13 +61,13 @@ export function QuantityStepper({ value, onChange, min = 1, max = 99, size = "md
   const btn = size === "sm" ? "w-9" : "w-12";
   return (
     <div className={`inline-flex items-center rounded-full border border-line ${dims} ${className}`} role="group" aria-label="Quantity">
-      <button type="button" aria-label="Decrease quantity" disabled={value <= min} onClick={() => onChange(value - 1)} className={`grid h-full ${btn} place-items-center text-navy disabled:opacity-30`}>
+      <button type="button" aria-label="Decrease quantity" title="Decrease quantity" disabled={value <= min} onClick={() => onChange(value - 1)} className={`grid h-full ${btn} place-items-center text-navy disabled:opacity-30`}>
         <MinusIcon className="size-4" />
       </button>
       <span className="min-w-8 text-center text-[15px] font-semibold text-navy" aria-live="polite">
         {value}
       </span>
-      <button type="button" aria-label="Increase quantity" disabled={value >= max} onClick={() => onChange(value + 1)} className={`grid h-full ${btn} place-items-center text-navy disabled:opacity-30`}>
+      <button type="button" aria-label="Increase quantity" title="Increase quantity" disabled={value >= max} onClick={() => onChange(value + 1)} className={`grid h-full ${btn} place-items-center text-navy disabled:opacity-30`}>
         <PlusIcon className="size-4" />
       </button>
     </div>

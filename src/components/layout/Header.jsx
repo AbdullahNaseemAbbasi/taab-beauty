@@ -47,17 +47,17 @@ export default function Header() {
         </nav>
 
         <div className="flex items-center gap-1">
-          <IconButton label="Search" onClick={() => setUI({ searchOpen: true })}>
+          <IconButton label="Search products" onClick={() => setUI({ searchOpen: true })}>
             <SearchIcon className="size-[22px]" />
           </IconButton>
-          <Link to="/account" aria-label="My account" className="hidden size-11 place-items-center rounded-full text-navy hover:bg-tint sm:grid">
+          <Link to="/account" aria-label="My account" title="My account" className="hidden size-11 place-items-center rounded-full text-navy hover:bg-tint sm:grid">
             <UserIcon className="size-[22px]" />
           </Link>
-          <Link to="/wishlist" aria-label={`Wishlist, ${wishlist.length} items`} className="relative hidden size-11 place-items-center rounded-full text-navy hover:bg-tint sm:grid">
+          <Link to="/wishlist" aria-label={`Wishlist, ${wishlist.length} items`} title="Wishlist" className="relative hidden size-11 place-items-center rounded-full text-navy hover:bg-tint sm:grid">
             <HeartIcon className="size-[22px]" />
             {wishlist.length > 0 && <span className="absolute -top-0.5 -right-0.5 grid min-w-5 place-items-center rounded-full bg-coral px-1 text-[11px] font-bold text-white">{wishlist.length}</span>}
           </Link>
-          <IconButton label={`Shopping bag, ${cart.totals.itemCount} items`} badge={cart.totals.itemCount} onClick={() => setUI({ cartOpen: true })}>
+          <IconButton label="Your bag" badge={cart.totals.itemCount} onClick={() => setUI({ cartOpen: true })}>
             <BagIcon className="size-[22px]" />
           </IconButton>
         </div>

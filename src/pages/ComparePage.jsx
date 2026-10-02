@@ -48,7 +48,7 @@ export default function ComparePage() {
                   {items.map((product) => (
                     <th key={product.id} className="border-b border-l border-line p-4 font-normal">
                       <div className="relative">
-                        <button type="button" aria-label={`Remove ${product.name}`} onClick={() => toggleCompare(product)} className="absolute top-0 right-0 grid size-8 place-items-center rounded-full bg-white text-ink-light shadow-card hover:text-danger">
+                        <button type="button" aria-label={`Remove ${product.name}`} title="Remove from compare" onClick={() => toggleCompare(product)} className="absolute top-0 right-0 grid size-8 place-items-center rounded-full bg-white text-ink-light shadow-card hover:text-danger">
                           <CloseIcon className="size-4" />
                         </button>
                         <Link to={`/product/${product.slug}`}>

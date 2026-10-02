@@ -2,7 +2,6 @@ import { Link } from "react-router-dom";
 import useSeo from "../hooks/useSeo.js";
 import Button from "../components/ui/Button.jsx";
 import RatingStars from "../components/ui/RatingStars.jsx";
-import { Eyebrow } from "../components/ui/Typography.jsx";
 import { ProductGrid, ProductCarousel } from "../components/product/ProductGrid.jsx";
 import { Section, TrustSignals, CategoryGrid, ConcernGrid, BrandStrip, PromoBanner, Testimonials, InstagramFeed, JournalCard } from "../components/sections/Sections.jsx";
 import { CashIcon, TruckIcon } from "../components/ui/Icons.jsx";
@@ -24,9 +23,9 @@ function Hero({ threshold }) {
         <img {...imageProps(images.hero.home, { width: 1600, sizes: "60vw", alt: "", eager: true })} className="h-full w-full object-cover object-right [mask-image:linear-gradient(to_right,transparent,black_16%)]" />
       </div>
       <div className="wrap relative">
-        <div className="max-w-[560px] py-10 sm:py-12 lg:py-16 xl:py-20">
-          <Eyebrow tone="navy">Karachi’s new beauty house</Eyebrow>
-          <h1 className="mt-4 font-display text-[38px] font-extrabold leading-[1.02] tracking-[-0.03em] text-navy min-[400px]:text-[42px] sm:text-[56px] xl:text-[66px]">
+        <div className="max-w-[560px] py-8 sm:py-9 lg:py-10 xl:py-12">
+          <p className="text-[13px] font-extrabold uppercase tracking-[0.24em] text-navy sm:text-[14px]">Karachi’s new beauty house</p>
+          <h1 className="mt-3 font-display text-[38px] font-extrabold leading-[1.02] tracking-[-0.03em] text-navy min-[400px]:text-[42px] sm:text-[56px] xl:text-[66px]">
             {headline[0]}
             <br />
             <span className="text-coral">{headline[1]}</span>

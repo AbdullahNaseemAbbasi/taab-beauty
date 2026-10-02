@@ -29,6 +29,7 @@ export default function ProductGallery({ product }) {
               type="button"
               onClick={() => setActive(index)}
               aria-label={`Show image ${index + 1}`}
+              title={`View image ${index + 1}`}
               aria-pressed={index === active}
               className={`size-20 overflow-hidden rounded-xl border-2 transition-colors ${index === active ? "border-navy" : "border-transparent hover:border-line"}`}
             >

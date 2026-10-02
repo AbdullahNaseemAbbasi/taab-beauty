@@ -55,6 +55,7 @@ export function IconButton({ label, className = "", badge, children, ...rest }) 
     <button
       type="button"
       aria-label={label}
+      title={label}
       className={`relative grid size-11 place-items-center rounded-full text-navy transition-colors hover:bg-tint ${className}`}
       {...rest}
     >

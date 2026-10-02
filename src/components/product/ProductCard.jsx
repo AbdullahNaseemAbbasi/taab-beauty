@@ -42,6 +42,7 @@ export default function ProductCard({ product, listName = "product_grid", eager 
         <button
           type="button"
           aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}
+          title={wishlisted ? "Remove from wishlist" : "Save to wishlist"}
           aria-pressed={wishlisted}
           onClick={() => toggleWishlist(product)}
           className={`grid size-9 place-items-center rounded-full bg-white/90 shadow-card backdrop-blur-sm transition-colors ${wishlisted ? "text-coral" : "text-navy hover:text-coral"}`}
@@ -51,6 +52,7 @@ export default function ProductCard({ product, listName = "product_grid", eager 
         <button
           type="button"
           aria-label={compared ? "Remove from compare" : "Add to compare"}
+          title={compared ? "Remove from compare" : "Compare this product"}
           aria-pressed={compared}
           onClick={() => toggleCompare(product)}
           className={`grid size-9 place-items-center rounded-full bg-white/90 shadow-card backdrop-blur-sm transition-opacity lg:opacity-0 lg:group-hover:opacity-100 ${compared ? "text-teal opacity-100" : "text-navy hover:text-teal"}`}

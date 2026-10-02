@@ -60,7 +60,8 @@ export default function Footer() {
                       href={site.social[key]}
                       target="_blank"
                       rel="noreferrer"
-                      aria-label={key}
+                      aria-label={`TAAB on ${key.charAt(0).toUpperCase() + key.slice(1)}`}
+                      title={`TAAB on ${key.charAt(0).toUpperCase() + key.slice(1)}`}
                       onClick={() => track(EVENTS.SOCIAL_CLICK, { network: key, placement: "footer" })}
                       className="grid size-10 place-items-center rounded-full bg-white/10 text-white transition-colors hover:bg-coral"
                     >

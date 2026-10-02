@@ -50,10 +50,10 @@ export function ProductCarousel({ products, listName = "carousel" }) {
         ))}
       </div>
       <div className="mt-4 hidden justify-end gap-2 sm:flex">
-        <button type="button" aria-label="Scroll left" onClick={() => scrollBy(-1)} className="grid size-10 place-items-center rounded-full border border-line text-navy hover:border-navy">
+        <button type="button" aria-label="Scroll left" title="Previous products" onClick={() => scrollBy(-1)} className="grid size-10 place-items-center rounded-full border border-line text-navy hover:border-navy">
           <ChevronLeftIcon className="size-5" />
         </button>
-        <button type="button" aria-label="Scroll right" onClick={() => scrollBy(1)} className="grid size-10 place-items-center rounded-full border border-line text-navy hover:border-navy">
+        <button type="button" aria-label="Scroll right" title="More products" onClick={() => scrollBy(1)} className="grid size-10 place-items-center rounded-full border border-line text-navy hover:border-navy">
           <ChevronRightIcon className="size-5" />
         </button>
       </div>

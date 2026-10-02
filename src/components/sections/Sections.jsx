@@ -23,8 +23,8 @@ export function PageHero({ eyebrow, title, description, image, imageAlt = "", pr
         </div>
       )}
       <div className="wrap relative">
-        <div className={`max-w-[560px] ${compact ? "py-10 lg:py-12" : "py-10 lg:py-14"}`}>
-          {eyebrow && <Eyebrow tone="navy">{eyebrow}</Eyebrow>}
+        <div className={`max-w-[560px] ${compact ? "py-8 lg:py-10" : "py-8 lg:py-12"}`}>
+          {eyebrow && <p className="text-[13px] font-extrabold uppercase tracking-[0.24em] text-navy sm:text-[14px]">{eyebrow}</p>}
           <h1 className={`mt-4 font-display font-extrabold leading-[1.05] tracking-[-0.025em] text-navy ${compact ? "text-[34px] sm:text-[44px]" : "text-[38px] sm:text-[50px] lg:text-[58px]"}`}>{title}</h1>
           {description && <p className="mt-5 max-w-[480px] text-[17px] leading-[1.65] text-ink">{description}</p>}
           {(primary || secondary) && (

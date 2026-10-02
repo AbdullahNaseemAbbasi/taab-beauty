@@ -25,7 +25,7 @@ export default function CartItem({ line, compact = false }) {
             </Link>
             {variant && <span className="mt-0.5 block text-[13px] text-ink">{product.variants.label}: {variant.name}</span>}
           </div>
-          <button type="button" aria-label={`Remove ${product.name}`} onClick={() => removeLine(key)} className="grid size-8 shrink-0 place-items-center rounded-full text-ink-light hover:bg-tint hover:text-danger">
+          <button type="button" aria-label={`Remove ${product.name}`} title="Remove from bag" onClick={() => removeLine(key)} className="grid size-8 shrink-0 place-items-center rounded-full text-ink-light hover:bg-tint hover:text-danger">
             <TrashIcon className="size-4" />
           </button>
         </div>

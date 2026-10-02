@@ -40,7 +40,7 @@ export default function MobileMenu() {
               </details>
             ))}
             {Object.values(collections).map((collection) => (
-              <Link key={collection.slug} to={`/${collection.slug}`} onClick={close} className={`block px-3 py-3.5 text-[16px] font-semibold ${collection.slug === "sale" ? "text-coral" : "text-navy"}`}>
+              <Link key={collection.slug} to={`/${collection.slug}`} onClick={close} className="block px-3 py-3.5 text-[16px] font-semibold text-navy">
                 {collection.name}
               </Link>
             ))}

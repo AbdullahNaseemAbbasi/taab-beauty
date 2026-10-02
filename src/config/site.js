@@ -80,7 +80,7 @@ export const nav = [
   { label: "Skincare", to: "/shop/skincare" },
   { label: "Haircare", to: "/shop/haircare" },
   { label: "Fragrance", to: "/shop/fragrance" },
-  { label: "Sale", to: "/sale", accent: true },
+  { label: "Sale", to: "/sale" },
   { label: "Journal", to: "/journal" },
 ];
 

@@ -31,7 +31,7 @@ export default function Overlay({ open, onClose, side = "right", title, children
         {title && (
           <div className="flex items-center justify-between border-b border-line px-5 py-4">
             <h2 className="font-display text-[20px] font-extrabold text-navy">{title}</h2>
-            <button type="button" aria-label="Close" onClick={onClose} className="grid size-10 place-items-center rounded-full text-navy hover:bg-tint">
+            <button type="button" aria-label="Close" title="Close" onClick={onClose} className="grid size-10 place-items-center rounded-full text-navy hover:bg-tint">
               <CloseIcon className="size-5" />
             </button>
           </div>
