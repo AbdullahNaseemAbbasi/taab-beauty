@@ -90,6 +90,13 @@ source, campaign, ad_content, creator_ref,
 value?, currency, items[]?, ...event-specific fields
 ```
 
-## Admin entities (future)
+## Accounts and admin
 
-Products, Categories, Brands, Inventory, Orders, Customers, Payments, Coupons, Discounts, Reviews, Blog, Marketing (campaigns, creators), Analytics, Shipping (couriers, zones), Settings. All keyed on the IDs above so no renumbering is needed when the backend arrives.
+```
+profiles      id (= auth user id), name, phone, address, city, province
+admins        email, user_id            who may open /admin; checked by is_admin()
+product_costs product_id, cost          admin-only, kept out of the public products table
+orders.user_id                          set when the order is placed while signed in
+```
+
+The admin panel manages Products, Orders, Customers, Coupons and creators, Reviews, Inbox (messages, abandoned checkouts, stock alerts, subscribers), Analytics and Settings. Categories, brands, blog and courier zones are still edited through the seed data or the Supabase table editor.

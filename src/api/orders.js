@@ -193,11 +193,18 @@ export async function saveCheckout(payload) {
   }
 }
 
-/* Orders placed from this device (account page). */
+/* Orders linked to the signed-in account plus orders placed from this device. */
 export async function getMyOrders() {
   if (!isLive) {
     return [...readJson(ORDERS_KEY, []), ...sampleOrders];
   }
-  const results = await Promise.all(placedOrders().map((entry) => getOrder(entry.id, entry.phone).catch(() => null)));
-  return results.filter(Boolean);
+  const { data: sessionData } = await supabase.auth.getSession();
+  const [accountOrders, deviceOrders] = await Promise.all([
+    sessionData.session ? supabase.rpc("my_orders").then(({ data }) => data || []) : Promise.resolve([]),
+    Promise.all(placedOrders().map((entry) => getOrder(entry.id, entry.phone).catch(() => null))),
+  ]);
+  const seen = new Set();
+  return [...accountOrders, ...deviceOrders.filter(Boolean)]
+    .filter((order) => (seen.has(order.id) ? false : seen.add(order.id)))
+    .sort((a, b) => new Date(b.placedAt) - new Date(a.placedAt));
 }

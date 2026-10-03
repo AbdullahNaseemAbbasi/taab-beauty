@@ -66,7 +66,7 @@ await upsert("products", products.map((product) => ({
   subcategory: product.subcategory,
   price: product.price,
   compare_at_price: product.compareAtPrice || null,
-  cost: Math.round(product.price * 0.55),
+
   images: product.images,
   description: product.description,
   benefits: product.benefits,
@@ -85,6 +85,8 @@ await upsert("products", products.map((product) => ({
   active: true,
 })));
 
+await upsert("product_costs", products.map((product) => ({ product_id: product.id, cost: Math.round(product.price * 0.55) })), "product_id");
+
 await upsert("reviews", reviews.map((review) => ({
   id: review.id,
   product_id: review.productId,
@@ -99,6 +101,9 @@ await upsert("reviews", reviews.map((review) => ({
   status: "approved",
   created_at: new Date(review.date).toISOString(),
 })));
+
+/* Approving reviews recalculates a product's rating; restore the seeded display numbers for the demo catalogue. */
+await upsert("products", products.map((product) => ({ id: product.id, sku: product.sku, name: product.name, slug: product.slug, price: product.price, rating: product.rating, review_count: product.reviewCount })));
 
 await upsert("articles", articles.map((article) => ({
   slug: article.slug, title: article.title, excerpt: article.excerpt, topic: article.topic, author: article.author, published_at: article.date, read_time: article.readTime, image: article.image, content: article.content, active: true,
@@ -129,7 +134,7 @@ for (const sample of sampleOrders) {
     customer_id: customer.id,
     status: sample.status,
     payment_method: sample.payment,
-    payment_status: sample.status === "delivered" ? "paid" : "pending",
+    payment_status: sample.status === "delivered" || sample.timeline.some((entry) => entry.status === "confirmed") ? "paid" : "pending",
     customer: { name: sample.customer.name, phone, address: "12-C, Khayaban-e-Ittehad, DHA Phase 6", city: sample.customer.city, province: "Sindh" },
     phone,
     subtotal: sample.totals.subtotal,

@@ -21,6 +21,7 @@ const PolicyPage = lazy(() => import("./pages/PolicyPage.jsx"));
 const JournalPage = lazy(() => import("./pages/JournalPage.jsx"));
 const ArticlePage = lazy(() => import("./pages/ArticlePage.jsx"));
 const NotFoundPage = lazy(() => import("./pages/NotFoundPage.jsx"));
+const AdminApp = lazy(() => import("./admin/AdminApp.jsx"));
 
 function PageFallback() {
   return (
@@ -38,6 +39,14 @@ function PageFallback() {
 export default function App() {
   return (
     <Routes>
+      <Route
+        path="admin/*"
+        element={
+          <Suspense fallback={<PageFallback />}>
+            <AdminApp />
+          </Suspense>
+        }
+      />
       <Route element={<Layout />}>
         <Route index element={<HomePage />} />
         <Route

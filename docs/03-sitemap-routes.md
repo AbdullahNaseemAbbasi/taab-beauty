@@ -49,7 +49,9 @@ Home
 | `/checkout` | CheckoutPage | store | no | Guest checkout, `begin_checkout` → `purchase` |
 | `/order/:id` | OrderConfirmationPage | local order or sample | no | Bank-transfer instructions when relevant |
 | `/track-order` | TrackOrderPage | order lookup | yes | Order number + phone |
-| `/wishlist` `/compare` `/account` | utility pages | store / localStorage | no | |
+| `/wishlist` `/compare` | utility pages | store / localStorage | no | |
+| `/account` | AccountPage | Supabase Auth, profile, `my_orders()` | no | Sign in, create account, reset password, saved details, order history |
+| `/admin/*` | AdminApp (own layout) | admin API | no | Dashboard, orders, products, customers, reviews, inbox, coupons, analytics, settings. Admins only; disallowed in robots.txt |
 | `/journal` `/journal/:slug` | JournalPage, ArticlePage | articles | yes | Article JSON-LD |
 | `/about` `/contact` `/faq` | content pages | config, faqs | yes | FAQ JSON-LD, Netlify contact form |
 | policies | PolicyPage | policies | yes | |

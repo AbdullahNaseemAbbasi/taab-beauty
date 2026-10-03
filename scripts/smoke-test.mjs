@@ -114,6 +114,77 @@ if (process.env.NTFY_TOPIC && order) {
   }
 }
 
+/* ------------------------------------------------ privacy of settings and costs */
+const { data: settingsRows } = await db.from("settings").select("key");
+check("public settings expose only shipping and store", (settingsRows || []).length === 2 && settingsRows.every((row) => ["shipping", "store"].includes(row.key)), (settingsRows || []).map((row) => row.key).join(","));
+const { error: topicError } = await db.rpc("ntfy_topic");
+check("notification topic not callable by public", Boolean(topicError));
+const { data: costLeak, error: costError } = await db.from("product_costs").select("cost").limit(1);
+check("product costs hidden from public", Boolean(costError) || (costLeak || []).length === 0);
+const { data: oneProduct } = await db.from("products").select("*").limit(1);
+check("products rows carry no cost column", Boolean(oneProduct?.[0]) && !("cost" in oneProduct[0]));
+
+/* ------------------------------------------------------------ customer account */
+let customerUserId = null;
+let customerOrderId = null;
+const customer = createClient(process.env.VITE_SUPABASE_URL, process.env.VITE_SUPABASE_ANON_KEY, { auth: { persistSession: false } });
+const { data: signUp, error: signUpError } = await customer.auth.signUp({
+  email: `smoke-${Date.now()}@example.com`,
+  password: "Smoke-test-1234",
+  options: { data: { name: "Smoke Customer", phone: "03009998877" } },
+});
+check("customer sign-up returns a session (no email confirmation needed)", !signUpError && Boolean(signUp?.session), signUpError?.message);
+if (signUp?.session) {
+  customerUserId = signUp.user.id;
+  const { data: profile } = await customer.from("profiles").select("*").maybeSingle();
+  check("profile created on sign-up", profile?.name === "Smoke Customer" && profile?.phone === "03009998877");
+  const { data: accountOrder, error: accountOrderError } = await customer.rpc("place_order", { p_payload: { ...payload, couponCode: null, lines: [{ productId: simple.id, quantity: 1 }] } });
+  check("signed-in customer can place an order", !accountOrderError && Boolean(accountOrder?.id), accountOrderError?.message);
+  customerOrderId = accountOrder?.id || null;
+  const { data: mine } = await customer.rpc("my_orders");
+  check("my_orders lists the account's order", Array.isArray(mine) && mine.some((entry) => entry.id === customerOrderId));
+  const { data: ordersLeakToCustomer } = await customer.from("orders").select("id").limit(5);
+  check("customers cannot read the orders table", (ordersLeakToCustomer || []).length === 0);
+  const { error: statsDenied } = await customer.rpc("admin_stats", { p_days: 7 });
+  check("customers cannot call admin_stats", Boolean(statsDenied), statsDenied?.message);
+  const { data: customerIsAdmin } = await customer.rpc("is_admin");
+  check("customer is not an admin", customerIsAdmin === false);
+  const { error: productWrite } = await customer.from("products").update({ price: 1 }).eq("id", simple.id).select();
+  const { data: priceAfter } = await db.from("products").select("price").eq("id", simple.id).single();
+  check("customers cannot change products", priceAfter?.price === 1900, productWrite?.message || `price ${priceAfter?.price}`);
+}
+
+/* ---------------------------------------------------------------------- admin */
+if (process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD) {
+  const staff = createClient(process.env.VITE_SUPABASE_URL, process.env.VITE_SUPABASE_ANON_KEY, { auth: { persistSession: false } });
+  const { error: staffSignIn } = await staff.auth.signInWithPassword({ email: process.env.ADMIN_EMAIL, password: process.env.ADMIN_PASSWORD });
+  check("admin can sign in", !staffSignIn, staffSignIn?.message);
+  const { data: staffIsAdmin } = await staff.rpc("is_admin");
+  check("admin is recognised", staffIsAdmin === true);
+  const { data: stats, error: statsError } = await staff.rpc("admin_stats", { p_days: 7 });
+  check("admin_stats works", !statsError && typeof stats?.orders === "number", statsError?.message || `orders ${stats?.orders}, pending ${stats?.pending}`);
+  const { data: staffOrders, error: staffOrdersError } = await staff.from("orders").select("id, order_items(id)").order("created_at", { ascending: false }).limit(5);
+  check("admin reads orders with items", !staffOrdersError && staffOrders.length > 0 && Array.isArray(staffOrders[0].order_items), staffOrdersError?.message);
+  if (customerOrderId) {
+    const { data: shipped, error: shipError } = await staff.rpc("update_order_status", { p_order_id: customerOrderId, p_status: "shipped", p_note: "Smoke test note", p_courier: "TCS", p_tracking: "SMOKE123", p_payment_status: null });
+    check("admin marks an order shipped", !shipError && shipped?.status === "shipped" && shipped?.trackingCode === "SMOKE123", shipError?.message);
+    const { data: tracked } = await db.rpc("get_order", { p_order_id: customerOrderId, p_phone: "03009998877" });
+    check("customer sees courier and tracking after the update", tracked?.status === "shipped" && tracked?.courier === "TCS" && tracked?.timeline?.some((entry) => entry.note === "Smoke test note"));
+    const { data: beforeCancel } = await db.from("products").select("stock").eq("id", simple.id).single();
+    const { error: cancelError } = await staff.rpc("update_order_status", { p_order_id: customerOrderId, p_status: "cancelled", p_note: null, p_courier: null, p_tracking: null, p_payment_status: null });
+    const { data: afterCancel } = await db.from("products").select("stock").eq("id", simple.id).single();
+    check("cancelling an order returns its stock", !cancelError && afterCancel.stock === beforeCancel.stock + 1, `${beforeCancel.stock} -> ${afterCancel.stock}`);
+  }
+  const { data: costRows, error: costRowsError } = await staff.from("products").select("id, product_costs(cost)").limit(1);
+  check("admin reads product costs", !costRowsError && costRows?.[0]?.product_costs != null, costRowsError?.message);
+  const { data: reportRows, error: reportRowsError } = await staff.from("report_daily_sales").select("*").limit(3);
+  check("admin reads report views", !reportRowsError && reportRows.length > 0, reportRowsError?.message);
+  const { data: allSettings } = await staff.from("settings").select("key");
+  check("admin reads all settings", (allSettings || []).some((row) => row.key === "notifications"));
+  const { data: team, error: teamError } = await staff.rpc("list_admins");
+  check("admin lists the team", !teamError && team.length >= 1, teamError?.message);
+}
+
 /* Clean up the test rows when the service key is available (never from the browser). */
 if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
   const admin = createClient(process.env.VITE_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
@@ -124,6 +195,7 @@ if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
   await admin.from("newsletter_subscribers").delete().eq("email", "smoke@example.com");
   await admin.from("checkout_sessions").delete().eq("session_id", "smoke-session");
   await admin.from("stock_alerts").delete().eq("contact", "03009998877");
+  if (customerUserId) await admin.auth.admin.deleteUser(customerUserId);
   if (order) {
     await admin.from("products").update({ stock: simple.stock }).eq("id", simple.id);
     await admin.from("products").update({ stock: variantProduct.stock, variants: variantProduct.variants }).eq("id", variantProduct.id);

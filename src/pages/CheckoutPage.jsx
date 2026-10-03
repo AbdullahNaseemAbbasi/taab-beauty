@@ -18,6 +18,7 @@ import { getAttribution, attributionForOrder } from "../analytics/attribution.js
 import DispatchCountdown from "../components/commerce/DispatchCountdown.jsx";
 import { useCatalog } from "../catalog/CatalogProvider.jsx";
 import { useStore } from "../store/StoreProvider.jsx";
+import { useAuth } from "../auth/AuthProvider.jsx";
 import { ecommerce } from "../analytics/ecommerce.js";
 
 const CUSTOMER_KEY = "taab:customer";
@@ -50,11 +51,28 @@ export default function CheckoutPage() {
   const navigate = useNavigate();
   useSeo({ title: "Checkout", path: "/checkout", noindex: true });
 
+  /* Card needs both the admin switch and a configured gateway, so it can never be offered by accident. */
   const enabledMethods = site.payments.methods.filter(
-    (method) => (method.id === "cod" && settings.store.codEnabled) || (method.id === "bank" && settings.store.bankTransferEnabled) || (method.id === "card" && settings.store.cardEnabled)
+    (method) => (method.id === "cod" && settings.store.codEnabled) || (method.id === "bank" && settings.store.bankTransferEnabled) || (method.id === "card" && settings.store.cardEnabled && method.enabled)
   );
+  const auth = useAuth();
   const [form, setForm] = useState(() => ({ name: "", phone: "", email: "", address: "", city: "Karachi", province: "Sindh", postalCode: "", instructions: "", notes: "", payment: enabledMethods[0]?.id || "cod", ...loadSavedCustomer() }));
   const [errors, setErrors] = useState({});
+
+  /* Signed-in customers get their saved details filled in (without overwriting what they already typed). */
+  useEffect(() => {
+    if (!auth.session) return;
+    const profile = auth.profile || {};
+    setForm((current) => ({
+      ...current,
+      name: current.name || profile.name || "",
+      phone: current.phone || profile.phone || "",
+      email: current.email || auth.user?.email || "",
+      address: current.address || profile.address || "",
+      city: current.address ? current.city : profile.city || current.city,
+      province: current.address ? current.province : profile.province || current.province,
+    }));
+  }, [auth.session, auth.profile]);
   const [submitError, setSubmitError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -114,6 +132,9 @@ export default function CheckoutPage() {
       const order = hydrateOrder(placed, { productById, productBySlug });
       ecommerce.purchase(order);
       saveCheckout({ ...checkoutSnapshot(form, cart), converted: true, orderId: order.id });
+      if (auth.session && !auth.profile?.address) {
+        auth.updateProfile({ name: customer.name, phone: customer.phone, address: customer.address, city: customer.city, province: customer.province }).catch(() => {});
+      }
       clearCart();
       if (isLive) reload(); // refresh stock counts in the background
       navigate(`/order/${order.id}`, { state: { justPlaced: true, order } });
@@ -137,7 +158,13 @@ export default function CheckoutPage() {
 
   return (
     <>
-      <PageHeader title="Checkout" description="Guest checkout, no account needed. We only ask for what the courier requires." />
+      <PageHeader title="Checkout" description={auth.session ? "Your saved details are filled in. Check them and place your order." : "Guest checkout, no account needed. We only ask for what the courier requires."}>
+        {!auth.session && auth.available && (
+          <p className="mb-3 text-[14px] text-ink">
+            Have an account? <Link to="/account" className="font-semibold text-teal hover:underline">Sign in</Link> to fill this in automatically.
+          </p>
+        )}
+      </PageHeader>
       <form onSubmit={submit} noValidate className="wrap grid gap-8 py-8 sm:py-10 lg:grid-cols-[1fr_400px] lg:items-start">
         <div className="space-y-6 sm:space-y-8">
           {submitError && (

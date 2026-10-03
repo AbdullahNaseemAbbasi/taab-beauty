@@ -2,9 +2,9 @@
  * Creates (or resets the password of) an admin user for /admin.
  *   node scripts/create-admin.mjs <email> [password]
  * Needs SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env. If no password is
- * given a strong one is generated and printed once.
+ * given a strong one is generated and saved to .env.supabase.local (gitignored).
  */
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync, writeFileSync } from "node:fs";
 import { randomBytes } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 
@@ -26,11 +26,12 @@ if (!url || !key) {
   console.error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in .env");
   process.exit(1);
 }
-const password = givenPassword || randomBytes(12).toString("base64url");
+const password = givenPassword || `Taab-${randomBytes(9).toString("base64url")}`;
 const admin = createClient(url, key, { auth: { persistSession: false } });
-
 const normalised = email.trim().toLowerCase();
-const { data: created, error: createError } = await admin.auth.admin.createUser({ email: normalised, password, email_confirm: true });
+
+let userId;
+const { data: created, error: createError } = await admin.auth.admin.createUser({ email: normalised, password, email_confirm: true, user_metadata: { name: "Store owner" } });
 if (createError) {
   if (!/already|exists|registered/i.test(createError.message)) {
     console.error("createUser failed:", createError.message);
@@ -42,12 +43,21 @@ if (createError) {
   if (!existing) throw new Error("User exists but could not be found.");
   const { error: updateError } = await admin.auth.admin.updateUserById(existing.id, { password, email_confirm: true });
   if (updateError) throw updateError;
+  userId = existing.id;
   console.log(`Updated password for existing user ${normalised}`);
 } else {
-  console.log(`Created auth user ${created.user.email}`);
+  userId = created.user.id;
+  console.log(`Created auth user ${normalised}`);
 }
 
-const { error: adminError } = await admin.from("admins").upsert({ email: normalised }, { onConflict: "email" });
+const { error: adminError } = await admin.from("admins").upsert({ email: normalised, user_id: userId }, { onConflict: "email" });
 if (adminError) throw adminError;
 console.log(`Granted admin access to ${normalised}`);
-if (!givenPassword) console.log(`Password: ${password}`);
+
+if (!givenPassword) {
+  const file = ".env.supabase.local";
+  const lines = existsSync(file) ? readFileSync(file, "utf8").split(/\r?\n/).filter((line) => line && !/^ADMIN_(EMAIL|PASSWORD)=/.test(line)) : [];
+  lines.push(`ADMIN_EMAIL=${normalised}`, `ADMIN_PASSWORD=${password}`);
+  writeFileSync(file, `${lines.join("\n")}\n`);
+  console.log(`Password saved to ${file} (ADMIN_PASSWORD). Change it after the first sign-in.`);
+}

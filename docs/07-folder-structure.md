@@ -14,11 +14,20 @@ taab-beauty/
 │   ├── config.toml            Supabase CLI config
 │   └── migrations/            SQL schema, functions, RLS (applied with npm run db:push)
 ├── scripts/
-│   └── seed.mjs               Loads src/data into the database (npm run seed)
+│   ├── seed.mjs               Loads src/data into the database (npm run seed)
+│   ├── create-admin.mjs       Creates an admin user or resets its password (npm run create-admin)
+│   ├── smoke-test.mjs         End-to-end backend check (npm run smoke-test)
+│   └── sitemap.mjs            Writes public/sitemap.xml before each build
 ├── docs/                      This architecture pack
 └── src/
-    ├── main.jsx               Router → CatalogProvider → StoreProvider → App
-    ├── App.jsx                Route table (lazy-loaded pages)
+    ├── main.jsx               Router → AuthProvider → CatalogProvider → StoreProvider → App
+    ├── App.jsx                Route table (lazy-loaded pages; /admin/* loads the admin bundle)
+    ├── auth/
+    │   └── AuthProvider.jsx   Session, profile and isAdmin; useAuth() exposes signIn, signUp, signOut…
+    ├── admin/                 Admin panel, loaded only on /admin
+    │   ├── AdminApp.jsx       Sign-in gate, sidebar shell, admin routes
+    │   ├── ui.jsx · helpers.js  Shared table, cards, async state, order statuses, CSV export
+    │   └── DashboardPage · OrdersPage · ProductsPage · CustomersPage · ReviewsPage · InboxPage · CouponsPage · AnalyticsPage · SettingsPage
     ├── index.css              Tailwind theme tokens and base styles
     ├── config/
     │   └── site.js            Brand, contact, social, payments, nav (static config)
@@ -26,6 +35,7 @@ taab-beauty/
     │   ├── client.js          createClient() or null; isLive flag
     │   ├── catalog.js         fetchCatalog(), fetchProductBySlug(), submitReview()
     │   ├── orders.js          validateCoupon(), placeOrder(), getOrder(), getMyOrders()
+    │   ├── admin.js           Everything the admin panel reads and writes (no mock fallback)
     │   ├── forms.js           subscribeNewsletter(), sendContactMessage()
     │   └── events.js          Batched insert of analytics events
     ├── catalog/
