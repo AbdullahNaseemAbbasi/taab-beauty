@@ -20,7 +20,7 @@ export const site = {
   legalName: "Naz & CO",
   tagline: "Good things for you and your home.",
   description:
-    "Naz & CO is an online store from Karachi for beauty, appliances, clothes and more, delivered across Pakistan. Pay part in advance and the rest when your order arrives.",
+    "Naz & CO is an online store from Karachi for clothing, beauty, appliances and more, delivered across Pakistan. Pay part in advance and the rest when your order arrives.",
   url: env.VITE_SITE_URL || origin,
   launchYear: 2026,
   locale: "en-PK",
@@ -118,7 +118,7 @@ export function applyStoreSettings({ contact, payments } = {}) {
 }
 
 export const helpLinks = [
-  { label: "Track Order", to: "/track-order" },
+  { label: "Tracking", to: "/track-order" },
   { label: "Payment & Advance", to: "/payment-policy" },
   { label: "Shipping Policy", to: "/shipping-policy" },
   { label: "Returns & Warranty", to: "/returns" },

@@ -18,8 +18,15 @@ export const faqs = [
     items: [
       { question: "How long does delivery take?", answer: "Orders are dispatched once the advance is received: the same day if it arrives before 2pm, otherwise the next working day. Karachi deliveries arrive the next business day. Lahore, Islamabad and other major cities take 2 to 3 business days; remote areas can take up to 5." },
       { question: "How much is delivery?", answer: "Delivery is free on orders over {freeOver}. Below that, a flat {fee} applies anywhere in Pakistan, however many departments you order from." },
-      { question: "Can I track my order?", answer: "Yes. Enter your order number and phone number on the Track Order page to see the payment status, the courier, the tracking number and the latest update." },
+      { question: "Can I track my order?", answer: "Yes. Enter your order number and phone number on the Tracking page to see the payment status, the courier, the tracking number and the latest update." },
       { question: "Can I change or cancel my order?", answer: "You can change or cancel an order any time before it is dispatched. Message us on WhatsApp with your order number." },
+    ],
+  },
+  {
+    category: "Clothing",
+    items: [
+      { question: "How do I choose the right size?", answer: "Each product page lists the available sizes and the fit. If you are between sizes, message us your usual size and height on WhatsApp and we will suggest one." },
+      { question: "Can I exchange a size?", answer: "Yes, within 7 days of delivery, as long as the item is unworn and unwashed with its tags on and the other size is in stock." },
     ],
   },
   {
@@ -36,13 +43,6 @@ export const faqs = [
       { question: "Do appliances and gadgets come with a warranty?", answer: "Yes. The warranty period is written on each product page. If an item develops a fault within that period, message us on WhatsApp with your order number and a short video of the problem, and we will repair or replace it." },
       { question: "Are they checked before they ship?", answer: "Every electrical item is powered on and inspected before it is packed, then shipped in its original box with all accessories." },
       { question: "Will the plugs work in Pakistan?", answer: "Yes. Mains-powered items are 220 to 240 V and come with a plug that fits Pakistani sockets, or with an adapter in the box." },
-    ],
-  },
-  {
-    category: "Clothes",
-    items: [
-      { question: "How do I choose the right size?", answer: "Each product page lists the available sizes and the fit. If you are between sizes, message us your usual size and height on WhatsApp and we will suggest one." },
-      { question: "Can I exchange a size?", answer: "Yes, within 7 days of delivery, as long as the item is unworn and unwashed with its tags on and the other size is in stock." },
     ],
   },
   {

@@ -34,7 +34,7 @@ export default function AboutPage() {
       <PageHero
         eyebrow={`About ${site.name}`}
         title="Things you will be proud to bring home."
-        description="Naz means pride. We started in Karachi in 2026 to make it easy to buy good beauty, appliances and clothes from one store you can trust."
+        description="Naz means pride. We started in Karachi in 2026 to make it easy to buy good clothing, beauty and appliances from one store you can trust."
         image={images.hero.about}
         imageAlt={images.hero.aboutAlt}
         primary={{ label: "Shop best sellers", to: "/best-sellers" }}
@@ -47,7 +47,7 @@ export default function AboutPage() {
             <Eyebrow>Our story</Eyebrow>
             <h2 className="mt-3 font-display text-[30px] font-extrabold leading-[1.15] tracking-[-0.02em] text-navy sm:text-[36px]">Shopping online should not feel like a gamble.</h2>
             <p className="mt-5 text-[16px] leading-[1.7] text-ink">Too many orders arrive as the wrong shade, a copy of the real thing or a gadget that stops working in a week. {site.name} exists to take that risk away: a short, carefully chosen range, described honestly and checked before it leaves us.</p>
-            <p className="mt-4 text-[16px] leading-[1.7] text-ink">We began with beauty and now carry appliances, clothes and more, because the same promise matters everywhere in the house. Every product page tells you exactly what you are getting and what it costs. You pay part in advance to confirm the order and the rest only when it arrives.</p>
+            <p className="mt-4 text-[16px] leading-[1.7] text-ink">We began with beauty and now carry clothing, appliances and more, because the same promise matters everywhere in the house. Every product page tells you exactly what you are getting and what it costs. You pay part in advance to confirm the order and the rest only when it arrives.</p>
           </div>
           <img {...imageProps(images.about[1], { width: 1000, sizes: "(min-width: 1024px) 50vw, 100vw", alt: "" })} className="aspect-[4/3] w-full rounded-2xl object-cover shadow-float" />
         </div>

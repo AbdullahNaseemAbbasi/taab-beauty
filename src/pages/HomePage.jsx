@@ -12,7 +12,7 @@ import { useCatalog } from "../catalog/CatalogProvider.jsx";
 
 const FEED_STEP = 12;
 
-/* "Beauty, Appliances and Clothes" from the department names. */
+/* "Clothing, Beauty and Appliances" from the department names. */
 function listNames(names) {
   if (names.length <= 1) return names.join("");
   return `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
@@ -25,6 +25,7 @@ export default function HomePage() {
   const [feedSize, setFeedSize] = useState(FEED_STEP);
   const percent = settings.payments.advancePercent;
   const names = departments.map((department) => department.name);
+  const order = departments.map((department) => department.id);
 
   /* The first slide introduces the store; then every department gets its own slide. */
   const slides = useMemo(
@@ -57,9 +58,9 @@ export default function HomePage() {
   );
 
   /* Short lists take turns between departments so the page shows a bit of everything. */
-  const bestSellers = interleaveBy(sortProducts(products.filter((product) => product.bestSeller), "rating"), departmentOf).slice(0, 12);
-  const newArrivals = interleaveBy(products.filter((product) => product.newArrival), departmentOf).slice(0, 8);
-  const feed = useMemo(() => interleaveBy(sortProducts(products, "featured"), departmentOf), [products, departmentOf]);
+  const bestSellers = interleaveBy(sortProducts(products.filter((product) => product.bestSeller), "rating"), departmentOf, order).slice(0, 12);
+  const newArrivals = interleaveBy(products.filter((product) => product.newArrival), departmentOf, order).slice(0, 8);
+  const feed = useMemo(() => interleaveBy(sortProducts(products, "featured"), departmentOf, order), [products, departmentOf, order.join()]);
 
   return (
     <>

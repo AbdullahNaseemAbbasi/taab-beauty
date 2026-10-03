@@ -3,8 +3,16 @@ import { images } from "./images.js";
 /*
  * Departments group the categories. They live in the `departments` table and
  * are edited in Admin → Catalogue; this file is the seed and the mock data.
+ * The order here is the order used across the site: menu, hero, home page.
  */
 export const departments = [
+  {
+    id: "clothes",
+    name: "Clothing",
+    tagline: "Everyday style for the whole family.",
+    description: "Easy, well-made clothing, bags and accessories for women, men and kids.",
+    image: images.departments.clothes,
+  },
   {
     id: "beauty",
     name: "Beauty",
@@ -18,13 +26,6 @@ export const departments = [
     tagline: "Gadgets and home essentials that just work.",
     description: "Audio, wearables, chargers, gadgets and kitchen essentials, checked before dispatch.",
     image: images.departments.appliances,
-  },
-  {
-    id: "clothes",
-    name: "Clothes",
-    tagline: "Everyday style for the whole family.",
-    description: "Easy, well-made clothing, bags and accessories for women, men and kids.",
-    image: images.departments.clothes,
   },
 ];
 

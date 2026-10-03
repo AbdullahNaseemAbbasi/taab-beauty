@@ -87,15 +87,16 @@ export function sortProducts(list, sort = "featured") {
   }
 }
 
-/* Takes turns between groups (e.g. departments) so a short list shows a bit of everything. */
-export function interleaveBy(list, groupOf) {
+/* Takes turns between groups (e.g. departments) so a short list shows a bit of everything. `order` lists the group keys in the order they should take their turns. */
+export function interleaveBy(list, groupOf, order = []) {
   const groups = new Map();
   list.forEach((item) => {
     const key = groupOf(item);
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push(item);
   });
-  const queues = [...groups.values()];
+  const rank = (key) => (order.includes(key) ? order.indexOf(key) : order.length);
+  const queues = [...groups.entries()].sort((a, b) => rank(a[0]) - rank(b[0])).map(([, queue]) => queue);
   const result = [];
   while (result.length < list.length) {
     queues.forEach((queue) => {

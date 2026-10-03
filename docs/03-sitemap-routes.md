@@ -23,7 +23,7 @@ Home
 ├── Bag                              /cart
 ├── Checkout                         /checkout
 ├── Order confirmation               /order/:id
-├── Track order                      /track-order
+├── Tracking                         /track-order
 ├── Wishlist                         /wishlist
 ├── Compare                          /compare
 ├── My account                       /account
@@ -45,7 +45,7 @@ The Sale page and the Journal were removed on 4 October 2026 at the owner's requ
 
 | Route | Page component | Data | Index | Notes |
 |-------|----------------|------|-------|-------|
-| `/` | HomePage | departments, categories, products | yes | Auto-rotating hero (one slide per department), category collage, department rows, mixed product feed |
+| `/` | HomePage | departments, categories, products | yes | Hero that slides sideways every 4 seconds (one slide per department), category collage, department rows, mixed product feed |
 | `/shop` | ShopPage (mode=all) | products | yes | Filters live in the query string so they are shareable and trackable |
 | `/department/:id` | ShopPage (mode=department) | every category of that department | yes | Unknown ids show the 404 page |
 | `/shop/:category` | ShopPage (mode=category) | category + products | yes | Category hero, breadcrumb through its department |

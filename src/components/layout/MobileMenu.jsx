@@ -55,7 +55,7 @@ export default function MobileMenu() {
           {[
             { to: "/account", label: "Account", Icon: UserIcon },
             { to: "/wishlist", label: "Wishlist", Icon: HeartIcon },
-            { to: "/track-order", label: "Track order", Icon: PackageIcon },
+            { to: "/track-order", label: "Tracking", Icon: PackageIcon },
           ].map(({ to, label, Icon }) => (
             <Link key={to} to={to} onClick={close} className="flex flex-col items-center gap-1.5 rounded-xl bg-tint px-2 py-3 text-[12px] font-semibold text-navy">
               <Icon className="size-5" />

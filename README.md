@@ -1,6 +1,6 @@
 # Naz & CO · Multi-department e-commerce for Pakistan
 
-Storefront and admin panel for **Naz & CO**, an online store with many departments (Beauty, Appliances and Clothes to start), built with React 19, Vite, Tailwind CSS v4 and React Router on **Supabase** (Postgres, Auth, Storage, Realtime).
+Storefront and admin panel for **Naz & CO**, an online store with many departments (Clothing, Beauty and Appliances to start), built with React 19, Vite, Tailwind CSS v4 and React Router on **Supabase** (Postgres, Auth, Storage, Realtime).
 
 Everything a customer sees comes from the database and can be changed from the admin panel without a deploy: departments, categories, brands, products, prices, stock, delivery fee, payment accounts, the advance percentage, contact details and the announcement bar. The site refreshes by itself when any of these change.
 
@@ -71,7 +71,7 @@ Schema: `supabase/migrations/` (applied in order). Main tables: settings, depart
 
 - Browse the departments from the menu (`/department/beauty`, `/department/appliances`, `/department/clothes`). Beauty pages show ingredients; appliances show specifications and warranty; clothes have size buttons.
 - Add products to the bag, apply code `WELCOME10`, `NAZ500` or creator code `HIRA15`, and place the order. The confirmation page shows the advance to send and the account to send it to.
-- Sign in at `/admin`, open the order and press "Advance received, confirm order"; the customer's Track Order page updates at once. Mark it delivered and the balance is recorded as paid.
+- Sign in at `/admin`, open the order and press "Advance received, confirm order"; the customer's Tracking page updates at once. Mark it delivered and the balance is recorded as paid.
 - Track the sample order `NZ-241001-0211` with phone `0300 1234567`.
 - In Admin → Catalogue add a department or rename a category while the store is open in another tab: the menu and home page change without a refresh.
 - Land on any page with `?utm_source=instagram&utm_campaign=test&ref=hira`: the creator link shows a banner and auto-applies `HIRA15`, and the order carries the attribution.

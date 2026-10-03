@@ -136,7 +136,7 @@ function AuthForms() {
       </form>
 
       <p className="mt-5 text-center text-[14px] text-ink">
-        Ordered as a guest? <Link to="/track-order" className="font-semibold text-teal hover:underline">Track your order</Link> with the order number and phone.
+        Ordered as a guest? <Link to="/track-order" className="font-semibold text-teal hover:underline">Open Tracking</Link> and enter the order number and phone.
       </p>
     </div>
   );
@@ -258,7 +258,7 @@ function OrdersList() {
     );
   }
   if (!orders.length) {
-    return <EmptyState icon={PackageIcon} title="No orders yet" text="Orders you place while signed in appear here automatically." action={{ label: "Start shopping", to: "/shop" }} secondary={{ label: "Track a guest order", to: "/track-order" }} />;
+    return <EmptyState icon={PackageIcon} title="No orders yet" text="Orders you place while signed in appear here automatically." action={{ label: "Start shopping", to: "/shop" }} secondary={{ label: "Tracking", to: "/track-order" }} />;
   }
   return (
     <ul className="space-y-4">

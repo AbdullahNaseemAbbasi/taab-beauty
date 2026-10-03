@@ -1,7 +1,7 @@
 {
   "name": "Naz & CO",
   "short_name": "Naz & CO",
-  "description": "Beauty, appliances, clothes and more, delivered across Pakistan.",
+  "description": "Clothing, beauty, appliances and more, delivered across Pakistan.",
   "start_url": "/?utm_source=pwa&utm_medium=homescreen",
   "scope": "/",
   "display": "standalone",

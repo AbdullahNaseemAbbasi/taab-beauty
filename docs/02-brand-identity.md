@@ -2,7 +2,7 @@
 
 ## Positioning
 
-Naz & CO is a Karachi online store with many departments (beauty, appliances and clothes to start), chosen for Pakistani homes and delivered nationwide. Customers pay part in advance and the rest on delivery.
+Naz & CO is a Karachi online store with many departments (clothing, beauty and appliances to start), chosen for Pakistani homes and delivered nationwide. Customers pay part in advance and the rest on delivery.
 
 **Promise:** good things you will be proud to bring home, without the gamble of buying online.
 **Proof:** genuine products from authorised sources, honest ingredient lists, specifications and sizes, warranty on appliances, a clear advance-and-balance payment policy, 7-day returns, a human on WhatsApp.

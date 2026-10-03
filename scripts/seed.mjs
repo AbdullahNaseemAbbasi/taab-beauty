@@ -43,18 +43,15 @@ async function upsert(table, rows, onConflict = "id") {
 
 const brandIdByName = Object.fromEntries(brands.map((brand) => [brand.name, brand.id]));
 
-await upsert("settings", [
-  { key: "shipping", value: { free_shipping_threshold: 7000, shipping_fee: 250, estimated_days: "2 to 4 business days" } },
-  { key: "store", value: { name: "Naz & CO", currency: "PKR", card_enabled: false } },
-], "key");
-
 /*
- * Payment accounts and store details belong to the owner (Admin → Settings), so
- * a reseed leaves them alone. `--reset-settings` puts the sample values back.
+ * Delivery, payment accounts and store details belong to the owner (Admin → Settings),
+ * so a reseed leaves them alone. `--reset-settings` puts the sample values back.
  * The sample bank account is deliberately not a real one, and email and social
  * links start empty so the site never points at somebody else's address.
  */
 const ownerSettings = [
+  { key: "shipping", value: { free_shipping_threshold: 7000, shipping_fee: 250, estimated_days: "2 to 4 business days" } },
+  { key: "store", value: { name: "Naz & CO", currency: "PKR", card_enabled: false } },
   { key: "payments", value: { advance_percent: 50, methods: [
     { id: "bank", label: "Bank Transfer", enabled: true, bank: "Meezan Bank", account_title: "Naz & CO", account_number: "PK00 MEZN 0000 0000 0000 0000" },
     { id: "easypaisa", label: "Easypaisa", enabled: false, bank: "", account_title: "", account_number: "" },
@@ -67,7 +64,7 @@ if (process.argv.includes("--reset-settings")) {
 } else {
   const { error } = await db.from("settings").upsert(ownerSettings, { onConflict: "key", ignoreDuplicates: true });
   if (error) throw new Error(`settings: ${error.message}`);
-  console.log("✓ payments / contact       kept as they are (use --reset-settings to restore the samples)");
+  console.log("✓ settings                 kept as they are (use --reset-settings to restore the samples)");
 }
 
 await upsert("departments", departments.map((department, index) => ({ id: department.id, name: department.name, tagline: department.tagline, description: department.description, image: department.image, sort_order: index, active: true })));

@@ -2,8 +2,8 @@
 
 ## Done and tested (4 October 2026)
 
-- Storefront: Naz & CO with three departments to start (Beauty, Appliances, Clothes), 11 categories and 73 sample products. Mobile-first (320 to 2560 px), bag, guest checkout, wishlist, compare, search, FAQ, policies.
-- Home page: hero that changes slide by itself (one slide per department), every category shown with two product photos, department cards, best sellers, a row per department and a mixed product feed.
+- Storefront: Naz & CO with three departments to start (Clothing, Beauty, Appliances, in that order everywhere on the site), 11 categories and 73 sample products. Mobile-first (320 to 2560 px), bag, guest checkout, wishlist, compare, search, FAQ, policies.
+- Home page: hero that slides sideways by itself every 4 seconds (one slide per department, each with its photo), every category shown with two product photos, department cards, best sellers, a row per department and a mixed product feed.
 - **Everything is managed from the admin panel and shows on the site straight away, without a refresh:** departments, categories, brands, products, prices, stock, sizes, photos, delivery fee, payment accounts, advance percentage, phone, WhatsApp, email, address, social links and the announcement bar.
 - **Payment: no cash on delivery.** The customer pays an advance (50% now, changeable in Settings) by bank transfer, Easypaisa or JazzCash and the rest on delivery. Orders wait as "Awaiting advance" until you confirm the payment.
 - Policies written for this model: Payment & Advance, Shipping, Returns & Warranty, Privacy, Terms. The percentages and fees in them follow your settings.
@@ -54,6 +54,6 @@ If you are ever locked out: `npm run create-admin -- you@example.com` from the p
 - Unpaid orders are not cancelled automatically after 48 hours; cancel them yourself.
 - No automatic SMS or email to customers. The WhatsApp buttons in the order screen cover every step.
 - New accounts are not asked to confirm their email (so sign-up works without a mail provider).
-- Orders placed as a guest are not attached to an account created later; they can always be found on Track Order.
+- Orders placed as a guest are not attached to an account created later; they can always be found on the Tracking page.
 - Product photos are licensed stock placeholders.
 - FAQs are stored in the database but have no admin screen yet; policies, the About page and the home-page headings are in the code. Ask the developer to change them.

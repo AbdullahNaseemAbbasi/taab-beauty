@@ -85,7 +85,7 @@ function NextSteps({ order }) {
     awaiting
       ? { Icon: CashIcon, title: `Send the ${formatPrice(plan.advance)} advance`, text: "Transfer it to the account shown above and share the receipt on WhatsApp with your order number." }
       : { Icon: CheckIcon, title: "Advance received", text: "Your order is confirmed and we are getting it ready." },
-    { Icon: PackageIcon, title: "Packed and handed to the courier", text: "Confirmed orders are dispatched the same or next working day. The tracking number appears on the Track Order page." },
+    { Icon: PackageIcon, title: "Packed and handed to the courier", text: "Confirmed orders are dispatched the same or next working day. The tracking number appears on the Tracking page." },
     {
       Icon: TruckIcon,
       title: `Delivered ${delivery.express ? "next business day" : "in a few days"}`,
@@ -174,8 +174,8 @@ export default function OrderConfirmationPage() {
       <section className="wrap py-16">
         <ErrorState
           title={status === "needs-phone" ? "Verify this order with your phone number" : "We could not find that order"}
-          text={status === "needs-phone" ? "For your privacy, orders can only be viewed with the phone number used at checkout." : "Check the order number, or track it with your phone number."}
-          action={{ label: "Track an order", to: `/track-order?id=${encodeURIComponent(id)}` }}
+          text={status === "needs-phone" ? "For your privacy, orders can only be viewed with the phone number used at checkout." : "Check the order number, or look it up on the Tracking page with your phone number."}
+          action={{ label: "Go to Tracking", to: `/track-order?id=${encodeURIComponent(id)}` }}
         />
       </section>
     );
@@ -209,7 +209,7 @@ export default function OrderConfirmationPage() {
 
           <div className="mt-6 flex flex-wrap gap-3 print:hidden">
             <Button to={`/track-order?id=${encodeURIComponent(order.id)}`} variant="navy" arrow>
-              Track this order
+              Tracking
             </Button>
             <Button variant="ghost" onClick={() => window.print()}>
               Print receipt

@@ -19,7 +19,7 @@ import { EVENTS } from "../analytics/events.js";
 import { ecommerce } from "../analytics/ecommerce.js";
 
 export default function TrackOrderPage() {
-  useSeo({ title: "Track Your Order", description: "Enter your Naz & CO order number and phone number to see delivery progress.", path: "/track-order" });
+  useSeo({ title: "Tracking", description: `Enter your ${site.name} order number and phone number to see payment and delivery progress.`, path: "/track-order" });
   const { productById, productBySlug } = useCatalog();
   const [params] = useSearchParams();
   const [form, setForm] = useState(() => ({ id: (params.get("id") || "").toUpperCase(), phone: params.get("phone") || phoneForOrder(params.get("id") || "") || "" }));
@@ -58,7 +58,7 @@ export default function TrackOrderPage() {
 
   return (
     <>
-      <PageHeader title="Track your order" description="Enter the order number from your confirmation message and the phone number used at checkout." />
+      <PageHeader title="Tracking" description="Enter your order number and the phone number used at checkout to see the payment and delivery status." />
       <section className="wrap py-8 sm:py-10">
         <form
           onSubmit={(event) => {

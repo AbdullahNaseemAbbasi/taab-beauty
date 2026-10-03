@@ -62,85 +62,160 @@ export function PageHeader({ title, description, children }) {
   );
 }
 
-/* ---------- Home hero: one slide per department, changing by itself ---------- */
-export function HeroCarousel({ slides, interval = 6000 }) {
-  const [index, setIndex] = useState(0);
+/* ---------- Home hero: slides move sideways by themselves, one per department ---------- */
+function HeroDots({ slides, active, onSelect }) {
+  if (slides.length < 2) return null;
+  return (
+    <div className="mt-6 flex flex-wrap items-center gap-2" role="tablist" aria-label="Choose a slide">
+      {slides.map((slide, position) => (
+        <button
+          key={slide.id}
+          type="button"
+          role="tab"
+          aria-selected={position === active}
+          aria-label={`Show ${slide.label}`}
+          title={slide.label}
+          onClick={() => onSelect(position)}
+          className={`h-2.5 rounded-full transition-all duration-300 ${position === active ? "w-8 bg-coral" : "w-2.5 bg-navy/25 hover:bg-navy/50"}`}
+        />
+      ))}
+    </div>
+  );
+}
+
+export function HeroCarousel({ slides, interval = 4000 }) {
+  const count = slides.length;
+  /* `position` runs 0..count: the last place is a copy of the first slide, so the loop keeps moving in one direction. */
+  const [position, setPosition] = useState(0);
+  const [animated, setAnimated] = useState(true);
   const [paused, setPaused] = useState(false);
   const touchStart = useRef(null);
-  const count = slides.length;
-  const active = count ? index % count : 0;
-  const go = useCallback((next) => setIndex(((next % count) + count) % count), [count]);
+  const positionRef = useRef(0);
+  positionRef.current = position;
+  const active = count ? position % count : 0;
 
+  /* Moves without animation, then runs `then` once the browser has painted that position. */
+  const jump = (target, then) => {
+    setAnimated(false);
+    setPosition(target);
+    requestAnimationFrame(() => requestAnimationFrame(then));
+  };
+
+  const next = useCallback(() => {
+    const slideTo = (target) => {
+      setAnimated(true);
+      setPosition(target);
+    };
+    /* Still on the copy (its transition end was missed, e.g. in a background tab): snap to the real first slide before moving on. */
+    if (positionRef.current >= count) jump(0, () => slideTo(1));
+    else slideTo(positionRef.current + 1);
+  }, [count]);
+
+  const previous = useCallback(() => {
+    if (position > 0) {
+      setAnimated(true);
+      setPosition(position - 1);
+      return;
+    }
+    /* From the first slide: jump (without animation) onto its copy at the end, then slide back one. */
+    jump(count, () => {
+      setAnimated(true);
+      setPosition(count - 1);
+    });
+  }, [position, count]);
+
+  const select = useCallback((target) => {
+    setAnimated(true);
+    setPosition(target);
+  }, []);
+
+  /* When the copy of the first slide has slid in, swap to the real first slide without moving. */
+  const settle = () => {
+    if (position !== count) return;
+    setAnimated(false);
+    setPosition(0);
+  };
+
+  /* Moves on by itself every few seconds. It waits while a button or link in the hero is being pointed at, focused or touched. */
   useEffect(() => {
     if (paused || count < 2) return undefined;
-    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return undefined;
-    const timer = setInterval(() => setIndex((current) => (current + 1) % count), interval);
+    const timer = setInterval(next, interval);
     return () => clearInterval(timer);
-  }, [paused, count, interval]);
+  }, [paused, count, interval, next]);
+
+  /* If the departments change while the page is open, never point past the end. */
+  useEffect(() => {
+    if (position > count) setPosition(0);
+  }, [count, position]);
 
   if (!count) return null;
+  const track = count > 1 ? [...slides, { ...slides[0], id: `${slides[0].id}-copy`, copy: true }] : slides;
 
   return (
     <section
       className="relative overflow-hidden bg-tint"
       aria-roledescription="carousel"
       aria-label="Featured departments"
-      onMouseEnter={() => setPaused(true)}
+      onMouseOver={(event) => setPaused(Boolean(event.target.closest("a, button")))}
       onMouseLeave={() => setPaused(false)}
       onFocusCapture={() => setPaused(true)}
       onBlurCapture={() => setPaused(false)}
       onTouchStart={(event) => {
         touchStart.current = event.touches[0].clientX;
+        setPaused(true);
       }}
       onTouchEnd={(event) => {
+        setPaused(false);
         if (touchStart.current == null) return;
         const moved = event.changedTouches[0].clientX - touchStart.current;
         touchStart.current = null;
-        if (Math.abs(moved) > 50) go(active + (moved < 0 ? 1 : -1));
+        if (moved < -50) next();
+        if (moved > 50) previous();
       }}
     >
-      <div className="grid">
-        {slides.map((slide, position) => {
-          const current = position === active;
-          const Heading = position === 0 ? "h1" : "h2";
+      <div
+        className={`flex ${animated ? "transition-transform duration-700 ease-out" : ""}`}
+        style={{ transform: `translateX(-${position * 100}%)` }}
+        onTransitionEnd={(event) => event.target === event.currentTarget && settle()}
+      >
+        {track.map((slide, index) => {
+          const current = index === position;
+          const Heading = index === 0 ? "h1" : "h2";
           return (
-            <div
-              key={slide.id}
-              role="group"
-              aria-roledescription="slide"
-              aria-label={`${position + 1} of ${count}`}
-              aria-hidden={!current}
-              inert={!current}
-              className={`relative col-start-1 row-start-1 transition-opacity duration-700 ${current ? "opacity-100" : "pointer-events-none opacity-0"}`}
-            >
-              <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-[60%] max-w-[1000px] lg:block" aria-hidden="true">
-                <img {...imageProps(slide.image, { width: 1600, sizes: "60vw", alt: "", eager: position === 0 })} className="h-full w-full object-cover object-center [mask-image:linear-gradient(to_right,transparent,black_16%)]" />
+            <div key={slide.id} role="group" aria-roledescription="slide" aria-label={`${(index % count) + 1} of ${count}`} aria-hidden={!current} inert={!current} className="relative w-full shrink-0">
+              {/* Large screens: the photo fills the right side of the slide. */}
+              <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-[58%] max-w-[1000px] lg:block" aria-hidden="true">
+                <img {...imageProps(slide.image, { width: 1600, sizes: "58vw", alt: "", eager: true })} fetchPriority={index === 0 ? "high" : "low"} className="h-full w-full object-cover object-center [mask-image:linear-gradient(to_right,transparent,black_16%)]" />
               </div>
               <div className="wrap relative">
-                <div className="flex max-w-[560px] flex-col justify-center py-8 sm:py-9 lg:min-h-[470px] lg:py-10">
-                  <p className="text-[13px] font-extrabold uppercase tracking-[0.24em] text-navy sm:text-[14px]">{slide.eyebrow}</p>
-                  <Heading className="mt-3 font-display text-[36px] font-extrabold leading-[1.04] tracking-[-0.03em] text-navy min-[400px]:text-[40px] sm:text-[52px] xl:text-[60px]">
-                    {slide.title}
-                    {slide.accent && (
-                      <>
-                        <br />
-                        <span className="text-coral">{slide.accent}</span>
-                      </>
-                    )}
-                  </Heading>
-                  <p className="mt-5 max-w-[480px] text-[16px] leading-[1.65] text-ink sm:text-[17px]">{slide.text}</p>
-                  <div className="mt-7 flex flex-wrap gap-3">
-                    <Button to={slide.primary.to} arrow onClick={() => track(EVENTS.PROMO_CLICK, { promotion_name: `hero_${slide.id}` })}>
-                      {slide.primary.label}
-                    </Button>
-                    {slide.secondary && (
-                      <Button to={slide.secondary.to} variant="outline">
-                        {slide.secondary.label}
+                <div className="flex flex-col gap-5 py-5 sm:py-7 lg:min-h-[480px] lg:justify-center lg:py-10">
+                  {/* Phones and tablets: the photo sits above the text, so every slide shows its picture first. */}
+                  <img {...imageProps(slide.image, { width: 900, sizes: "100vw", alt: slide.imageAlt || "", eager: true })} fetchPriority={index === 0 ? "high" : "low"} className="aspect-[16/10] w-full rounded-2xl object-cover sm:aspect-[2/1] lg:hidden" />
+                  <div className="max-w-[560px]">
+                    <p className="text-[12px] font-extrabold uppercase tracking-[0.22em] text-navy sm:text-[14px]">{slide.eyebrow}</p>
+                    <Heading className="mt-3 font-display text-[34px] font-extrabold leading-[1.05] tracking-[-0.03em] text-navy min-[400px]:text-[38px] sm:text-[50px] xl:text-[60px]">
+                      {slide.title}
+                      {slide.accent && (
+                        <>
+                          {" "}
+                          <span className="text-coral sm:block">{slide.accent}</span>
+                        </>
+                      )}
+                    </Heading>
+                    <p className="mt-4 max-w-[480px] text-[16px] leading-[1.65] text-ink sm:mt-5 sm:text-[17px]">{slide.text}</p>
+                    <div className="mt-6 flex flex-wrap gap-3 sm:mt-7">
+                      <Button to={slide.primary.to} arrow onClick={() => track(EVENTS.PROMO_CLICK, { promotion_name: `hero_${slide.id}` })}>
+                        {slide.primary.label}
                       </Button>
-                    )}
+                      {slide.secondary && (
+                        <Button to={slide.secondary.to} variant="outline">
+                          {slide.secondary.label}
+                        </Button>
+                      )}
+                    </div>
+                    <HeroDots slides={slides} active={active} onSelect={select} />
                   </div>
                 </div>
-                <img {...imageProps(slide.image, { width: 900, sizes: "100vw", alt: slide.imageAlt || "", eager: position === 0 })} className="mb-14 aspect-[4/3] w-full rounded-2xl object-cover lg:hidden" />
               </div>
             </div>
           );
@@ -148,26 +223,12 @@ export function HeroCarousel({ slides, interval = 6000 }) {
       </div>
 
       {count > 1 && (
-        <div className="wrap pointer-events-none absolute inset-x-0 bottom-4 flex items-center justify-between lg:bottom-6">
-          <div className="pointer-events-auto flex items-center gap-2" role="tablist" aria-label="Choose a slide">
-            {slides.map((slide, position) => (
-              <button
-                key={slide.id}
-                type="button"
-                role="tab"
-                aria-selected={position === active}
-                aria-label={`Show ${slide.label}`}
-                title={slide.label}
-                onClick={() => go(position)}
-                className={`h-2.5 rounded-full transition-all ${position === active ? "w-8 bg-coral" : "w-2.5 bg-navy/25 hover:bg-navy/50"}`}
-              />
-            ))}
-          </div>
+        <div className="wrap pointer-events-none absolute inset-x-0 bottom-6 hidden justify-end lg:flex">
           <div className="pointer-events-auto flex gap-2">
-            <button type="button" aria-label="Previous slide" title="Previous" onClick={() => go(active - 1)} className="grid size-10 place-items-center rounded-full border border-line bg-white text-navy shadow-card hover:border-navy">
+            <button type="button" aria-label="Previous slide" title="Previous" onClick={previous} className="grid size-10 place-items-center rounded-full border border-line bg-white text-navy shadow-card hover:border-navy">
               <ChevronLeftIcon className="size-5" />
             </button>
-            <button type="button" aria-label="Next slide" title="Next" onClick={() => go(active + 1)} className="grid size-10 place-items-center rounded-full border border-line bg-white text-navy shadow-card hover:border-navy">
+            <button type="button" aria-label="Next slide" title="Next" onClick={next} className="grid size-10 place-items-center rounded-full border border-line bg-white text-navy shadow-card hover:border-navy">
               <ChevronRightIcon className="size-5" />
             </button>
           </div>

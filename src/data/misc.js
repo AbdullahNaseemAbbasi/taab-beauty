@@ -21,7 +21,7 @@ export const instagramPosts = images.instagram.map((slug, index) => ({
   likes: [1240, 980, 2210, 760, 1530, 1890][index],
 }));
 
-/* Sample orders so Track Order and My Account have something to show. */
+/* Sample orders so Tracking and My Account have something to show. */
 export const sampleOrders = [
   {
     id: "NZ-240912-0148",
