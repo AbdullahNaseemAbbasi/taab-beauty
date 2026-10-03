@@ -57,7 +57,7 @@ export default function Footer() {
 
         <div className="mt-14 grid gap-10 md:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
           <div>
-            <Logo variant="light" />
+            <Logo variant="light" size="lg" />
             <p className="mt-4 max-w-sm text-[14px] leading-[1.7] text-white/80">{site.description}</p>
             <ul className="mt-5 space-y-2 text-[14px] text-white/80">
               {site.contact.address && <li className="flex items-start gap-2"><PinIcon className="mt-0.5 size-4 shrink-0 text-cyan" /> {site.contact.address}</li>}

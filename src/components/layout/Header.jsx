@@ -23,7 +23,7 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-line bg-white/95 backdrop-blur print:hidden">
-      <div className="wrap flex h-[72px] items-center justify-between gap-4">
+      <div className="wrap flex h-[76px] items-center justify-between gap-4 lg:h-[84px]">
         <div className="flex items-center gap-2 lg:hidden">
           <IconButton label="Open menu" onClick={() => setUI({ menuOpen: true })}>
             <MenuIcon className="size-6" />

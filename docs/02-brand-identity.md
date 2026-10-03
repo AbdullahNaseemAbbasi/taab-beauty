@@ -50,16 +50,16 @@ Rule: one coral element per viewport. Coral is the thing to click; everything el
 
 ### Logo
 
-The owner's logo: a tall serif **N** that flows into a woman's profile with leaves, above the wordmark **Naz & CO**. The original artwork is a rose-gold 3D render reading "Naaz&CO"; for the site it was redrawn as flat vector shapes, the wordmark was shortened to the new spelling, and the colours come from the palette:
+The owner's logo: a tall serif **N** that flows into a woman's profile with leaves, with the wordmark **Naz & CO** underneath (stacked lockup). The original artwork is a rose-gold 3D render reading "Naaz&CO". For the site it was cut out, the wordmark shortened to the new spelling, and the colours remapped to the palette while keeping the artwork's own highlights and shadows, so it still looks embossed:
 
 | Variant | Letter N, profile and wordmark | Large leaf | Small sprig | Used on |
 |---------|-------------------------------|------------|-------------|---------|
-| Default | navy #072B4B | coral #F3685E | teal #1F8DA6 | white and tint backgrounds (header, admin sign-in) |
-| Light | white | coral #F3685E | cyan #51DBDF | navy backgrounds (footer, admin sidebar) |
+| Default | navy | coral | teal | white and tint backgrounds (header, admin sign-in) |
+| Light | white / silver | coral | cyan | navy backgrounds (footer, admin sidebar) |
 
-- Header and footer use the horizontal lockup: monogram on the left, wordmark on the right.
-- The monogram alone is the favicon and app icon (on a navy rounded square).
-- Source of truth: `src/components/Logo.jsx` (inline SVG paths). The vector was traced from the supplied image, so if the designer's original vector file exists, swap its paths in for the cleanest result.
+- The wordmark sits under the monogram and is slightly narrower than it (0.8 of its width).
+- The monogram alone is used where space is tight (mobile menu) and for the favicon and app icons (on a navy square).
+- Files: `src/assets/logo/logo-stacked*.webp` and `logo-mark*.webp`, used by `src/components/Logo.jsx`. They are images made from the supplied picture, so if the designer's original layered file exists, a cleaner version can be rendered from it.
 
 ### Imagery
 

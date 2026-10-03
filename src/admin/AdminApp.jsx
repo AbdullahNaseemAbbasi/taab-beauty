@@ -63,7 +63,7 @@ function AdminLogin() {
     <Centered>
       <div className="w-full max-w-md">
         <div className="mb-6 flex justify-center">
-          <Logo />
+          <Logo size="lg" />
         </div>
         <form onSubmit={submit} className="rounded-2xl border border-line bg-white p-6 shadow-float sm:p-8">
           <p className="text-[12px] font-bold uppercase tracking-[0.22em] text-teal">Store admin</p>
@@ -178,7 +178,7 @@ function Shell({ children }) {
         <button type="button" aria-label="Open menu" title="Open menu" onClick={() => setMenuOpen(true)} className="grid size-11 place-items-center rounded-full text-navy hover:bg-tint">
           <MenuIcon className="size-6" />
         </button>
-        <Logo />
+        <Logo size="sm" />
         <span className="w-11" />
       </header>
 

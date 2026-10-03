@@ -93,6 +93,6 @@ Schema: `supabase/migrations/` (applied in order). Main tables: settings, depart
 
 ## Images
 
-The logo in `src/components/Logo.jsx` draws the paths in `src/components/logoPaths.js`, traced from the owner's artwork (`docs/brand/`) and coloured from the site palette.
+The logo images in `src/assets/logo/` (used by `src/components/Logo.jsx`) are rendered from the owner's artwork in `docs/brand/`: they keep its embossed 3D lighting, recoloured to the site palette, with the wordmark stacked under the monogram.
 
 Placeholder photography is served from Burst (Shopify's free stock library, licensed for commercial use) through its resizing CDN. Replace it with your own photos in Admin → Products and Admin → Catalogue.

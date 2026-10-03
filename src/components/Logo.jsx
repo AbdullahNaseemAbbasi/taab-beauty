@@ -1,32 +1,19 @@
-import { mark, wordmark } from "./logoPaths.js";
+import stacked from "../assets/logo/logo-stacked.webp";
+import stackedLight from "../assets/logo/logo-stacked-light.webp";
+import mark from "../assets/logo/logo-mark.webp";
+import markLight from "../assets/logo/logo-mark-light.webp";
 import { site } from "../config/site.js";
 
 /*
- * Naz & CO logo: the N monogram (letter, profile and leaves) beside the
- * wordmark. The shapes are the owner's artwork traced to vector and coloured
- * from the site palette; `light` is for navy backgrounds.
+ * Naz & CO logo: the N monogram with the wordmark underneath. The images keep
+ * the embossed 3D lighting of the owner's artwork, recoloured to the site
+ * palette. `light` is for navy backgrounds; `compact` shows the monogram alone.
  */
-const palettes = {
-  dark: { n: "#072B4B", figure: "#072B4B", leaf: "#F3685E", sprig: "#1F8DA6", word: "#072B4B" },
-  light: { n: "#FFFFFF", figure: "#FFFFFF", leaf: "#F3685E", sprig: "#51DBDF", word: "#FFFFFF" },
-};
-const layers = ["n", "leaf", "figure", "sprig"];
+const heights = { sm: "h-12", md: "h-[60px] lg:h-[68px]", lg: "h-24" };
 
-export default function Logo({ variant = "dark", compact = false, className = "" }) {
-  const colors = palettes[variant] || palettes.dark;
-  return (
-    <span className={`inline-flex items-center gap-2.5 ${className}`}>
-      <svg viewBox={mark.viewBox} className="h-11 w-auto shrink-0" aria-hidden="true">
-        {layers.map((layer) => (
-          <path key={layer} d={mark[layer]} fill={colors[layer]} fillRule="evenodd" />
-        ))}
-      </svg>
-      {!compact && (
-        <svg viewBox={wordmark.viewBox} className="h-[22px] w-auto shrink-0 sm:h-6" aria-hidden="true">
-          <path d={wordmark.fill} fill={colors.word} fillRule="evenodd" />
-        </svg>
-      )}
-      <span className="sr-only">{site.name}</span>
-    </span>
-  );
+export default function Logo({ variant = "dark", compact = false, size = "md", className = "" }) {
+  const light = variant === "light";
+  const src = compact ? (light ? markLight : mark) : light ? stackedLight : stacked;
+  const [width, height] = compact ? [281, 240] : [353, 384];
+  return <img src={src} width={width} height={height} alt={site.name} draggable="false" decoding="async" className={`${compact ? "h-11" : heights[size]} w-auto shrink-0 select-none ${className}`} />;
 }

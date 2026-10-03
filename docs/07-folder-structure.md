@@ -63,7 +63,7 @@ taab-beauty/                   (folder and repository keep the working name; the
     ├── store/
     │   └── StoreProvider.jsx  Cart, wishlist, compare, recent, UI, toasts (localStorage)
     ├── components/
-    │   ├── Logo.jsx · logoPaths.js   Monogram and wordmark (vector paths traced from the owner's artwork)
+    │   ├── Logo.jsx           Stacked 3D logo (images in src/assets/logo, rendered from the owner's artwork)
     │   ├── ui/                Button, Typography, Form, Feedback, RatingStars, Modal, Navigation, Icons
     │   ├── layout/            Layout, AnnouncementBar, Header, MegaMenu, MobileMenu, SearchOverlay, CartDrawer, Footer, Newsletter, WhatsAppButton
     │   ├── product/           ProductCard, ProductGrid (+Carousel), ProductGallery, ReviewSection, FilterSidebar
