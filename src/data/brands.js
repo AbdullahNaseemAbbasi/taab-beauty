@@ -1,9 +1,9 @@
 export const brands = [
   {
-    id: "taab",
-    name: "TAAB",
+    id: "naaz-co",
+    name: "Naaz & CO",
     tagline: "The house line",
-    description: "Our own makeup, skincare and tools, developed in Karachi and tested on real Pakistani skin in real Pakistani weather.",
+    description: "Our own makeup, tools and everyday essentials, developed in Karachi and tested in real Pakistani homes and weather.",
     featured: true,
   },
   {
@@ -32,6 +32,27 @@ export const brands = [
     name: "Oudh Atelier",
     tagline: "Fragrance from Lahore",
     description: "Small-batch eau de parfum and bath rituals with notes of rose, oud and sandalwood.",
+    featured: true,
+  },
+  {
+    id: "sada-audio",
+    name: "Sada Audio",
+    tagline: "Sound for every day",
+    description: "Earbuds, headphones and speakers tuned for calls, commutes and long playlists.",
+    featured: true,
+  },
+  {
+    id: "roshan-tech",
+    name: "Roshan Tech",
+    tagline: "Power and desk essentials",
+    description: "Chargers, power banks, wearables and accessories that survive load-shedding and long days.",
+    featured: true,
+  },
+  {
+    id: "dastarkhwan-home",
+    name: "Dastarkhwan Home",
+    tagline: "Kitchen and table",
+    description: "Cookware, storage and serveware made for daily cooking and for guests.",
     featured: true,
   },
 ];

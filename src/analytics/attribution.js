@@ -8,9 +8,9 @@
  * Both are attached to every tracked event and to the order at checkout, so the
  * business can answer "which ad produced this sale?".
  */
-const FIRST_KEY = "taab:attribution:first";
-const LAST_KEY = "taab:attribution:last";
-const SESSION_KEY = "taab:session";
+const FIRST_KEY = "naaz:attribution:first";
+const LAST_KEY = "naaz:attribution:last";
+const SESSION_KEY = "naaz:session";
 
 const TRACKED_PARAMS = [
   "utm_source",

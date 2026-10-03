@@ -41,6 +41,8 @@ export function mapProduct(row) {
     tags: row.tags || [],
     concerns: row.concerns || [],
     variants: row.variants || undefined,
+    specs: row.specs || [],
+    warranty: row.warranty || "",
     featured: row.featured,
     bestSeller: row.best_seller,
     newArrival: row.new_arrival,
@@ -48,7 +50,7 @@ export function mapProduct(row) {
 }
 
 function mapCategory(row) {
-  return { id: row.id, slug: row.id, name: row.name, tagline: row.tagline, description: row.description, image: row.image, subcategories: row.subcategories || [] };
+  return { id: row.id, slug: row.id, department: row.department || "beauty", name: row.name, tagline: row.tagline, description: row.description, image: row.image, subcategories: row.subcategories || [] };
 }
 
 function mapReview(row) {

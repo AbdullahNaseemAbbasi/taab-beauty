@@ -1,7 +1,7 @@
 # Step 9 · Folder structure
 
 ```
-taab-beauty/
+taab-beauty/                   (folder and repository keep the working name; the store is Naaz & CO)
 ├── index.html                 Fonts, meta, hidden Netlify forms (fallback), #root
 ├── netlify.toml               Build command and publish folder
 ├── .env.example               Supabase keys, tracking IDs, payment flags
@@ -30,7 +30,7 @@ taab-beauty/
     │   └── DashboardPage · OrdersPage · ProductsPage · CustomersPage · ReviewsPage · InboxPage · CouponsPage · AnalyticsPage · SettingsPage
     ├── index.css              Tailwind theme tokens and base styles
     ├── config/
-    │   └── site.js            Brand, contact, social, payments, nav (static config)
+    │   └── site.js            Brand, contact, social, payments, departments, nav (static config)
     ├── api/                   The only modules that talk to Supabase; each falls back to mock data
     │   ├── client.js          createClient() or null; isLive flag
     │   ├── catalog.js         fetchCatalog(), fetchProductBySlug(), submitReview()
@@ -48,7 +48,8 @@ taab-beauty/
     │   └── experiments.js     A/B assignment
     ├── data/                  Mock dataset (also the seed source)
     │   ├── images.js          Photo slug map
-    │   ├── categories.js · brands.js · concerns.js · products.js · reviews.js · journal.js · faqs.js · policies.js
+    │   ├── categories.js · brands.js · concerns.js · products.js (beauty) · products-home.js (electronics, kitchen)
+    │   ├── reviews.js · journal.js · faqs.js · policies.js
     │   └── misc.js            Coupons, sample orders, order statuses, cities, Instagram
     ├── lib/
     │   ├── images.js          CDN URL and srcset builders
@@ -62,7 +63,7 @@ taab-beauty/
     ├── store/
     │   └── StoreProvider.jsx  Cart, wishlist, compare, recent, UI, toasts (localStorage)
     ├── components/
-    │   ├── Logo.jsx
+    │   ├── Logo.jsx · logoPaths.js   Monogram and wordmark (vector paths traced from the owner's artwork)
     │   ├── ui/                Button, Typography, Form, Feedback, RatingStars, Modal, Navigation, Icons
     │   ├── layout/            Layout, AnnouncementBar, Header, MegaMenu, MobileMenu, SearchOverlay, CartDrawer, Footer, Newsletter, WhatsAppButton
     │   ├── product/           ProductCard, ProductGrid (+Carousel), ProductGallery, ReviewSection, FilterSidebar

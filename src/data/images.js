@@ -4,10 +4,12 @@
  */
 export const images = {
   hero: {
-    home: "tattooed-makeup-artist-at-work",
+    home: "woman-with-white-crisp-shopping-carrier-bags",
+    homeAlt: "A smiling shopper carrying white shopping bags",
     skincare: "under-eye-patches-for-skincare",
     makeup: "profile-of-a-person-adding-blush-to-her-cheeks-with-a-brush",
-    about: "makeup-artist-applies-makeup",
+    about: "young-man-preparing-a-package-for-fulfillment",
+    aboutAlt: "Packing an order into a box",
     journal: "mirror-view-of-putting-on-makeup",
     contact: "beauty-product-flatlay",
     sale: "beauty-products-and-makeup-on-black-background",
@@ -19,6 +21,13 @@ export const images = {
     haircare: "blow-drying-on-round-brush",
     fragrance: "antique-mirror-with-perfume-and-earrings",
     tools: "makeup-brush-set",
+    electronics: "flat-lay-of-phone-and-wireless-earbuds",
+    kitchen: "beautiful-kitchen-utensils-in-bright-wooden-kitchen",
+  },
+  departments: {
+    beauty: "makeup-on-marble",
+    electronics: "a-flatlay-view-of-a-minimalist-workspace",
+    kitchen: "kitchen-ready-for-cooking",
   },
   concerns: {
     dryness: "two-hands-running-in-skincare-treatment",
@@ -35,13 +44,13 @@ export const images = {
   },
   instagram: [
     "pink-flatlay",
-    "beauty-flatlay",
+    "drone-knoll-flatlay",
+    "colorful-ingredients-flat-lay",
     "makeup-beauty-flatlay",
-    "flowers-nail-polish-flatlay",
-    "makeup-brush-in-flowers",
-    "bright-makeup-flatlay",
+    "videogame-knoll",
+    "flatlay-with-knife-and-vegatables",
   ],
-  about: ["makeup-artist-applies-makeup", "beauty-product-flatlay", "beauty-products-and-flower"],
+  about: ["young-man-preparing-a-package-for-fulfillment", "small-business-interior", "beauty-products-and-flower"],
   avatars: [
     "smiling-brunette-woman",
     "portrait-of-person-with-long-brown-hair-smiling-in-white",

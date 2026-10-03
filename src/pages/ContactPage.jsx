@@ -16,7 +16,7 @@ import { ecommerce } from "../analytics/ecommerce.js";
 const topics = ["Order status", "Product recommendation", "Returns or exchange", "Wholesale or partnership", "Press", "Something else"];
 
 export default function ContactPage() {
-  useSeo({ title: "Contact Us", description: "Reach TAAB on WhatsApp, email or phone. Replies within one business day.", path: "/contact" });
+  useSeo({ title: "Contact Us", description: "Reach Naaz & CO on WhatsApp, email or phone. Replies within one business day.", path: "/contact" });
   const [status, setStatus] = useState("idle");
 
   async function submit(event) {
@@ -36,7 +36,7 @@ export default function ContactPage() {
 
   return (
     <>
-      <PageHero eyebrow="Contact" title="Talk to a real person." description="Shade questions, order updates, returns: WhatsApp is fastest, but every channel below is answered within one business day." image={images.hero.contact} imageAlt="Beauty products flatlay" compact primary={{ label: "Chat on WhatsApp", href: whatsappLink("Hi TAAB, I have a question.") }} secondary={{ label: "Read the FAQ", to: "/faq" }} />
+      <PageHero eyebrow="Contact" title="Talk to a real person." description="Product questions, order updates, returns and warranty: WhatsApp is fastest, but every channel below is answered within one business day." image={images.hero.contact} imageAlt="Beauty products flatlay" compact primary={{ label: "Chat on WhatsApp", href: whatsappLink("Hi Naaz & CO, I have a question.") }} secondary={{ label: "Read the FAQ", to: "/faq" }} />
 
       <section className="wrap grid gap-10 py-12 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16">
         <div>
@@ -44,7 +44,7 @@ export default function ContactPage() {
           <ul className="mt-6 space-y-5 text-[15px]">
             <li className="flex items-start gap-4">
               <span className="grid size-12 shrink-0 place-items-center rounded-full bg-[#25D366]/15 text-[#128C4A]"><WhatsAppIcon className="size-6" /></span>
-              <span><span className="block font-semibold text-navy">WhatsApp</span><a href={whatsappLink("Hi TAAB, I have a question.")} target="_blank" rel="noreferrer" onClick={() => ecommerce.whatsapp("contact_page")} className="text-teal hover:underline">{site.contact.phone}</a><span className="block text-[13px] text-ink">Fastest. Typical reply under 15 minutes in business hours.</span></span>
+              <span><span className="block font-semibold text-navy">WhatsApp</span><a href={whatsappLink("Hi Naaz & CO, I have a question.")} target="_blank" rel="noreferrer" onClick={() => ecommerce.whatsapp("contact_page")} className="text-teal hover:underline">{site.contact.phone}</a><span className="block text-[13px] text-ink">Fastest. Typical reply under 15 minutes in business hours.</span></span>
             </li>
             <li className="flex items-start gap-4">
               <span className="grid size-12 shrink-0 place-items-center rounded-full bg-mint text-navy"><MailIcon className="size-6" /></span>

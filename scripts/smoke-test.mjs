@@ -19,9 +19,15 @@ const check = (label, ok, detail = "") => {
   if (!ok) failures += 1;
 };
 
-const { data: products, error: productsError } = await db.from("products").select("id, slug, name, stock, variants, brands(name)").eq("active", true);
-check("read products", !productsError && products.length === 30, productsError?.message || `${products?.length} rows`);
+const { data: products, error: productsError } = await db.from("products").select("id, slug, name, stock, variants, rating, review_count, category_id, specs, warranty, brands(name)").eq("active", true);
+check("read products", !productsError && products.length > 0, productsError?.message || `${products?.length} rows`);
 check("brand join works", products?.[0]?.brands?.name != null, products?.[0]?.brands?.name);
+
+const { data: categoryRows } = await db.from("categories").select("id, department").eq("active", true);
+const departmentsFound = [...new Set((categoryRows || []).map((row) => row.department))].sort();
+check("categories carry a department", ["beauty", "electronics", "kitchen"].every((name) => departmentsFound.includes(name)), departmentsFound.join(","));
+const gadget = (products || []).find((row) => row.category_id === "electronics" && row.warranty);
+check("electronics carry specifications and warranty", Boolean(gadget) && Array.isArray(gadget.specs) && gadget.specs.length > 0, gadget ? `${gadget.name}: ${gadget.specs.length} specs` : "none found");
 
 const { data: reviews } = await db.from("reviews").select("id, status");
 check("only approved reviews visible", reviews?.every((review) => review.status === "approved"), `${reviews?.length} rows`);
@@ -33,12 +39,12 @@ check("orders table is not readable", Boolean(ordersError) || (ordersLeak || [])
 
 const { data: couponOk } = await db.rpc("validate_coupon", { p_code: "welcome10", p_subtotal: 5000 });
 check("validate_coupon WELCOME10 on 5000", couponOk?.valid && couponOk.discount === 500, JSON.stringify(couponOk));
-const { data: couponLow } = await db.rpc("validate_coupon", { p_code: "TAAB500", p_subtotal: 1000 });
+const { data: couponLow } = await db.rpc("validate_coupon", { p_code: "NAAZ500", p_subtotal: 1000 });
 check("validate_coupon rejects below minimum", couponLow?.valid === false, couponLow?.error);
 
-const { data: sample } = await db.rpc("get_order", { p_order_id: "TB-241001-0211", p_phone: "0300 1234567" });
-check("get_order sample order", sample?.id === "TB-241001-0211" && sample.lines?.length === 2, `${sample?.status}, ${sample?.lines?.length} lines`);
-const { data: wrongPhone } = await db.rpc("get_order", { p_order_id: "TB-241001-0211", p_phone: "0300 0000000" });
+const { data: sample } = await db.rpc("get_order", { p_order_id: "NZ-241001-0211", p_phone: "0300 1234567" });
+check("get_order sample order", sample?.id === "NZ-241001-0211" && sample.lines?.length === 2, `${sample?.status}, ${sample?.lines?.length} lines`);
+const { data: wrongPhone } = await db.rpc("get_order", { p_order_id: "NZ-241001-0211", p_phone: "0300 0000000" });
 check("get_order rejects wrong phone", wrongPhone === null);
 
 const simple = products.find((product) => product.slug === "gentle-gel-cleanser");
@@ -56,7 +62,7 @@ const payload = {
   ],
 };
 const { data: order, error: orderError } = await db.rpc("place_order", { p_payload: payload });
-check("place_order succeeds", !orderError && order?.id?.startsWith("TB-"), orderError?.message || order?.id);
+check("place_order succeeds", !orderError && order?.id?.startsWith("NZ-"), orderError?.message || order?.id);
 if (order) {
   const expectedSubtotal = 1900 * 2 + 1850;
   check("server-side pricing", order.totals.subtotal === expectedSubtotal, `${order.totals.subtotal} vs ${expectedSubtotal}`);
@@ -191,6 +197,8 @@ if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
   await admin.from("orders").delete().eq("phone", "03009998877");
   await admin.from("customers").delete().eq("phone", "03009998877");
   await admin.from("reviews").delete().eq("author", "Smoke");
+  /* Deleting a review recalculates the product rating; put the displayed numbers back. */
+  await admin.from("products").update({ rating: simple.rating, review_count: simple.review_count }).eq("id", simple.id);
   await admin.from("events").delete().eq("event", "smoke_test");
   await admin.from("newsletter_subscribers").delete().eq("email", "smoke@example.com");
   await admin.from("checkout_sessions").delete().eq("session_id", "smoke-session");

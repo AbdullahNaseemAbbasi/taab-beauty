@@ -1,8 +1,11 @@
 /*
- * Product catalogue. The shape mirrors what a database table or headless
+ * Product catalogue (beauty; electronics and kitchen are appended from
+ * products-home.js). The shape mirrors what a database table or headless
  * commerce API would return, so swapping this file for a fetch() later needs
  * no component changes. Prices are in PKR.
  */
+import { electronicsProducts, kitchenProducts } from "./products-home.js";
+
 const lipShades = {
   label: "Shade",
   options: [
@@ -28,10 +31,10 @@ export const products = [
   /* ---------------- Makeup ---------------- */
   {
     id: "p-001",
-    sku: "TB-LP-001",
+    sku: "NZ-LP-001",
     name: "Velvet Matte Lipstick",
     slug: "velvet-matte-lipstick",
-    brand: "TAAB",
+    brand: "Naaz & CO",
     category: "makeup",
     subcategory: "Lips",
     price: 1850,
@@ -55,10 +58,10 @@ export const products = [
   },
   {
     id: "p-002",
-    sku: "TB-LP-002",
+    sku: "NZ-LP-002",
     name: "Glass Shine Lip Gloss",
     slug: "glass-shine-lip-gloss",
-    brand: "TAAB",
+    brand: "Naaz & CO",
     category: "makeup",
     subcategory: "Lips",
     price: 1450,
@@ -81,10 +84,10 @@ export const products = [
   },
   {
     id: "p-003",
-    sku: "TB-LP-003",
+    sku: "NZ-LP-003",
     name: "Stay-On Liquid Lip Tint",
     slug: "stay-on-liquid-lip-tint",
-    brand: "TAAB",
+    brand: "Naaz & CO",
     category: "makeup",
     subcategory: "Lips",
     price: 1650,
@@ -107,10 +110,10 @@ export const products = [
   },
   {
     id: "p-004",
-    sku: "TB-EY-001",
+    sku: "NZ-EY-001",
     name: "Karachi Sunset Eyeshadow Palette",
     slug: "karachi-sunset-eyeshadow-palette",
-    brand: "TAAB",
+    brand: "Naaz & CO",
     category: "makeup",
     subcategory: "Eyes",
     price: 4900,
@@ -133,10 +136,10 @@ export const products = [
   },
   {
     id: "p-005",
-    sku: "TB-FC-001",
+    sku: "NZ-FC-001",
     name: "Skin-Fit Serum Foundation",
     slug: "skin-fit-serum-foundation",
-    brand: "TAAB",
+    brand: "Naaz & CO",
     category: "makeup",
     subcategory: "Face",
     price: 3200,
@@ -160,10 +163,10 @@ export const products = [
   },
   {
     id: "p-006",
-    sku: "TB-EY-002",
+    sku: "NZ-EY-002",
     name: "Lift & Curl Volume Mascara",
     slug: "lift-and-curl-volume-mascara",
-    brand: "TAAB",
+    brand: "Naaz & CO",
     category: "makeup",
     subcategory: "Eyes",
     price: 1950,
@@ -186,10 +189,10 @@ export const products = [
   },
   {
     id: "p-007",
-    sku: "TB-EY-003",
+    sku: "NZ-EY-003",
     name: "Precision Liquid Eyeliner",
     slug: "precision-liquid-eyeliner",
-    brand: "TAAB",
+    brand: "Naaz & CO",
     category: "makeup",
     subcategory: "Eyes",
     price: 1350,
@@ -212,10 +215,10 @@ export const products = [
   },
   {
     id: "p-008",
-    sku: "TB-CH-001",
+    sku: "NZ-CH-001",
     name: "Soft Flush Blush Duo",
     slug: "soft-flush-blush-duo",
-    brand: "TAAB",
+    brand: "Naaz & CO",
     category: "makeup",
     subcategory: "Cheeks",
     price: 2450,
@@ -238,10 +241,10 @@ export const products = [
   },
   {
     id: "p-009",
-    sku: "TB-FC-002",
+    sku: "NZ-FC-002",
     name: "Airbrush Loose Setting Powder",
     slug: "airbrush-loose-setting-powder",
-    brand: "TAAB",
+    brand: "Naaz & CO",
     category: "makeup",
     subcategory: "Face",
     price: 2800,
@@ -474,10 +477,10 @@ export const products = [
   },
   {
     id: "p-018",
-    sku: "TB-ST-001",
+    sku: "NZ-ST-001",
     name: "Skincare Starter Set (Travel Minis)",
     slug: "skincare-starter-set",
-    brand: "TAAB",
+    brand: "Naaz & CO",
     category: "skincare",
     subcategory: "Sets",
     price: 2900,
@@ -688,10 +691,10 @@ export const products = [
   /* ---------------- Tools ---------------- */
   {
     id: "p-026",
-    sku: "TB-TL-001",
+    sku: "NZ-TL-001",
     name: "Essential 12-Piece Brush Set",
     slug: "essential-12-piece-brush-set",
-    brand: "TAAB",
+    brand: "Naaz & CO",
     category: "tools",
     subcategory: "Brushes",
     price: 4200,
@@ -714,10 +717,10 @@ export const products = [
   },
   {
     id: "p-027",
-    sku: "TB-TL-002",
+    sku: "NZ-TL-002",
     name: "Jade Facial Roller",
     slug: "jade-facial-roller",
-    brand: "TAAB",
+    brand: "Naaz & CO",
     category: "tools",
     subcategory: "Facial Tools",
     price: 2400,
@@ -740,10 +743,10 @@ export const products = [
   },
   {
     id: "p-028",
-    sku: "TB-TL-003",
+    sku: "NZ-TL-003",
     name: "Obsidian Sculpting Roller",
     slug: "obsidian-sculpting-roller",
-    brand: "TAAB",
+    brand: "Naaz & CO",
     category: "tools",
     subcategory: "Facial Tools",
     price: 2900,
@@ -766,10 +769,10 @@ export const products = [
   },
   {
     id: "p-029",
-    sku: "TB-TL-004",
+    sku: "NZ-TL-004",
     name: "Dry Body Brush",
     slug: "dry-body-brush",
-    brand: "TAAB",
+    brand: "Naaz & CO",
     category: "tools",
     subcategory: "Body Tools",
     price: 1500,
@@ -792,10 +795,10 @@ export const products = [
   },
   {
     id: "p-030",
-    sku: "TB-TL-005",
+    sku: "NZ-TL-005",
     name: "Pro Artist Brush Collection",
     slug: "pro-artist-brush-collection",
-    brand: "TAAB",
+    brand: "Naaz & CO",
     category: "tools",
     subcategory: "Brushes",
     price: 6900,
@@ -816,6 +819,10 @@ export const products = [
     bestSeller: false,
     newArrival: true,
   },
+
+  /* ---------------- Electronics and kitchen (src/data/products-home.js) ---------------- */
+  ...electronicsProducts,
+  ...kitchenProducts,
 ];
 
 export const productBySlug = Object.fromEntries(products.map((product) => [product.slug, product]));

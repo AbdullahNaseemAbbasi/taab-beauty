@@ -10,15 +10,19 @@ price, compareAtPrice, images[], description,
 benefits[], ingredients[], howToUse, size,
 stock, rating, reviewCount, tags[], concerns[],
 variants? { label, options[ { id, name, hex, stock } ] },
+specs[ { label, value } ], warranty,
 featured, bestSeller, newArrival
 ```
+
+Beauty products fill `ingredients`, `howToUse` and `concerns`. Electronics and kitchen products leave `ingredients` empty and fill `specs` (shown as a table under Specifications), `warranty` and `size` (shown as "In the box"). The product page chooses its labels from the category's department.
 
 Derived: `discount = round((compareAtPrice - price) / compareAtPrice * 100)`, `inStock = stock > 0` (or the selected variant's stock). "In stock" is never shown when stock is 0; the stepper and add-to-bag enforce the limit.
 
 ## Category · Brand · Concern
 
 ```
-category: id, name, slug, tagline, description, image, subcategories[]
+category: id, name, slug, department (beauty | electronics | kitchen), tagline, description, image, subcategories[]
+department: id, name, to, tagline, description   (static, in src/config/site.js)
 brand:    id, name, tagline, description, featured
 concern:  id, name, description, image
 collection: slug, name, tagline, description, filter(product) → bool
@@ -54,7 +58,7 @@ code, type (percent | fixed | shipping), value, minOrder, description, creatorId
 ## Order
 
 ```
-id (TB-YYMMDD-NNNN), placedAt, status, payment (cod | bank | card), notes,
+id (NZ-YYMMDD-NNNN), placedAt, status, payment (cod | bank | card), notes,
 customer { name, phone, email, address, city, province, postalCode, instructions },
 lines[ { productId, slug, variant, quantity, unitPrice } ],
 totals { subtotal, discount, shipping, total, itemCount },

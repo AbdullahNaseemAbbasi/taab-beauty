@@ -2,7 +2,8 @@
 
 ## Done and tested (3 October 2026)
 
-- Storefront: 18 pages, mobile-first (320 to 2560 px), bag, guest checkout, wishlist, compare, search, journal, FAQ, policies.
+- Storefront: Naaz & CO, three departments (Beauty, Electronics, Kitchen) with 55 sample products, 18 page types, mobile-first (320 to 2560 px), bag, guest checkout, wishlist, compare, search, journal, FAQ, policies.
+- Logo: the owner's N monogram and wordmark, redrawn as vector in the site colours (header, footer, admin, favicon, app icons).
 - Backend: Supabase project `taab-beauty` (Mumbai). Orders are priced, stock-checked and written server-side. Coupons and creator codes validated server-side. Max 5 orders per phone per hour.
 - Customer accounts (`/account`): sign up and sign in with email + password, saved delivery details that prefill checkout, and a list of every order placed while signed in. Guest checkout still works without an account.
 - Admin panel (`/admin`): dashboard, orders, products, customers, reviews, inbox, coupons and creators, analytics, settings. Same colours and components as the store, works on a phone. Only accounts listed in Settings → Team can open it; the database enforces this, not just the screen.
@@ -12,12 +13,12 @@
 
 ## Before you announce the store (your side)
 
-1. **Deploy on Netlify**: import the GitHub repo, add the environment variables `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (values are in `.env`), deploy. Without them the live site runs on mock data and the admin panel cannot open. Then point your domain (`taab.co` is unregistered as of 3 Oct 2026) at Netlify and set `VITE_SITE_URL` to it.
+1. **Deploy on Netlify**: import the GitHub repo, add the environment variables `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (values are in `.env`), deploy. Without them the live site runs on mock data and the admin panel cannot open. Then point your domain (`naazandco.com` had no registration on 3 Oct 2026) at Netlify and set `VITE_SITE_URL` to it.
 2. **Sign in to the admin panel** at `<your site>/admin`. Email and first password are in `D:\taab-beauty\.env.supabase.local` (`ADMIN_EMAIL`, `ADMIN_PASSWORD`). Change the password straight away in Settings → Your password.
-3. **Settings → Order notifications**: set "Store address" to the live URL (for example `https://taab.co`) so notification taps open the right site. Install the **ntfy** app (Play Store / App Store), choose "Subscribe to topic" and enter the topic shown on that settings card. Keep the topic private; change it there if it ever leaks.
+3. **Settings → Order notifications**: set "Store address" to the live URL (for example `https://naazandco.com`) so notification taps open the right site. Install the **ntfy** app (Play Store / App Store), choose "Subscribe to topic" and enter the topic shown on that settings card. Keep the topic private; change it there if it ever leaks.
 4. **Password-reset links**: once the live address exists and is yours, open `supabase/config.toml`, set `site_url` to it, add `"<live address>/**"` to `additional_redirect_urls` and run `npx supabase config push` (or do the same in Supabase → Authentication → URL configuration). Until then it points at `localhost`, on purpose: reset links carry a sign-in token, so they must only ever go to a domain you own.
 5. **Real information** → send it and it goes live in minutes. Phone, WhatsApp number, email, address, bank account, social links and hours are in `src/config/site.js`. Products, prices, stock and photos are edited in Admin → Products.
-6. **Register the domain and handles**: taab.co / taabbeauty.com, @taab.beauty on Instagram, TikTok and Facebook. Trademark search at ipo.gov.pk (class 3 and 35).
+6. **Register the domain and handles**: naazandco.com (no registration found on 3 Oct 2026, see `docs/01-brand-naming.md`), naazandco.pk at PKNIC, and @naazandco on Instagram, TikTok and Facebook. Trademark search at ipo.gov.pk (classes 3, 9, 21 and 35).
 7. **Courier account**: open a TCS or Leopards business account for pickups and COD remittance. Confirm the public tracking URLs in `src/lib/shipping.js` still match their websites.
 8. **Pixels** (when the ad accounts exist): add `VITE_META_PIXEL_ID`, `VITE_TIKTOK_PIXEL_ID`, `VITE_GA_ID` or `VITE_GTM_ID` in Netlify environment variables and redeploy.
 9. **Supabase plan**: the free tier pauses a project after 7 days without any request and keeps no backups. A live store receives requests daily, so pausing is unlikely, but move to the Pro plan ($25/month) once orders start; it adds daily backups.
@@ -53,4 +54,6 @@ If you are ever locked out: `npm run create-admin -- you@example.com` from the p
 - Orders placed as a guest are not attached to an account created later; the customer can always find them on Track Order with the order number and phone.
 - Card payments stay off until a payment gateway is integrated; the switch in Settings is locked until then.
 - Product photos are licensed stock placeholders; replace with your own before advertising.
+- **Sample content to replace before you advertise:** every product, brand name, price, specification and warranty term is sample data, and so are the customer reviews, the star ratings, the home page line "4.8/5 from 2,100+ reviews" and the testimonials. Showing invented reviews or ratings to real customers is misleading, so remove them (Admin → Reviews, and `src/pages/HomePage.jsx` / `src/data/reviews.js`) or replace them with real ones as they arrive.
+- The warranty and return rules in the FAQ and on the Returns page are sensible defaults, not your confirmed policy. Read them and tell the developer what to change.
 - Ratings on the seeded products are sample values; each product's rating is recalculated from approved reviews as soon as a real review is approved for it.

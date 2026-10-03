@@ -6,7 +6,7 @@ import { site, footerLinks } from "../../config/site.js";
 import { track } from "../../analytics/tracking.js";
 import { EVENTS } from "../../analytics/events.js";
 
-const socialOrder = ["instagram", "tiktok", "facebook", "youtube", "reddit"];
+const socialOrder = ["instagram", "tiktok", "facebook", "youtube"];
 
 function LinkColumn({ title, links }) {
   return (
@@ -37,7 +37,7 @@ export default function Footer() {
           <div>
             <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-cyan">Newsletter</p>
             <h2 className="mt-2 font-display text-[24px] font-extrabold sm:text-[28px]">Get 10% off your first order.</h2>
-            <p className="mt-2 text-[15px] text-white/80">Launches, restocks and honest beauty advice. One email a week, no spam.</p>
+            <p className="mt-2 text-[15px] text-white/80">Launches, restocks and honest buying advice. One email a week, no spam.</p>
           </div>
           <Newsletter source="footer" />
         </div>
@@ -60,8 +60,8 @@ export default function Footer() {
                       href={site.social[key]}
                       target="_blank"
                       rel="noreferrer"
-                      aria-label={`TAAB on ${key.charAt(0).toUpperCase() + key.slice(1)}`}
-                      title={`TAAB on ${key.charAt(0).toUpperCase() + key.slice(1)}`}
+                      aria-label={`${site.name} on ${key.charAt(0).toUpperCase() + key.slice(1)}`}
+                      title={`${site.name} on ${key.charAt(0).toUpperCase() + key.slice(1)}`}
                       onClick={() => track(EVENTS.SOCIAL_CLICK, { network: key, placement: "footer" })}
                       className="grid size-10 place-items-center rounded-full bg-white/10 text-white transition-colors hover:bg-coral"
                     >
@@ -78,7 +78,7 @@ export default function Footer() {
         </div>
 
         <div className="mt-12 flex flex-col gap-4 border-t border-white/10 pt-6 text-[12px] text-white/70 sm:flex-row sm:items-center sm:justify-between">
-          <p>© {new Date().getFullYear()} {site.legalName} All rights reserved.</p>
+          <p>© {new Date().getFullYear()} {site.legalName}. All rights reserved.</p>
           <p className="flex flex-wrap gap-x-4 gap-y-1">
             <span>Cash on Delivery</span>
             <span>Bank Transfer</span>

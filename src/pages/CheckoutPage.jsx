@@ -21,7 +21,7 @@ import { useStore } from "../store/StoreProvider.jsx";
 import { useAuth } from "../auth/AuthProvider.jsx";
 import { ecommerce } from "../analytics/ecommerce.js";
 
-const CUSTOMER_KEY = "taab:customer";
+const CUSTOMER_KEY = "naaz:customer";
 const phonePattern = /^(\+92|0)?3\d{9}$/;
 
 function loadSavedCustomer() {
@@ -239,7 +239,7 @@ export default function CheckoutPage() {
               </div>
             )}
             <Field label="Order notes (optional)" className="mt-4">
-              <Textarea rows={3} value={form.notes} onChange={update("notes")} placeholder="Gift message, shade questions, anything we should know." />
+              <Textarea rows={3} value={form.notes} onChange={update("notes")} placeholder="Gift message, product questions, anything we should know." />
             </Field>
           </fieldset>
         </div>
@@ -255,7 +255,7 @@ export default function CheckoutPage() {
               Your details are used only to deliver this order. By placing it you agree to our <Link to="/terms" className="underline">terms</Link>.
             </span>
           </p>
-          <a href={whatsappLink("Hi TAAB, I need help with my checkout.")} target="_blank" rel="noreferrer" onClick={() => ecommerce.whatsapp("checkout_help")} className="mt-4 flex items-center justify-center gap-2 rounded-full border border-line py-3 text-[14px] font-semibold text-navy hover:border-navy">
+          <a href={whatsappLink("Hi Naaz & CO, I need help with my checkout.")} target="_blank" rel="noreferrer" onClick={() => ecommerce.whatsapp("checkout_help")} className="mt-4 flex items-center justify-center gap-2 rounded-full border border-line py-3 text-[14px] font-semibold text-navy hover:border-navy">
             <WhatsAppIcon className="size-4 text-[#25D366]" /> Need help? Chat with us
           </a>
         </div>

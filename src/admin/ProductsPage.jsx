@@ -14,10 +14,19 @@ import { Async, Chips, DataTable, PageTitle, useAsync } from "./ui.jsx";
 
 const lines = (text) => String(text || "").split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
 const commas = (text) => String(text || "").split(",").map((part) => part.trim()).filter(Boolean);
+/* "Label: value" per line <-> [{ label, value }] */
+const specsToText = (specs) => (specs || []).map((spec) => `${spec.label}: ${spec.value}`).join("\n");
+const textToSpecs = (text) =>
+  lines(text)
+    .map((line) => {
+      const at = line.indexOf(":");
+      return at > 0 ? { label: line.slice(0, at).trim(), value: line.slice(at + 1).trim() } : null;
+    })
+    .filter((spec) => spec && spec.label && spec.value);
 
 function toForm(row, defaults) {
   if (!row) {
-    return { id: "", sku: "", name: "", slug: "", brandId: defaults.brandId, category: defaults.category, subcategory: "", price: "", compareAtPrice: "", cost: "", stock: 0, lowStockThreshold: 5, size: "", description: "", benefits: "", ingredients: "", howToUse: "", tags: "", concerns: [], images: [], hasVariants: false, variantLabel: "Shade", options: [], featured: false, bestSeller: false, newArrival: true, active: true };
+    return { id: "", sku: "", name: "", slug: "", brandId: defaults.brandId, category: defaults.category, subcategory: "", price: "", compareAtPrice: "", cost: "", stock: 0, lowStockThreshold: 5, size: "", description: "", benefits: "", ingredients: "", howToUse: "", specs: "", warranty: "", tags: "", concerns: [], images: [], hasVariants: false, variantLabel: "Shade", options: [], featured: false, bestSeller: false, newArrival: true, active: true };
   }
   const cost = Array.isArray(row.product_costs) ? row.product_costs[0]?.cost : row.product_costs?.cost;
   return {
@@ -38,6 +47,8 @@ function toForm(row, defaults) {
     benefits: (row.benefits || []).join("\n"),
     ingredients: (row.ingredients || []).join(", "),
     howToUse: row.how_to_use || "",
+    specs: specsToText(row.specs),
+    warranty: row.warranty || "",
     tags: (row.tags || []).join(", "),
     concerns: row.concerns || [],
     images: row.images || [],
@@ -74,6 +85,8 @@ function toRow(form) {
     benefits: lines(form.benefits),
     ingredients: commas(form.ingredients),
     how_to_use: form.howToUse.trim(),
+    specs: textToSpecs(form.specs),
+    warranty: form.warranty.trim() || null,
     size: form.size.trim(),
     stock: options.length ? options.reduce((sum, option) => sum + option.stock, 0) : Math.max(0, Math.round(Number(form.stock) || 0)),
     low_stock_threshold: Math.max(0, Math.round(Number(form.lowStockThreshold) || 0)),
@@ -97,6 +110,7 @@ function ProductEditor({ row, onClose, onSaved }) {
   const [error, setError] = useState("");
   const set = (field) => (event) => setForm({ ...form, [field]: event.target.type === "checkbox" ? event.target.checked : event.target.value });
   const category = categories.find((entry) => entry.slug === form.category);
+  const isBeauty = (category?.department || "beauty") === "beauty";
 
   async function upload(event) {
     const files = [...event.target.files];
@@ -143,7 +157,7 @@ function ProductEditor({ row, onClose, onSaved }) {
         <div className="flex-1 space-y-6 overflow-y-auto p-5">
           <section className="grid gap-4 sm:grid-cols-2">
             <Field label="Product name" required className="sm:col-span-2"><Input value={form.name} onChange={set("name")} required /></Field>
-            <Field label="SKU" required hint="Your stock code, e.g. TB-LP-001"><Input value={form.sku} onChange={set("sku")} required /></Field>
+            <Field label="SKU" required hint="Your stock code, e.g. NZ-LP-001"><Input value={form.sku} onChange={set("sku")} required /></Field>
             <Field label="URL slug" hint="Leave empty to create it from the name"><Input value={form.slug} onChange={set("slug")} placeholder={slugify(form.name)} /></Field>
             <Field label="Brand">
               <Select value={form.brandId || ""} onChange={set("brandId")}>{brands.map((brand) => <option key={brand.id} value={brand.id}>{brand.name}</option>)}</Select>
@@ -157,7 +171,7 @@ function ProductEditor({ row, onClose, onSaved }) {
                 {(category?.subcategories || []).map((sub) => <option key={sub}>{sub}</option>)}
               </Select>
             </Field>
-            <Field label="Size" hint="e.g. 30 ml"><Input value={form.size} onChange={set("size")} /></Field>
+            <Field label={isBeauty ? "Size" : "In the box"} hint={isBeauty ? "e.g. 30 ml" : "e.g. Earbuds, case, USB-C cable"}><Input value={form.size} onChange={set("size")} /></Field>
           </section>
 
           <section className="grid gap-4 rounded-2xl bg-tint p-4 sm:grid-cols-3">
@@ -197,7 +211,7 @@ function ProductEditor({ row, onClose, onSaved }) {
           </section>
 
           <section className="rounded-2xl border border-line p-4">
-            <Checkbox label="This product has options (shades, sizes)" checked={form.hasVariants} onChange={set("hasVariants")} />
+            <Checkbox label="This product has options (shades, colours, sizes)" checked={form.hasVariants} onChange={set("hasVariants")} />
             {form.hasVariants && (
               <div className="mt-4 space-y-3">
                 <Field label="Option name"><Input value={form.variantLabel} onChange={set("variantLabel")} placeholder="Shade" /></Field>
@@ -220,13 +234,15 @@ function ProductEditor({ row, onClose, onSaved }) {
 
           <section className="grid gap-4">
             <Field label="Description"><Textarea rows={4} value={form.description} onChange={set("description")} /></Field>
-            <Field label="Benefits" hint="One per line"><Textarea rows={4} value={form.benefits} onChange={set("benefits")} /></Field>
-            <Field label="Ingredients" hint="Separated by commas"><Textarea rows={2} value={form.ingredients} onChange={set("ingredients")} /></Field>
-            <Field label="How to use"><Textarea rows={2} value={form.howToUse} onChange={set("howToUse")} /></Field>
+            <Field label={isBeauty ? "Benefits" : "Highlights"} hint="One per line"><Textarea rows={4} value={form.benefits} onChange={set("benefits")} /></Field>
+            {isBeauty && <Field label="Ingredients" hint="Separated by commas"><Textarea rows={2} value={form.ingredients} onChange={set("ingredients")} /></Field>}
+            <Field label={isBeauty ? "How to use" : "Use and care"}><Textarea rows={2} value={form.howToUse} onChange={set("howToUse")} /></Field>
+            <Field label="Specifications" hint="One per line as Label: value, e.g. Battery: 10,000 mAh"><Textarea rows={4} value={form.specs} onChange={set("specs")} /></Field>
+            <Field label="Warranty" hint="Shown on the product page. Leave empty if there is none."><Input value={form.warranty} onChange={set("warranty")} placeholder="e.g. 6 months replacement warranty" /></Field>
             <Field label="Search tags" hint="Separated by commas"><Input value={form.tags} onChange={set("tags")} /></Field>
           </section>
 
-          <section>
+          <section className={isBeauty ? "" : "hidden"}>
             <p className="text-[13px] font-semibold text-ink-mid">Concerns this product helps with</p>
             <div className="mt-2 grid gap-2 sm:grid-cols-3">
               {concerns.map((concern) => (

@@ -6,7 +6,7 @@ import { track } from "../../analytics/tracking.js";
 import { EVENTS } from "../../analytics/events.js";
 import { TagIcon, CloseIcon } from "../ui/Icons.jsx";
 
-const DISMISS_KEY = "taab:creatorBanner:dismissed";
+const DISMISS_KEY = "naaz:creatorBanner:dismissed";
 
 /* Visitors who arrive through a creator link (?ref=name) see that creator's code. */
 export default function CreatorBanner() {

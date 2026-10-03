@@ -21,10 +21,10 @@ export default function ComparePage() {
     { label: "Rating", render: (product) => <RatingStars rating={product.rating} count={product.reviewCount} size="size-3.5" /> },
     { label: "Brand", render: (product) => product.brand },
     { label: "Category", render: (product) => `${product.category} / ${product.subcategory}` },
-    { label: "Size", render: (product) => product.size },
+    { label: "Size / contents", render: (product) => product.size },
     { label: "Availability", render: (product) => (product.stock > 0 ? `In stock (${product.stock})` : "Out of stock") },
     { label: "Key benefits", render: (product) => <ul className="list-disc space-y-1 pl-4">{product.benefits.slice(0, 3).map((benefit) => <li key={benefit}>{benefit}</li>)}</ul> },
-    { label: "Concerns", render: (product) => (product.concerns.length ? product.concerns.join(", ") : "General") },
+    { label: "Warranty", render: (product) => product.warranty || "Not applicable" },
   ];
 
   return (

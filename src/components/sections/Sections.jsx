@@ -5,7 +5,8 @@ import { Badge, Eyebrow, SectionHeading } from "../ui/Typography.jsx";
 import { trustIcons, InstagramIcon, ClockIcon, ArrowIcon } from "../ui/Icons.jsx";
 import { imageProps } from "../../lib/images.js";
 import { formatDate } from "../../lib/format.js";
-import { site } from "../../config/site.js";
+import { site, departments } from "../../config/site.js";
+import { images } from "../../data/images.js";
 import { useCatalog } from "../../catalog/CatalogProvider.jsx";
 import { testimonials } from "../../data/reviews.js";
 import { instagramPosts } from "../../data/misc.js";
@@ -83,9 +84,53 @@ export function TrustSignals({ compact = false }) {
   );
 }
 
-/* ---------- Categories ---------- */
-export function CategoryGrid() {
-  const { categories } = useCatalog();
+/* ---------- Departments ---------- */
+export function DepartmentGrid() {
+  const { categories, products } = useCatalog();
+  return (
+    <div className="grid gap-4 sm:gap-5 lg:grid-cols-3">
+      {departments.map((department) => {
+        const own = categories.filter((category) => category.department === department.id);
+        const slugs = own.map((category) => category.slug);
+        const count = products.filter((product) => slugs.includes(product.category)).length;
+        const chips =
+          own.length > 1
+            ? own.map((category) => ({ label: category.name, to: `/shop/${category.slug}` }))
+            : (own[0]?.subcategories || []).map((sub) => ({ label: sub, to: `/shop/${own[0].slug}?sub=${encodeURIComponent(sub)}` }));
+        return (
+          <article key={department.id} className="group flex flex-col overflow-hidden rounded-2xl border border-line bg-white">
+            <Link to={department.to} onClick={() => track(EVENTS.SELECT_CATEGORY, { category: department.id, placement: "home_departments" })} className="relative block aspect-[16/10] overflow-hidden bg-tint">
+              <img {...imageProps(images.departments[department.id], { width: 900, sizes: "(min-width: 1024px) 33vw, 100vw", alt: department.name })} className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+              <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-navy/85 via-navy/30 to-transparent p-5 text-white">
+                <span className="block font-display text-[24px] font-extrabold sm:text-[26px]">{department.name}</span>
+                <span className="mt-0.5 block text-[14px] text-white/85">{department.tagline}</span>
+              </span>
+            </Link>
+            <div className="flex flex-1 flex-col p-5">
+              <ul className="flex flex-wrap gap-2">
+                {chips.slice(0, 6).map((chip) => (
+                  <li key={chip.to}>
+                    <Link to={chip.to} className="inline-block rounded-full border border-line px-3 py-1.5 text-[13px] font-semibold text-navy transition-colors hover:border-navy">
+                      {chip.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+              <Link to={department.to} className="mt-auto flex items-center gap-2 pt-5 text-[14px] font-semibold text-teal hover:underline">
+                Shop all {count} products <ArrowIcon className="size-4" />
+              </Link>
+            </div>
+          </article>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ---------- Categories (optionally limited to one department) ---------- */
+export function CategoryGrid({ department }) {
+  const catalog = useCatalog();
+  const categories = department ? catalog.categories.filter((category) => category.department === department) : catalog.categories;
   return (
     <div className="grid grid-cols-2 gap-4 sm:gap-5 lg:grid-cols-4">
       {categories.map((category, index) => (
@@ -128,8 +173,8 @@ export function ConcernGrid() {
 export function BrandStrip() {
   const { brands } = useCatalog();
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-      {brands.map((brand) => (
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {brands.filter((brand) => brand.featured).map((brand) => (
         <Link key={brand.id} to={`/shop?brand=${encodeURIComponent(brand.name)}`} className="group rounded-2xl border border-line bg-white p-5 transition-shadow hover:shadow-float">
           <span className="block font-display text-[20px] font-extrabold tracking-wide text-navy group-hover:text-coral">{brand.name}</span>
           <span className="mt-1 block text-[13px] font-semibold text-teal">{brand.tagline}</span>
@@ -195,7 +240,7 @@ export function InstagramFeed() {
       </div>
       <div className="mt-6 text-center">
         <Button href={site.social.instagram} target="_blank" rel="noreferrer" variant="outline" onClick={() => track(EVENTS.SOCIAL_CLICK, { network: "instagram", placement: "home_feed_cta" })}>
-          <InstagramIcon className="size-5" /> Follow @taab.beauty
+          <InstagramIcon className="size-5" /> Follow {site.social.handle}
         </Button>
       </div>
     </div>

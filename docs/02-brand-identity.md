@@ -2,10 +2,10 @@
 
 ## Positioning
 
-TAAB is a Karachi beauty house that sells makeup, skincare, haircare, fragrance and tools chosen for Pakistani skin tones and Pakistani weather, delivered nationwide with cash on delivery.
+Naaz & CO is a Karachi online store with three departments, beauty, electronics and kitchen, chosen for Pakistani homes and delivered nationwide with cash on delivery.
 
-**Promise:** radiance without guesswork.
-**Proof:** weather-tested formulas, published ingredient lists, shade ranges built for warm and olive undertones, 7-day returns, a human on WhatsApp.
+**Promise:** good things you will be proud to bring home, without the gamble of buying online.
+**Proof:** genuine products from authorised sources, honest ingredient lists and specifications, warranty on electronics, 7-day returns, a human on WhatsApp.
 
 ## Personality
 
@@ -14,25 +14,25 @@ TAAB is a Karachi beauty house that sells makeup, skincare, haircare, fragrance 
 | Confident, warm, direct | Loud, pushy, salesy |
 | Expert without jargon | Clinical or cold |
 | Premium through restraint | Luxury through gold foil and gradients |
-| Local pride, global standards | Imported-only snobbery |
+| A curated house | A marketplace with ten thousand listings |
 
 ## Voice
 
 - Short sentences. One idea each.
-- Say what a product does and when it fails. "Survives a July baraat" beats "long-lasting".
-- Urdu words where they are natural (chai, baraat, champi, dupatta), never forced.
+- Say what a product does and when it fails. "Survives a July baraat" beats "long-lasting"; "charges a phone twice" beats "high capacity".
+- Urdu words where they are natural (chai, baraat, champi, roti), never forced.
 - No Lorem Ipsum anywhere. Every string on the site is real copy.
 
 ## Visual identity
 
-The identity reuses the existing design system (shared with the agency work) so every page is consistent.
+The identity reuses the existing design system (shared with the agency work) so every page is consistent. The owner's logo was adapted to this palette rather than the palette to the logo.
 
 ### Colour
 
 | Token | Hex | Role |
 |-------|-----|------|
-| navy | #072B4B | Headlines, primary dark surfaces, footer |
-| coral | #F3685E | Primary call to action, sale badges, the sun in the logo |
+| navy | #072B4B | Headlines, primary dark surfaces, footer, logo outlines |
+| coral | #F3685E | Primary call to action, sale badges, logo fills |
 | teal | #1F8DA6 | Links, secondary buttons, trust accents |
 | cyan | #51DBDF | Highlights on navy |
 | mint / sky / lavender / coral-100 | pastels | Icon backgrounds, badges |
@@ -46,21 +46,31 @@ Rule: one coral element per viewport. Coral is the thing to click; everything el
 - Display: Plus Jakarta Sans 700/800, tight tracking, sentence case with a full stop.
 - Body and UI: Inter 400/500/600.
 - Script accent: Caveat, used sparingly for handwritten notes.
+- The serif lettering of the logo is artwork, not a web font; it is not used for headings.
 
 ### Logo
 
-A rising sun (coral) over a horizon line (navy) with three teal rays, beside the wordmark **TAAB** in Plus Jakarta Sans 800 with 0.18em tracking. Light variant inverts navy to white. Favicon is the mark alone on a navy rounded square.
+The owner's logo: a tall serif **N** that flows into a woman's profile with leaves, above the wordmark **Naaz & CO**. The original artwork is a rose-gold 3D render; for the site it was redrawn as flat vector shapes in two layers and recoloured to the palette:
+
+| Variant | Outlines and line-art | Filled shapes | Used on |
+|---------|----------------------|---------------|---------|
+| Default | navy #072B4B | coral #F3685E | white and tint backgrounds (header, admin sign-in) |
+| Light | white | coral #F3685E | navy backgrounds (footer, admin sidebar) |
+
+- Header and footer use the horizontal lockup: monogram on the left, wordmark on the right.
+- The monogram alone is the favicon and app icon (on a navy rounded square).
+- Source of truth: `src/components/Logo.jsx` (inline SVG paths). The vector was traced from the supplied image, so if the designer's original vector file exists, swap its paths in for the cleanest result.
 
 ### Imagery
 
-- Real product and texture photography; people shown mid-ritual (applying, blending), not posing.
+- Real product and texture photography; people shown mid-task (applying, cooking, using), not posing.
 - Warm, daylight, minimal props. No heavy filters.
-- Current placeholders are licensed stock from Burst (free for commercial use). Replace with brand photography before launch; the slug map in `src/data/images.js` is the only file to touch.
+- Current placeholders are licensed stock from Burst (free for commercial use). Replace with the store's own photography before advertising; the slug map in `src/data/images.js` and the product `images` arrays are the only places to touch.
 
 ### Layout rules
 
 - 5% side margins up to 1600px, then the page scales on very large screens.
-- Alternate white and tint sections. Navy sections for proof (stats) and promotions.
+- Alternate white and tint sections. Navy sections for proof and promotions.
 - Cards: 16px radius, 1px line border, soft shadow on hover.
 - Buttons: full pill, 52px tall; coral for the primary action, navy for commerce actions (add to bag, checkout), teal outline for secondary.
 

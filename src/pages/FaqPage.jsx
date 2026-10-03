@@ -11,7 +11,7 @@ import { ecommerce } from "../analytics/ecommerce.js";
 export default function FaqPage() {
   const { faqs } = useCatalog();
   const allFaqs = faqs.flatMap((group) => group.items);
-  useSeo({ title: "Frequently Asked Questions", description: "Delivery times, cash on delivery, returns, authenticity and shade help at TAAB.", path: "/faq", jsonLd: [faqSchema(allFaqs)] });
+  useSeo({ title: "Frequently Asked Questions", description: "Delivery times, cash on delivery, returns, warranty and product help at Naaz & CO.", path: "/faq", jsonLd: [faqSchema(allFaqs)] });
 
   return (
     <>
@@ -28,7 +28,7 @@ export default function FaqPage() {
         <aside className="rounded-2xl bg-tint p-6 lg:sticky lg:top-24">
           <h2 className="font-display text-[20px] font-extrabold text-navy">Still stuck?</h2>
           <p className="mt-2 text-[14px] text-ink">A real person answers WhatsApp Monday to Saturday, 10am to 8pm.</p>
-          <Button href={whatsappLink("Hi TAAB, I have a question that is not in the FAQ.")} target="_blank" rel="noreferrer" variant="whatsapp" className="mt-4 w-full" onClick={() => ecommerce.whatsapp("faq_page")}>
+          <Button href={whatsappLink("Hi Naaz & CO, I have a question that is not in the FAQ.")} target="_blank" rel="noreferrer" variant="whatsapp" className="mt-4 w-full" onClick={() => ecommerce.whatsapp("faq_page")}>
             <WhatsAppIcon className="size-5" /> Chat on WhatsApp
           </Button>
           <Button to="/contact" variant="ghost" className="mt-2 w-full">

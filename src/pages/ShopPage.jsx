@@ -11,6 +11,8 @@ import FilterSidebar from "../components/product/FilterSidebar.jsx";
 import { PageHero, PageHeader } from "../components/sections/Sections.jsx";
 import NotFoundPage from "./NotFoundPage.jsx";
 import { useCatalog } from "../catalog/CatalogProvider.jsx";
+import { departmentById } from "../config/site.js";
+import { images } from "../data/images.js";
 import { filterProducts, sortProducts, sortOptions } from "../lib/catalog.js";
 import { breadcrumbSchema } from "../lib/schema.js";
 import { track } from "../analytics/tracking.js";
@@ -48,14 +50,16 @@ function paramsFromFilters(filters, sort, lockedCategory) {
   return next;
 }
 
-export default function ShopPage({ mode = "all", collection }) {
+export default function ShopPage({ mode = "all", collection, department }) {
   const { category: categorySlug } = useParams();
   const [params, setParams] = useSearchParams();
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const { products, categoryBySlug, collections } = useCatalog();
+  const { products, categories, categoryBySlug, collections } = useCatalog();
 
   const category = mode === "category" ? categoryBySlug[categorySlug] : null;
   const collectionDef = mode === "collection" ? collections[collection] : null;
+  const departmentDef = mode === "department" ? departmentById[department] : null;
+  const departmentCategories = useMemo(() => (departmentDef ? categories.filter((entry) => entry.department === departmentDef.id) : null), [categories, departmentDef]);
   const sort = params.get("sort") || "featured";
   const page = Math.max(1, Number(params.get("page") || 1));
   const filters = filtersFromParams(params, category?.slug);
@@ -64,16 +68,20 @@ export default function ShopPage({ mode = "all", collection }) {
   const base = useMemo(() => {
     if (category) return products.filter((product) => product.category === category.slug);
     if (collectionDef) return products.filter(collectionDef.filter);
+    if (departmentCategories) {
+      const slugs = departmentCategories.map((entry) => entry.slug);
+      return products.filter((product) => slugs.includes(product.category));
+    }
     return products;
-  }, [products, category, collectionDef]);
+  }, [products, category, collectionDef, departmentCategories]);
 
   const filtered = useMemo(() => sortProducts(filterProducts(base, { ...filters, category: category ? null : filters.category }), sort), [base, filterKey, sort, category]);
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const visible = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  const title = category?.name || collectionDef?.name || "All Products";
-  const description = category?.description || collectionDef?.description || "Every product we carry, across makeup, skincare, haircare, fragrance and tools.";
-  const path = category ? `/shop/${category.slug}` : collectionDef ? `/${collectionDef.slug}` : "/shop";
+  const title = category?.name || collectionDef?.name || departmentDef?.name || "All Products";
+  const description = category?.description || collectionDef?.description || departmentDef?.description || "Everything we carry across beauty, electronics and kitchen, in one place.";
+  const path = category ? `/shop/${category.slug}` : collectionDef ? `/${collectionDef.slug}` : departmentDef ? departmentDef.to : "/shop";
   const crumbs = category ? [{ label: "Shop", to: "/shop" }, { label: category.name, to: path }] : [{ label: title, to: path }];
 
   useSeo({ title: `${title} in Pakistan`, description, path, jsonLd: [breadcrumbSchema(crumbs)] });
@@ -82,7 +90,7 @@ export default function ShopPage({ mode = "all", collection }) {
     if (category) track(EVENTS.SELECT_CATEGORY, { category: category.slug, placement: "category_page" });
   }, [category?.slug]);
 
-  if ((mode === "category" && !category) || (mode === "collection" && !collectionDef)) return <NotFoundPage />;
+  if ((mode === "category" && !category) || (mode === "collection" && !collectionDef) || (mode === "department" && !departmentDef)) return <NotFoundPage />;
 
   const updateFilters = (next) => {
     track(EVENTS.APPLY_FILTER, { ...next, placement: path });
@@ -94,12 +102,16 @@ export default function ShopPage({ mode = "all", collection }) {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const sidebar = <FilterSidebar baseProducts={base} filters={filters} onChange={updateFilters} showCategory={!category} category={category?.slug} />;
+  const sidebar = <FilterSidebar baseProducts={base} filters={filters} onChange={updateFilters} showCategory={!category} category={category?.slug} categoryOptions={departmentCategories} />;
 
   return (
     <>
       {category ? (
         <PageHero eyebrow={`Shop ${category.name}`} title={category.tagline} description={category.description} image={category.image} compact>
+          <Breadcrumbs items={crumbs} className="mt-6" />
+        </PageHero>
+      ) : departmentDef ? (
+        <PageHero eyebrow={`Shop ${departmentDef.name}`} title={departmentDef.tagline} description={departmentDef.description} image={images.departments[departmentDef.id]} compact>
           <Breadcrumbs items={crumbs} className="mt-6" />
         </PageHero>
       ) : (

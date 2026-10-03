@@ -62,7 +62,7 @@ function AdminLogin() {
         </div>
         <form onSubmit={submit} className="rounded-2xl border border-line bg-white p-6 shadow-float sm:p-8">
           <p className="text-[12px] font-bold uppercase tracking-[0.22em] text-teal">Store admin</p>
-          <h1 className="mt-2 font-display text-[26px] font-extrabold text-navy">Sign in to manage TAAB.</h1>
+          <h1 className="mt-2 font-display text-[26px] font-extrabold text-navy">Sign in to manage Naaz & CO.</h1>
           <div className="mt-6 grid gap-4">
             <Field label="Email" required>
               <Input required type="email" autoComplete="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} />
@@ -179,7 +179,7 @@ export default function AdminApp() {
   const auth = useAuth();
 
   useEffect(() => {
-    document.title = "TAAB Admin";
+    document.title = "Naaz & CO Admin";
     let robots = document.head.querySelector('meta[name="robots"]');
     if (!robots) {
       robots = document.createElement("meta");

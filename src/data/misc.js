@@ -3,7 +3,7 @@ import { images } from "./images.js";
 /* Coupons. Creator codes carry a creatorId so revenue can be attributed. */
 export const coupons = [
   { code: "WELCOME10", type: "percent", value: 10, minOrder: 1500, description: "10% off your first order", creatorId: null },
-  { code: "TAAB500", type: "fixed", value: 500, minOrder: 4000, description: "Rs. 500 off orders over Rs. 4,000", creatorId: null },
+  { code: "NAAZ500", type: "fixed", value: 500, minOrder: 4000, description: "Rs. 500 off orders over Rs. 4,000", creatorId: null },
   { code: "FREESHIP", type: "shipping", value: 0, minOrder: 0, description: "Free delivery on any order", creatorId: null },
   { code: "HIRA15", type: "percent", value: 15, minOrder: 2000, description: "Creator code: 15% off", creatorId: "hira" },
   { code: "MAHNOOR10", type: "percent", value: 10, minOrder: 0, description: "Creator code: 10% off", creatorId: "mahnoor" },
@@ -17,15 +17,15 @@ export function findCoupon(code) {
 export const instagramPosts = images.instagram.map((slug, index) => ({
   id: `ig-${index + 1}`,
   image: slug,
-  caption: ["Sunday flatlay, Rooh edition.", "The starter set that sells out every month.", "Palette season.", "Nails, done. Flowers, optional.", "Brushes we actually use.", "Everything you need for the mehndi."][index],
+  caption: ["Sunday flatlay, Rooh edition.", "Everything in the Pocket Stunt Drone box.", "Prep day. The good knife makes it quick.", "Palette season.", "Game night, sorted.", "One sharp knife beats a drawer of dull ones."][index],
   likes: [1240, 980, 2210, 760, 1530, 1890][index],
-  url: "https://instagram.com/taab.beauty",
+  url: "https://instagram.com/naazandco",
 }));
 
 /* Sample orders so Track Order and My Account have something to show. */
 export const sampleOrders = [
   {
-    id: "TB-240912-0148",
+    id: "NZ-240912-0148",
     phone: "03001234567",
     placedAt: "2026-09-12T11:20:00+05:00",
     status: "delivered",
@@ -47,7 +47,7 @@ export const sampleOrders = [
     ],
   },
   {
-    id: "TB-241001-0211",
+    id: "NZ-241001-0211",
     phone: "03001234567",
     placedAt: "2026-10-01T19:48:00+05:00",
     status: "shipped",

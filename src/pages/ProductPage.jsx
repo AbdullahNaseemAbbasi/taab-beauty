@@ -149,24 +149,48 @@ export default function ProductPage() {
   };
   const bundleTotal = product.price + bundle.reduce((sum, item) => sum + item.price, 0);
 
+  /* Beauty products list ingredients; electronics and kitchen items list specifications and warranty. */
+  const isBeauty = (category?.department || "beauty") === "beauty";
+  const specs = product.specs || [];
   const accordion = [
-    { title: "Benefits", content: <ul className="list-disc space-y-1.5 pl-5">{product.benefits.map((benefit) => <li key={benefit}>{benefit}</li>)}</ul> },
-    { title: "Ingredients", content: <p>{product.ingredients.join(", ")}.</p> },
-    { title: "How to use", content: <p>{product.howToUse}</p> },
+    product.benefits.length > 0 && { title: isBeauty ? "Benefits" : "Highlights", content: <ul className="list-disc space-y-1.5 pl-5">{product.benefits.map((benefit) => <li key={benefit}>{benefit}</li>)}</ul> },
+    product.ingredients.length > 0 && { title: "Ingredients", content: <p>{product.ingredients.join(", ")}.</p> },
+    product.howToUse && { title: isBeauty ? "How to use" : "Use and care", content: <p>{product.howToUse}</p> },
     {
       title: "Specifications",
       content: (
-        <dl className="grid grid-cols-[110px_1fr] gap-y-2">
-          <dt className="font-semibold text-navy">Size</dt><dd>{product.size}</dd>
+        <dl className="grid grid-cols-[130px_1fr] gap-x-3 gap-y-2">
+          {specs.map((spec) => (
+            <div key={spec.label} className="contents">
+              <dt className="font-semibold text-navy">{spec.label}</dt><dd>{spec.value}</dd>
+            </div>
+          ))}
+          {product.size && (<><dt className="font-semibold text-navy">{isBeauty ? "Size" : "In the box"}</dt><dd>{product.size}</dd></>)}
           <dt className="font-semibold text-navy">SKU</dt><dd>{product.sku}</dd>
           <dt className="font-semibold text-navy">Brand</dt><dd>{product.brand}</dd>
-          <dt className="font-semibold text-navy">Category</dt><dd>{category?.name || product.category} / {product.subcategory}</dd>
+          <dt className="font-semibold text-navy">Category</dt><dd>{category?.name || product.category}{product.subcategory ? ` / ${product.subcategory}` : ""}</dd>
         </dl>
       ),
     },
-    { title: "Authenticity", content: <p>Sourced directly from {product.brand} or its authorised distributor. Every unit ships sealed with an intact batch code, and we can share the batch certificate on request.</p> },
-    { title: "Shipping & returns", content: <p>Dispatched the same day on orders before 2pm. {settings.shipping.estimatedDays} across Pakistan, next business day in Karachi. Free delivery over {threshold}. Unopened products can be returned within 7 days.</p> },
-  ];
+    product.warranty && { title: "Warranty", content: <p>{product.warranty}</p> },
+    {
+      title: "Authenticity",
+      content: isBeauty ? (
+        <p>Sourced directly from {product.brand} or its authorised distributor. Every unit ships sealed with an intact batch code, and we can share the batch certificate on request.</p>
+      ) : (
+        <p>Sourced directly from {product.brand} or its authorised distributor. Every unit is new, checked before dispatch and shipped in its original packaging.</p>
+      ),
+    },
+    {
+      title: "Shipping & returns",
+      content: (
+        <p>
+          Dispatched the same day on orders before 2pm. {settings.shipping.estimatedDays} across Pakistan, next business day in Karachi. Free delivery over {threshold}.{" "}
+          {isBeauty ? "Unopened products can be returned within 7 days." : "Unused items in their original packaging can be returned within 7 days, and anything that arrives faulty is replaced."}
+        </p>
+      ),
+    },
+  ].filter(Boolean);
 
   return (
     <>
@@ -215,7 +239,7 @@ export default function ProductPage() {
                 <ShareIcon className="size-4" /> Share
               </button>
               <a
-                href={whatsappLink(`Hi TAAB, I have a question about ${product.name} (${product.sku}).`)}
+                href={whatsappLink(`Hi ${site.name}, I have a question about ${product.name} (${product.sku}).`)}
                 target="_blank"
                 rel="noreferrer"
                 onClick={() => ecommerce.whatsapp("product_page", product)}
@@ -228,7 +252,7 @@ export default function ProductPage() {
 
           <ul className="mt-7 grid gap-3 rounded-2xl bg-tint p-4 text-[13px] text-navy sm:grid-cols-3">
             <li className="flex items-center gap-2"><TruckIcon className="size-5 shrink-0 text-teal" /> {settings.shipping.estimatedDays}, free over {threshold}</li>
-            <li className="flex items-center gap-2"><ShieldIcon className="size-5 shrink-0 text-teal" /> 100% authentic, sealed</li>
+            <li className="flex items-center gap-2"><ShieldIcon className="size-5 shrink-0 text-teal" /> {product.warranty ? "Genuine, with warranty" : "100% genuine, sealed"}</li>
             <li className="flex items-center gap-2"><RefreshIcon className="size-5 shrink-0 text-teal" /> 7-day easy returns</li>
           </ul>
 
@@ -237,7 +261,7 @@ export default function ProductPage() {
       </section>
 
       {bundle.length > 0 && (
-        <Section eyebrow="Complete your routine" title="Frequently bought together." bg="tint" align="left">
+        <Section eyebrow={isBeauty ? "Complete your routine" : "Goes well with"} title="Frequently bought together." bg="tint" align="left">
           <div className="grid gap-6 lg:grid-cols-[1fr_300px] lg:items-start">
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
               <ProductCard product={product} listName="fbt_anchor" />

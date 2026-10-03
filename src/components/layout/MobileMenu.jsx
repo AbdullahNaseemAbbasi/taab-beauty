@@ -3,7 +3,7 @@ import Overlay from "../ui/Modal.jsx";
 import Logo from "../Logo.jsx";
 import { ChevronRightIcon, HeartIcon, PackageIcon, UserIcon, WhatsAppIcon } from "../ui/Icons.jsx";
 import { useCatalog } from "../../catalog/CatalogProvider.jsx";
-import { site } from "../../config/site.js";
+import { site, departments } from "../../config/site.js";
 import { useStore } from "../../store/StoreProvider.jsx";
 import { ecommerce } from "../../analytics/ecommerce.js";
 
@@ -17,35 +17,42 @@ export default function MobileMenu() {
       <div className="flex-1 overflow-y-auto">
         <nav aria-label="Mobile" className="px-2 py-3">
           <div className="divide-y divide-line">
-            {categories.map((category) => (
-              <details key={category.slug} className="group">
-                <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-3.5 text-[16px] font-semibold text-navy [&::-webkit-details-marker]:hidden">
-                  {category.name}
-                  <ChevronRightIcon className="size-5 text-ink-light transition-transform group-open:rotate-90" />
-                </summary>
-                <ul className="pb-3 pl-6">
-                  <li>
-                    <Link to={`/shop/${category.slug}`} onClick={close} className="block py-2 text-[15px] font-semibold text-teal">
-                      All {category.name}
-                    </Link>
-                  </li>
-                  {category.subcategories.map((sub) => (
-                    <li key={sub}>
-                      <Link to={`/shop/${category.slug}?sub=${encodeURIComponent(sub)}`} onClick={close} className="block py-2 text-[15px] text-ink">
-                        {sub}
+            {departments.map((department) => {
+              const own = categories.filter((category) => category.department === department.id);
+              const links =
+                own.length > 1
+                  ? own.map((category) => ({ label: category.name, to: `/shop/${category.slug}` }))
+                  : (own[0]?.subcategories || []).map((sub) => ({ label: sub, to: `/shop/${own[0].slug}?sub=${encodeURIComponent(sub)}` }));
+              return (
+                <details key={department.id} className="group">
+                  <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-3.5 text-[16px] font-semibold text-navy [&::-webkit-details-marker]:hidden">
+                    {department.name}
+                    <ChevronRightIcon className="size-5 text-ink-light transition-transform group-open:rotate-90" />
+                  </summary>
+                  <ul className="pb-3 pl-6">
+                    <li>
+                      <Link to={department.to} onClick={close} className="block py-2 text-[15px] font-semibold text-teal">
+                        All {department.name}
                       </Link>
                     </li>
-                  ))}
-                </ul>
-              </details>
-            ))}
+                    {links.map((link) => (
+                      <li key={link.to}>
+                        <Link to={link.to} onClick={close} className="block py-2 text-[15px] text-ink">
+                          {link.label}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              );
+            })}
             {Object.values(collections).map((collection) => (
               <Link key={collection.slug} to={`/${collection.slug}`} onClick={close} className="block px-3 py-3.5 text-[16px] font-semibold text-navy">
                 {collection.name}
               </Link>
             ))}
             <Link to="/journal" onClick={close} className="block px-3 py-3.5 text-[16px] font-semibold text-navy">
-              Beauty Journal
+              Journal
             </Link>
           </div>
         </nav>

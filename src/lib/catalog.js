@@ -87,6 +87,24 @@ export function sortProducts(list, sort = "featured") {
   }
 }
 
+/* Takes turns between groups (e.g. departments) so a short list shows a bit of everything. */
+export function interleaveBy(list, groupOf) {
+  const groups = new Map();
+  list.forEach((item) => {
+    const key = groupOf(item);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(item);
+  });
+  const queues = [...groups.values()];
+  const result = [];
+  while (result.length < list.length) {
+    queues.forEach((queue) => {
+      if (queue.length) result.push(queue.shift());
+    });
+  }
+  return result;
+}
+
 export function facetCounts(list, key) {
   const counts = {};
   list.forEach((product) => {
@@ -123,6 +141,8 @@ const bundleRules = {
   haircare: ["argan-and-amla-hair-oil", "neem-wood-detangling-comb", "ceramic-round-blow-dry-brush"],
   fragrance: ["bath-bomb-trio", "sandalwood-spa-candle-set", "rich-repair-hand-and-body-cream"],
   tools: ["skin-fit-serum-foundation", "soft-flush-blush-duo", "glow-boost-vitamin-c-serum"],
+  electronics: ["20w-fast-wall-charger", "cork-wireless-charging-pad", "brick-portable-bluetooth-speaker"],
+  kitchen: ["4-piece-cooking-utensil-set", "wooden-mortar-and-pestle", "glass-storage-jars-set-of-3"],
 };
 
 export function frequentlyBoughtTogether(productBySlug, product, limit = 3) {

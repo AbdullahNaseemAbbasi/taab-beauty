@@ -4,11 +4,12 @@ import { products } from "../src/data/products.js";
 import { articles } from "../src/data/journal.js";
 import { categories } from "../src/data/categories.js";
 
-const base = process.env.VITE_SITE_URL || "https://taab.co";
+const base = process.env.VITE_SITE_URL || "https://naazandco.com";
 const today = new Date().toISOString().slice(0, 10);
 const entries = [
   ["/", "daily", 1.0],
   ["/shop", "daily", 0.9],
+  ["/beauty", "weekly", 0.8],
   ...categories.map((category) => [`/shop/${category.slug}`, "weekly", 0.8]),
   ["/new-arrivals", "weekly", 0.7],
   ["/best-sellers", "weekly", 0.7],

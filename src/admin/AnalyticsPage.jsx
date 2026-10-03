@@ -72,7 +72,7 @@ export default function AnalyticsPage() {
   return (
     <div className="space-y-5">
       <PageTitle title="Analytics" subtitle="Sales, the customer journey, campaigns and product performance.">
-        <button type="button" onClick={() => downloadCsv(`taab-${view}.csv`, report.data || [])} className="h-10 rounded-full border border-line bg-white px-4 text-[14px] font-semibold text-navy hover:border-navy" disabled={!report.data?.length}>
+        <button type="button" onClick={() => downloadCsv(`naaz-${view}.csv`, report.data || [])} className="h-10 rounded-full border border-line bg-white px-4 text-[14px] font-semibold text-navy hover:border-navy" disabled={!report.data?.length}>
           Export CSV
         </button>
       </PageTitle>

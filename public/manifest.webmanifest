@@ -1,7 +1,7 @@
 {
-  "name": "TAAB Beauty",
-  "short_name": "TAAB",
-  "description": "Premium makeup, skincare, haircare and fragrance, delivered across Pakistan.",
+  "name": "Naaz & CO",
+  "short_name": "Naaz & CO",
+  "description": "Beauty, electronics and kitchenware, delivered across Pakistan.",
   "start_url": "/?utm_source=pwa&utm_medium=homescreen",
   "scope": "/",
   "display": "standalone",
@@ -9,12 +9,33 @@
   "theme_color": "#072b4b",
   "lang": "en-PK",
   "icons": [
-    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "/icons/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ],
   "shortcuts": [
-    { "name": "Best sellers", "url": "/best-sellers?utm_source=pwa&utm_medium=shortcut" },
-    { "name": "Track order", "url": "/track-order?utm_source=pwa&utm_medium=shortcut" }
+    {
+      "name": "Best sellers",
+      "url": "/best-sellers?utm_source=pwa&utm_medium=shortcut"
+    },
+    {
+      "name": "Track order",
+      "url": "/track-order?utm_source=pwa&utm_medium=shortcut"
+    }
   ]
 }

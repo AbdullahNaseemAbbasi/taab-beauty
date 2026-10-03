@@ -32,19 +32,19 @@ function customerMessage(order, status, tracking, courier) {
   const track = `${site.url}/track-order?id=${order.id}&phone=${order.phone}`;
   switch (status) {
     case "confirmed":
-      return `Hi ${name}, your TAAB order ${order.id} is confirmed. We are packing it now. Track it here: ${track}`;
+      return `Hi ${name}, your Naaz & CO order ${order.id} is confirmed. We are packing it now. Track it here: ${track}`;
     case "packed":
-      return `Hi ${name}, your TAAB order ${order.id} is packed and will be handed to the courier today.`;
+      return `Hi ${name}, your Naaz & CO order ${order.id} is packed and will be handed to the courier today.`;
     case "shipped":
-      return `Hi ${name}, your TAAB order ${order.id} has shipped${courier ? ` with ${courier}` : ""}${tracking ? `. Tracking number: ${tracking}` : ""}. Track it here: ${track}`;
+      return `Hi ${name}, your Naaz & CO order ${order.id} has shipped${courier ? ` with ${courier}` : ""}${tracking ? `. Tracking number: ${tracking}` : ""}. Track it here: ${track}`;
     case "out_for_delivery":
-      return `Hi ${name}, your TAAB order ${order.id} is out for delivery today.${order.payment === "cod" ? ` Please keep ${formatPrice(order.totals.total)} ready.` : ""}`;
+      return `Hi ${name}, your Naaz & CO order ${order.id} is out for delivery today.${order.payment === "cod" ? ` Please keep ${formatPrice(order.totals.total)} ready.` : ""}`;
     case "delivered":
-      return `Hi ${name}, your TAAB order ${order.id} was delivered. We hope you love it! A quick review on the product page would mean a lot.`;
+      return `Hi ${name}, your Naaz & CO order ${order.id} was delivered. We hope you love it! A quick review on the product page would mean a lot.`;
     case "cancelled":
-      return `Hi ${name}, your TAAB order ${order.id} has been cancelled. Message us here if this was a mistake.`;
+      return `Hi ${name}, your Naaz & CO order ${order.id} has been cancelled. Message us here if this was a mistake.`;
     default:
-      return `Hi ${name}, an update on your TAAB order ${order.id}: ${statusLabel(status)}. Track it here: ${track}`;
+      return `Hi ${name}, an update on your Naaz & CO order ${order.id}: ${statusLabel(status)}. Track it here: ${track}`;
   }
 }
 
@@ -195,7 +195,7 @@ export default function OrdersPage() {
   const [params, setParams] = useSearchParams();
   const orders = useAsync(() => fetchOrders({ status, search }), [status, search]);
 
-  /* /admin/orders?order=TB-... opens that order directly (used by phone notifications). */
+  /* /admin/orders?order=NZ-... opens that order directly (used by phone notifications). */
   const linkedOrder = params.get("order");
   useEffect(() => {
     if (!linkedOrder) return;

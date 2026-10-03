@@ -6,11 +6,14 @@
 Home
 ├── Shop
 │   ├── All products                 /shop
-│   ├── Makeup                       /shop/makeup
-│   ├── Skincare                     /shop/skincare
-│   ├── Haircare                     /shop/haircare
-│   ├── Fragrance & Body             /shop/fragrance
-│   ├── Beauty Tools                 /shop/tools
+│   ├── Beauty (department)          /beauty
+│   │   ├── Makeup                   /shop/makeup
+│   │   ├── Skincare                 /shop/skincare
+│   │   ├── Haircare                 /shop/haircare
+│   │   ├── Fragrance & Body         /shop/fragrance
+│   │   └── Beauty Tools             /shop/tools
+│   ├── Electronics                  /shop/electronics
+│   ├── Kitchen & Dining             /shop/kitchen
 │   ├── New Arrivals                 /new-arrivals
 │   ├── Best Sellers                 /best-sellers
 │   └── Sale                         /sale
@@ -23,13 +26,13 @@ Home
 ├── Wishlist                         /wishlist
 ├── Compare                          /compare
 ├── My account                       /account
-├── Beauty Journal                   /journal  (?topic=guides|tips|skin|ingredients|routines)
+├── Journal                          /journal  (?topic=guides|tips|home|skin|ingredients|routines)
 │   └── Article                      /journal/:slug
 ├── About                            /about
 ├── Contact                          /contact
 ├── FAQ                              /faq
 ├── Shipping Policy                  /shipping-policy
-├── Returns & Refunds                /returns
+├── Returns, Refunds & Warranty      /returns
 ├── Privacy Policy                   /privacy-policy
 ├── Terms & Conditions               /terms
 └── 404                              *
@@ -42,6 +45,7 @@ Home
 | `/` | HomePage | products, articles, testimonials | yes | Hero A/B test, 16 sections |
 | `/shop` | ShopPage (mode=all) | products | yes | Filters live in the query string so they are shareable and trackable |
 | `/shop/:category` | ShopPage (mode=category) | category + products | yes | Category hero, breadcrumb schema |
+| `/beauty` | ShopPage (mode=department) | every category whose `department` is beauty | yes | Electronics and Kitchen are one category each, so their department links go to `/shop/electronics` and `/shop/kitchen` |
 | `/new-arrivals` `/best-sellers` `/sale` | ShopPage (mode=collection) | collection filter | yes | |
 | `/product/:slug` | ProductPage | product, reviews, bundles | yes | Product + Breadcrumb JSON-LD, sticky mobile add-to-bag |
 | `/search` | SearchPage | query | no | `search` event with result count |
@@ -60,7 +64,7 @@ Home
 
 - Lowercase, hyphenated, no trailing slashes.
 - Products: `/product/<slug>`; slugs are stable and never reused.
-- Filters: `?sub=Lips&brand=TAAB&concern=dryness&min=1000&max=4000&sale=1&stock=1&sort=price-asc&page=2`
+- Filters: `?sub=Lips&brand=Naaz%20%26%20CO&concern=dryness&min=1000&max=4000&sale=1&stock=1&sort=price-asc&page=2`
 - Campaign landing: any URL plus `?utm_source=instagram&utm_medium=paid_social&utm_campaign=summer_sale&utm_content=foundation_video_01` or `?ref=creator123`. Parameters are captured once and then dropped from internal navigation.
 
 ## SEO

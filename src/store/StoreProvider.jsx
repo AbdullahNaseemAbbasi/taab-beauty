@@ -5,7 +5,7 @@ import { variantStock } from "../lib/catalog.js";
 import { validateCoupon } from "../api/orders.js";
 import { ecommerce } from "../analytics/ecommerce.js";
 
-const STORAGE_KEY = "taab:store:v1";
+const STORAGE_KEY = "naaz:store:v1";
 const MAX_COMPARE = 4;
 const MAX_RECENT = 8;
 

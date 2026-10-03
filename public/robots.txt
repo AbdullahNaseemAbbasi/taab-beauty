@@ -9,4 +9,4 @@ Disallow: /compare
 Disallow: /search
 Disallow: /admin
 
-Sitemap: https://taab.co/sitemap.xml
+Sitemap: https://naazandco.com/sitemap.xml

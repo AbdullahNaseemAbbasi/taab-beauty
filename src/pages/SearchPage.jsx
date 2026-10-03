@@ -35,7 +35,7 @@ export default function SearchPage() {
             <EmptyState
               icon={SearchIcon}
               title={query ? `Nothing found for “${query}”` : "Start a search"}
-              text="Check the spelling, try a broader word like “serum” or “lipstick”, or browse the best sellers below."
+              text="Check the spelling, try a broader word like “serum”, “earbuds” or “pan”, or browse the best sellers below."
               action={{ label: "Browse all products", to: "/shop" }}
             />
             <button type="button" onClick={() => setUI({ searchOpen: true })} className="mx-auto mt-4 block text-[14px] font-semibold text-teal hover:underline">

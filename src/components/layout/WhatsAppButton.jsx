@@ -12,7 +12,7 @@ export default function WhatsAppButton() {
   const { ui } = useStore();
   return (
     <a
-      href={whatsappLink("Hi TAAB, I have a question about an order.")}
+      href={whatsappLink("Hi Naaz & CO, I have a question about an order.")}
       target="_blank"
       rel="noreferrer"
       onClick={() => ecommerce.whatsapp("floating_button")}

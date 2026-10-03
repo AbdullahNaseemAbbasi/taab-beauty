@@ -24,7 +24,7 @@ function upsertMeta(attr, key, content) {
 
 export default function useSeo({ title, description, path = "/", image, type = "website", jsonLd = [], noindex = false }) {
   useEffect(() => {
-    const fullTitle = title ? `${title} | ${site.name}` : `${site.name} | Premium Makeup, Skincare, Haircare & Fragrance in Pakistan`;
+    const fullTitle = title ? `${title} | ${site.name}` : `${site.name} | Beauty, Electronics & Kitchen, Delivered Across Pakistan`;
     const url = `${site.url}${path}`;
     const desc = description || site.description;
     const shareImage = image || defaultImage;

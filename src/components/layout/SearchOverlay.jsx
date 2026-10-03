@@ -9,7 +9,7 @@ import { useCatalog } from "../../catalog/CatalogProvider.jsx";
 import { useStore } from "../../store/StoreProvider.jsx";
 import { ecommerce } from "../../analytics/ecommerce.js";
 
-const popular = ["lipstick", "vitamin c serum", "foundation", "hair oil", "perfume", "brush set"];
+const popular = ["lipstick", "vitamin c serum", "earbuds", "power bank", "frying pan", "tea set"];
 
 export default function SearchOverlay() {
   const { ui, setUI } = useStore();

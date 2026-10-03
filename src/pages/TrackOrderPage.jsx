@@ -18,7 +18,7 @@ import { EVENTS } from "../analytics/events.js";
 import { ecommerce } from "../analytics/ecommerce.js";
 
 export default function TrackOrderPage() {
-  useSeo({ title: "Track Your Order", description: "Enter your TAAB order number and phone number to see delivery progress.", path: "/track-order" });
+  useSeo({ title: "Track Your Order", description: "Enter your Naaz & CO order number and phone number to see delivery progress.", path: "/track-order" });
   const { productById, productBySlug } = useCatalog();
   const [params] = useSearchParams();
   const [form, setForm] = useState(() => ({ id: (params.get("id") || "").toUpperCase(), phone: params.get("phone") || phoneForOrder(params.get("id") || "") || "" }));
@@ -65,7 +65,7 @@ export default function TrackOrderPage() {
           className="mx-auto grid max-w-2xl gap-4 rounded-2xl border border-line bg-white p-5 sm:grid-cols-[1fr_1fr_auto] sm:items-end sm:p-6"
         >
           <Field label="Order number" required>
-            <Input value={form.id} onChange={(event) => setForm({ ...form, id: event.target.value.toUpperCase() })} placeholder="TB-241001-0211" required />
+            <Input value={form.id} onChange={(event) => setForm({ ...form, id: event.target.value.toUpperCase() })} placeholder="NZ-241001-0211" required />
           </Field>
           <Field label="Phone number" required>
             <Input type="tel" inputMode="tel" value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} placeholder="0300 1234567" required />
@@ -79,7 +79,7 @@ export default function TrackOrderPage() {
             </p>
           )}
           <p className="text-[12px] text-ink-light sm:col-span-3">
-            Demo tip: try order <button type="button" onClick={() => setForm({ id: "TB-241001-0211", phone: "03001234567" })} className="font-semibold text-teal underline">TB-241001-0211</button> with phone 0300 1234567.
+            Demo tip: try order <button type="button" onClick={() => setForm({ id: "NZ-241001-0211", phone: "03001234567" })} className="font-semibold text-teal underline">NZ-241001-0211</button> with phone 0300 1234567.
           </p>
         </form>
 
@@ -104,7 +104,7 @@ export default function TrackOrderPage() {
               </div>
               <TrackingCard order={result} />
               <a
-                href={whatsappLink(`Hi TAAB, I have a question about order ${result.id}.`)}
+                href={whatsappLink(`Hi Naaz & CO, I have a question about order ${result.id}.`)}
                 target="_blank"
                 rel="noreferrer"
                 onClick={() => ecommerce.whatsapp("track_order")}

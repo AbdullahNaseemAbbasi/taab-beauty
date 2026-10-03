@@ -4,7 +4,7 @@ export const collections = {
     slug: "new-arrivals",
     name: "New Arrivals",
     tagline: "Fresh this month.",
-    description: "The newest launches at TAAB, added as soon as they pass our testing.",
+    description: "The newest arrivals at Naaz & CO across beauty, electronics and kitchen.",
     filter: (product) => product.newArrival,
   },
   "best-sellers": {

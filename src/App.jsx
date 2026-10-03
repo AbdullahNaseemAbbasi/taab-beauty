@@ -56,6 +56,7 @@ export default function App() {
               <Routes>
                 <Route path="shop" element={<ShopPage mode="all" />} />
                 <Route path="shop/:category" element={<ShopPage mode="category" />} />
+                <Route path="beauty" element={<ShopPage mode="department" department="beauty" />} />
                 <Route path="new-arrivals" element={<ShopPage mode="collection" collection="new-arrivals" />} />
                 <Route path="best-sellers" element={<ShopPage mode="collection" collection="best-sellers" />} />
                 <Route path="sale" element={<ShopPage mode="collection" collection="sale" />} />

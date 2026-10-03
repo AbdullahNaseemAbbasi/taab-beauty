@@ -7,8 +7,8 @@ import { supabase, isLive, toError } from "./client.js";
 import { findCoupon, sampleOrders } from "../data/misc.js";
 import { attributionForOrder } from "../analytics/attribution.js";
 
-const ORDERS_KEY = "taab:orders";
-const PLACED_KEY = "taab:orders:placed"; // [{ id, phone }] for orders placed on this device
+const ORDERS_KEY = "naaz:orders";
+const PLACED_KEY = "naaz:orders:placed"; // [{ id, phone }] for orders placed on this device
 
 function readJson(key, fallback) {
   try {
@@ -56,7 +56,7 @@ export async function validateCoupon(code, subtotal) {
 /* ---------------------------------------------------------- place order */
 function orderId(date = new Date()) {
   const stamp = date.toISOString().slice(2, 10).replace(/-/g, "");
-  return `TB-${stamp}-${Math.floor(Math.random() * 9000) + 1000}`;
+  return `NZ-${stamp}-${Math.floor(Math.random() * 9000) + 1000}`;
 }
 
 function mockPlaceOrder({ customer, lines, coupon, payment, notes, totals }) {
@@ -137,7 +137,7 @@ export async function getOrder(id, phone) {
 }
 
 /* -------------------------------------------------- creator / affiliate */
-const OFFER_KEY = "taab:creatorOffer";
+const OFFER_KEY = "naaz:creatorOffer";
 
 export async function fetchCreatorOffer(ref) {
   if (!ref) return null;

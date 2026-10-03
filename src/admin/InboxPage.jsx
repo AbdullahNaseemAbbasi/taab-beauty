@@ -45,11 +45,11 @@ function Messages() {
                 </div>
                 <p className="mt-3 whitespace-pre-line text-[15px] leading-[1.6] text-ink">{message.message}</p>
                 <div className="mt-4 flex flex-wrap items-center gap-2">
-                  <a href={`mailto:${message.email}?subject=${encodeURIComponent(`Re: ${message.topic || "Your message to TAAB"}`)}`} className="inline-flex h-10 items-center gap-2 rounded-full border border-line px-4 text-[14px] font-semibold text-navy hover:border-navy">
+                  <a href={`mailto:${message.email}?subject=${encodeURIComponent(`Re: ${message.topic || "Your message to Naaz & CO"}`)}`} className="inline-flex h-10 items-center gap-2 rounded-full border border-line px-4 text-[14px] font-semibold text-navy hover:border-navy">
                     <MailIcon className="size-4" /> {message.email}
                   </a>
                   {message.phone && (
-                    <a href={waLink(message.phone, `Hi ${message.name.split(" ")[0]}, this is TAAB replying to your message.`)} target="_blank" rel="noreferrer" className="inline-flex h-10 items-center gap-2 rounded-full bg-[#25D366] px-4 text-[14px] font-semibold text-white">
+                    <a href={waLink(message.phone, `Hi ${message.name.split(" ")[0]}, this is Naaz & CO replying to your message.`)} target="_blank" rel="noreferrer" className="inline-flex h-10 items-center gap-2 rounded-full bg-[#25D366] px-4 text-[14px] font-semibold text-white">
                       <WhatsAppIcon className="size-4" /> WhatsApp
                     </a>
                   )}
@@ -93,7 +93,7 @@ function Abandoned() {
               label: "",
               align: "right",
               render: (row) => (
-                <a href={waLink(row.phone, `Hi ${(row.name || "").split(" ")[0] || "there"}, this is TAAB. You left a few items in your bag. Can we help you finish the order or answer any question? ${site.url}/cart`)} target="_blank" rel="noreferrer" className="inline-flex h-9 items-center gap-2 rounded-full bg-[#25D366] px-3 text-[13px] font-semibold text-white">
+                <a href={waLink(row.phone, `Hi ${(row.name || "").split(" ")[0] || "there"}, this is Naaz & CO. You left a few items in your bag. Can we help you finish the order or answer any question? ${site.url}/cart`)} target="_blank" rel="noreferrer" className="inline-flex h-9 items-center gap-2 rounded-full bg-[#25D366] px-3 text-[13px] font-semibold text-white">
                   <WhatsAppIcon className="size-4" /> Follow up
                 </a>
               ),
@@ -129,7 +129,7 @@ function StockAlerts() {
               label: "Contact",
               render: (row) =>
                 row.channel === "phone" ? (
-                  <a href={waLink(row.contact, `Good news from TAAB: ${row.products?.name} is back in stock. ${site.url}/product/${row.products?.slug}`)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 font-semibold text-teal hover:underline">
+                  <a href={waLink(row.contact, `Good news from Naaz & CO: ${row.products?.name} is back in stock. ${site.url}/product/${row.products?.slug}`)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 font-semibold text-teal hover:underline">
                     <WhatsAppIcon className="size-4 text-[#25D366]" /> {row.contact}
                   </a>
                 ) : (
@@ -154,7 +154,7 @@ function Subscribers() {
         <>
           <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
             <p className="text-[15px] text-ink"><strong className="text-navy">{rows.length}</strong> subscriber{rows.length === 1 ? "" : "s"}</p>
-            <button type="button" onClick={() => downloadCsv("taab-newsletter.csv", rows.map(({ email, source, created_at }) => ({ email, source, subscribed_at: created_at })))} className="h-10 rounded-full border border-line bg-white px-4 text-[14px] font-semibold text-navy hover:border-navy" disabled={!rows.length}>
+            <button type="button" onClick={() => downloadCsv("naaz-newsletter.csv", rows.map(({ email, source, created_at }) => ({ email, source, subscribed_at: created_at })))} className="h-10 rounded-full border border-line bg-white px-4 text-[14px] font-semibold text-navy hover:border-navy" disabled={!rows.length}>
               Export CSV
             </button>
           </div>

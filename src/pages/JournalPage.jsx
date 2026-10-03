@@ -15,11 +15,11 @@ export default function JournalPage() {
   const [featured, ...rest] = list;
   const activeTopic = journalTopics.find((entry) => entry.id === topic);
 
-  useSeo({ title: activeTopic ? `${activeTopic.name} | Beauty Journal` : "Beauty Journal", description: "Product guides, routines, ingredient explainers and makeup tips from TAAB artists and dermatologists.", path: topic ? `/journal?topic=${topic}` : "/journal" });
+  useSeo({ title: activeTopic ? `${activeTopic.name} | Journal` : "Journal", description: "Buying guides, routines and practical tips for beauty, electronics and the kitchen from the Naaz & CO team.", path: topic ? `/journal?topic=${topic}` : "/journal" });
 
   return (
     <>
-      <PageHero eyebrow="Beauty Journal" title="Learn before you buy." description="Guides and tutorials written by our makeup artists and dermatologists. No fluff, no sponsored opinions." image={images.hero.journal} imageAlt="Applying makeup in a mirror" compact />
+      <PageHero eyebrow="The Journal" title="Learn before you buy." description="Guides and how-tos written by people who use the products: makeup artists, home cooks and gadget testers. No fluff, no sponsored opinions." image={images.hero.journal} imageAlt="Applying makeup in a mirror" compact />
       <section className="wrap py-8 sm:py-12">
         <div className="no-scrollbar -mx-5 flex gap-2 overflow-x-auto px-5 sm:mx-0 sm:flex-wrap sm:px-0">
           <button type="button" onClick={() => setParams({})} className={`shrink-0 rounded-full px-4 py-2 text-[14px] font-semibold ${!topic ? "bg-navy text-white" : "border border-line text-navy hover:border-navy"}`}>

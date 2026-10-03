@@ -1,6 +1,6 @@
-# TAAB · Premium beauty e-commerce for Pakistan
+# Naaz & CO · Beauty, electronics and kitchen e-commerce for Pakistan
 
-Data-driven storefront for **TAAB** (makeup, skincare, haircare, fragrance and tools), built with React 19, Vite, Tailwind CSS v4 and React Router, backed by **Supabase** (Postgres). Catalogue, reviews, articles, coupons, orders, customers, forms and analytics events all live in the database; prices, stock and coupons are validated server-side when an order is placed. Without Supabase keys the same frontend runs on the built-in mock data.
+Data-driven storefront for **Naaz & CO**, a three-department store (beauty, electronics, kitchen), built with React 19, Vite, Tailwind CSS v4 and React Router, backed by **Supabase** (Postgres). Catalogue, reviews, articles, coupons, orders, customers, forms and analytics events all live in the database; prices, stock and coupons are validated server-side when an order is placed. Without Supabase keys the same frontend runs on the built-in mock data.
 
 ## Run
 
@@ -60,10 +60,11 @@ Day-to-day operations are listed in `docs/10-launch-checklist.md`. `npm run seed
 
 ## Try the demo
 
-- Add products to the bag, apply code `WELCOME10` or creator code `HIRA15`, and check out with cash on delivery. The order is written to Supabase and stock is decremented.
-- Track the sample order `TB-241001-0211` with phone `0300 1234567`.
+- Browse the three departments (`/beauty`, `/shop/electronics`, `/shop/kitchen`). Beauty pages show ingredients; electronics and kitchen pages show specifications and warranty.
+- Add products to the bag, apply code `WELCOME10`, `NAAZ500` or creator code `HIRA15`, and check out with cash on delivery. The order is written to Supabase and stock is decremented.
+- Track the sample order `NZ-241001-0211` with phone `0300 1234567`.
 - Land on any page with `?utm_source=instagram&utm_campaign=test&ref=hira` and watch the attribution appear on the events in the console and on the order you place. The `ref=hira` creator link shows a banner and auto-applies `HIRA15` at checkout.
-- Open `/track-order?id=TB-241001-0211&phone=03001234567` to see the link format used in SMS and WhatsApp messages.
+- Open `/track-order?id=NZ-241001-0211&phone=03001234567` to see the link format used in SMS and WhatsApp messages.
 - Create an account on `/account`, place an order while signed in and see it under "Your orders".
 - Sign in at `/admin` with the admin created by `npm run create-admin`, open the order and move it to Shipped with a tracking code; the customer's Track Order page updates at once.
 
@@ -83,5 +84,7 @@ Day-to-day operations are listed in `docs/10-launch-checklist.md`. `npm run seed
 | `docs/10-launch-checklist.md` | What is done, what the owner must do, daily operations in the admin panel |
 
 ## Images
+
+The logo in `src/components/Logo.jsx` draws the paths in `src/components/logoPaths.js`, traced from the owner's artwork (`docs/brand/`) and coloured from the site palette.
 
 Placeholder photography is served from Burst (Shopify's free stock library, licensed for commercial use) through its resizing CDN. Replace slugs in `src/data/images.js` and the product `images` arrays with your own photography when it is ready.

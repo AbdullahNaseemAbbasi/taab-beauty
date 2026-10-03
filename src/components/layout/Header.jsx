@@ -4,7 +4,7 @@ import Logo from "../Logo.jsx";
 import MegaMenu from "./MegaMenu.jsx";
 import { IconButton } from "../ui/Button.jsx";
 import { BagIcon, HeartIcon, MenuIcon, SearchIcon, UserIcon } from "../ui/Icons.jsx";
-import { nav } from "../../config/site.js";
+import { nav, site } from "../../config/site.js";
 import { useStore } from "../../store/StoreProvider.jsx";
 
 const linkClass = ({ isActive }, accent) =>
@@ -25,7 +25,7 @@ export default function Header() {
           </IconButton>
         </div>
 
-        <Link to="/" aria-label="TAAB home" className="shrink-0">
+        <Link to="/" aria-label={`${site.name} home`} title={`${site.name} home`} className="shrink-0">
           <Logo />
         </Link>
 
@@ -33,7 +33,7 @@ export default function Header() {
           {nav.map((item) =>
             item.mega ? (
               <div key={item.to} className="relative" onMouseEnter={() => setMegaOpen(true)}>
-                <NavLink to={item.to} className={(state) => linkClass(state, false)} aria-haspopup="true" aria-expanded={megaOpen} onFocus={() => setMegaOpen(true)}>
+                <NavLink to={item.to} end className={(state) => linkClass(state, false)} aria-haspopup="true" aria-expanded={megaOpen} onFocus={() => setMegaOpen(true)}>
                   {item.label}
                 </NavLink>
                 <MegaMenu open={megaOpen} onClose={() => setMegaOpen(false)} />

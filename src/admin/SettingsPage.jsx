@@ -102,8 +102,8 @@ function NotificationsForm({ initial, onSaved }) {
         <li>Every new order and contact message then rings your phone.</li>
       </ol>
       <form onSubmit={save} className="mt-4 grid gap-3">
-        <Field label="Topic (keep it private)"><Input value={topic} onChange={(event) => setTopic(event.target.value)} placeholder="taab-orders-xxxxxxxx" /></Field>
-        <Field label="Store address" hint="Tapping a notification opens the order in this admin panel."><Input value={adminUrl} onChange={(event) => setAdminUrl(event.target.value)} placeholder="https://taab.co" /></Field>
+        <Field label="Topic (keep it private)"><Input value={topic} onChange={(event) => setTopic(event.target.value)} placeholder="naaz-orders-xxxxxxxx" /></Field>
+        <Field label="Store address" hint="Tapping a notification opens the order in this admin panel."><Input value={adminUrl} onChange={(event) => setAdminUrl(event.target.value)} placeholder="https://naazandco.com" /></Field>
         <div><Button type="submit" variant="navy" size="sm" disabled={busy}>{busy ? "Saving…" : "Save notification settings"}</Button></div>
       </form>
       <p className="mt-2 text-[12px] text-ink-light">Anyone who knows the topic can read the notifications. Change it here if it ever leaks, then subscribe to the new one in the app. Leave it empty to turn notifications off.</p>

@@ -45,13 +45,13 @@ const brandIdByName = Object.fromEntries(brands.map((brand) => [brand.name, bran
 
 await upsert("settings", [
   { key: "shipping", value: { free_shipping_threshold: 7000, shipping_fee: 250, estimated_days: "2 to 4 business days" } },
-  { key: "store", value: { name: "TAAB", currency: "PKR", cod_enabled: true, bank_transfer_enabled: true, card_enabled: false } },
+  { key: "store", value: { name: "Naaz & CO", currency: "PKR", cod_enabled: true, bank_transfer_enabled: true, card_enabled: false } },
 ], "key");
 
 await upsert("brands", brands.map((brand) => ({ id: brand.id, name: brand.name, tagline: brand.tagline, description: brand.description, featured: brand.featured, active: true })));
 
 await upsert("categories", categories.map((category, index) => ({
-  id: category.slug, name: category.name, tagline: category.tagline, description: category.description, image: category.image, subcategories: category.subcategories, sort_order: index, active: true,
+  id: category.slug, department: category.department, name: category.name, tagline: category.tagline, description: category.description, image: category.image, subcategories: category.subcategories, sort_order: index, active: true,
 })));
 
 await upsert("concerns", concerns.map((concern, index) => ({ id: concern.id, name: concern.name, description: concern.description, image: concern.image, sort_order: index })));
@@ -70,15 +70,17 @@ await upsert("products", products.map((product) => ({
   images: product.images,
   description: product.description,
   benefits: product.benefits,
-  ingredients: product.ingredients,
-  how_to_use: product.howToUse,
+  ingredients: product.ingredients || [],
+  how_to_use: product.howToUse || null,
   size: product.size,
   stock: product.stock,
   rating: product.rating,
   review_count: product.reviewCount,
   tags: product.tags,
-  concerns: product.concerns,
+  concerns: product.concerns || [],
   variants: product.variants || null,
+  specs: product.specs || [],
+  warranty: product.warranty || null,
   featured: product.featured,
   best_seller: product.bestSeller,
   new_arrival: product.newArrival,
@@ -111,6 +113,8 @@ await upsert("articles", articles.map((article) => ({
 
 const faqRows = faqs.flatMap((group, groupIndex) => group.items.map((item, index) => ({ id: groupIndex * 100 + index + 1, category: group.category, question: item.question, answer: item.answer, sort_order: groupIndex * 100 + index, active: true })));
 await upsert("faqs", faqRows);
+/* FAQs are only edited here, so rows that are no longer in the file are removed. */
+await db.from("faqs").delete().not("id", "in", `(${faqRows.map((row) => row.id).join(",")})`);
 
 await upsert("coupons", coupons.map((coupon) => ({ code: coupon.code, type: coupon.type, value: coupon.value, min_order: coupon.minOrder, description: coupon.description, creator_id: coupon.creatorId, active: true })), "code");
 

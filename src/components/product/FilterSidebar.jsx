@@ -16,12 +16,16 @@ function Group({ title, children }) {
   );
 }
 
-export default function FilterSidebar({ baseProducts, filters, onChange, showCategory = true, category }) {
-  const { categories, brands, concerns } = useCatalog();
+export default function FilterSidebar({ baseProducts, filters, onChange, showCategory = true, category, categoryOptions }) {
+  const catalog = useCatalog();
+  const categories = categoryOptions || catalog.categories;
   const brandCounts = facetCounts(baseProducts, "brand");
   const concernCounts = facetCounts(baseProducts, "concerns");
   const subCounts = facetCounts(baseProducts, "subcategory");
-  const activeCategory = categories.find((entry) => entry.slug === (category || filters.category));
+  const activeCategory = catalog.categories.find((entry) => entry.slug === (category || filters.category));
+  /* Only offer brands and concerns that exist in this list (plus any already ticked). */
+  const brands = catalog.brands.filter((brand) => brandCounts[brand.name] || filters.brands?.includes(brand.name));
+  const concerns = catalog.concerns.filter((concern) => concernCounts[concern.id] || filters.concerns?.includes(concern.id));
 
   const toggle = (key, value) => {
     const list = filters[key] || [];
@@ -66,17 +70,21 @@ export default function FilterSidebar({ baseProducts, filters, onChange, showCat
         </Group>
       )}
 
-      <Group title="Brand">
-        {brands.map((brand) => (
-          <Checkbox key={brand.id} label={`${brand.name} (${brandCounts[brand.name] || 0})`} checked={filters.brands?.includes(brand.name) || false} onChange={() => toggle("brands", brand.name)} />
-        ))}
-      </Group>
+      {brands.length > 0 && (
+        <Group title="Brand">
+          {brands.map((brand) => (
+            <Checkbox key={brand.id} label={`${brand.name} (${brandCounts[brand.name] || 0})`} checked={filters.brands?.includes(brand.name) || false} onChange={() => toggle("brands", brand.name)} />
+          ))}
+        </Group>
+      )}
 
-      <Group title="Concern">
-        {concerns.map((concern) => (
-          <Checkbox key={concern.id} label={`${concern.name} (${concernCounts[concern.id] || 0})`} checked={filters.concerns?.includes(concern.id) || false} onChange={() => toggle("concerns", concern.id)} />
-        ))}
-      </Group>
+      {concerns.length > 0 && (
+        <Group title="Concern">
+          {concerns.map((concern) => (
+            <Checkbox key={concern.id} label={`${concern.name} (${concernCounts[concern.id] || 0})`} checked={filters.concerns?.includes(concern.id) || false} onChange={() => toggle("concerns", concern.id)} />
+          ))}
+        </Group>
+      )}
 
       <Group title={`Price (${site.currency.symbol})`}>
         <div className="flex items-center gap-2">
@@ -87,8 +95,9 @@ export default function FilterSidebar({ baseProducts, filters, onChange, showCat
         <div className="flex flex-wrap gap-2 pt-1">
           {[
             ["Under 2,000", null, 2000],
-            ["2,000 to 4,000", 2000, 4000],
-            ["Over 4,000", 4000, null],
+            ["2,000 to 5,000", 2000, 5000],
+            ["5,000 to 10,000", 5000, 10000],
+            ["Over 10,000", 10000, null],
           ].map(([label, min, max]) => (
             <button key={label} type="button" onClick={() => onChange({ ...filters, minPrice: min, maxPrice: max })} className="rounded-full border border-line px-3 py-1 text-[12px] text-navy hover:border-navy">
               {label}

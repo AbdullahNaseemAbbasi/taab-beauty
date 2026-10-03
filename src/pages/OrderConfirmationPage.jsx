@@ -23,7 +23,7 @@ export function orderWhatsAppMessage(order) {
   const method = site.payments.methods.find((entry) => entry.id === order.payment)?.label || order.payment;
   const items = order.lines.map((line) => `• ${line.quantity} × ${line.product?.name || line.name}${line.variant?.name || line.variant ? ` (${line.variant?.name || line.variant})` : ""}`).join("\n");
   return [
-    `Hi TAAB, confirming my order ${order.id}.`,
+    `Hi Naaz & CO, confirming my order ${order.id}.`,
     "",
     items,
     "",
