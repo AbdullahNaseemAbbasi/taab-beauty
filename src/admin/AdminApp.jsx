@@ -1,13 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, NavLink, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import Logo from "../components/Logo.jsx";
 import Button from "../components/ui/Button.jsx";
 import Overlay from "../components/ui/Modal.jsx";
 import { Field, Input } from "../components/ui/Form.jsx";
 import { Skeleton, ToastViewport } from "../components/ui/Feedback.jsx";
-import { GridIcon, PackageIcon, BagIcon, UserIcon, StarIcon, MailIcon, TagIcon, ChartBarIcon, CogIcon, LogoutIcon, StoreIcon, MenuIcon, ShieldIcon } from "../components/ui/Icons.jsx";
+import { GridIcon, LayersIcon, PackageIcon, BagIcon, UserIcon, StarIcon, MailIcon, TagIcon, ChartBarIcon, CogIcon, LogoutIcon, StoreIcon, MenuIcon, ShieldIcon } from "../components/ui/Icons.jsx";
 import { useAuth } from "../auth/AuthProvider.jsx";
-import { fetchStats } from "../api/admin.js";
+import { fetchStats, subscribeToAdminChanges } from "../api/admin.js";
+import { useStore } from "../store/StoreProvider.jsx";
+import { formatPrice } from "../lib/format.js";
+import { site } from "../config/site.js";
 import { useAsync } from "./ui.jsx";
 import DashboardPage from "./DashboardPage.jsx";
 import OrdersPage from "./OrdersPage.jsx";
@@ -18,11 +21,13 @@ import InboxPage from "./InboxPage.jsx";
 import CouponsPage from "./CouponsPage.jsx";
 import AnalyticsPage from "./AnalyticsPage.jsx";
 import SettingsPage from "./SettingsPage.jsx";
+import CataloguePage from "./CataloguePage.jsx";
 
 const navItems = [
   { to: "/admin", label: "Dashboard", Icon: GridIcon, end: true },
   { to: "/admin/orders", label: "Orders", Icon: PackageIcon, badge: "pending" },
   { to: "/admin/products", label: "Products", Icon: BagIcon },
+  { to: "/admin/catalogue", label: "Catalogue", Icon: LayersIcon },
   { to: "/admin/customers", label: "Customers", Icon: UserIcon },
   { to: "/admin/reviews", label: "Reviews", Icon: StarIcon, badge: "pending_reviews" },
   { to: "/admin/inbox", label: "Inbox", Icon: MailIcon, badge: "new_messages" },
@@ -62,7 +67,7 @@ function AdminLogin() {
         </div>
         <form onSubmit={submit} className="rounded-2xl border border-line bg-white p-6 shadow-float sm:p-8">
           <p className="text-[12px] font-bold uppercase tracking-[0.22em] text-teal">Store admin</p>
-          <h1 className="mt-2 font-display text-[26px] font-extrabold text-navy">Sign in to manage Naaz & CO.</h1>
+          <h1 className="mt-2 font-display text-[26px] font-extrabold text-navy">Sign in to manage {site.name}.</h1>
           <div className="mt-6 grid gap-4">
             <Field label="Email" required>
               <Input required type="email" autoComplete="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} />
@@ -144,6 +149,20 @@ function Shell({ children }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const { pathname } = useLocation();
   const counts = useAsync(() => fetchStats(7), [pathname]);
+  const { toast } = useStore();
+  const reloadCounts = useRef(counts.reload);
+  reloadCounts.current = counts.reload;
+
+  /* Live: a new order or message shows a notice and refreshes the badges without reloading the page. */
+  useEffect(
+    () =>
+      subscribeToAdminChanges(({ table, event, row }) => {
+        if (table === "orders" && event === "INSERT") toast(`New order ${row.id} · ${formatPrice(row.total || 0)}`, { duration: 9000, action: { label: "Open", to: `/admin/orders?order=${row.id}` } });
+        if (table === "contact_messages" && event === "INSERT") toast("New contact message", { duration: 7000, action: { label: "Open", to: "/admin/inbox" } });
+        reloadCounts.current();
+      }),
+    []
+  );
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "instant" });
@@ -179,7 +198,7 @@ export default function AdminApp() {
   const auth = useAuth();
 
   useEffect(() => {
-    document.title = "Naaz & CO Admin";
+    document.title = `${site.name} Admin`;
     let robots = document.head.querySelector('meta[name="robots"]');
     if (!robots) {
       robots = document.createElement("meta");
@@ -215,6 +234,7 @@ export default function AdminApp() {
         <Route index element={<DashboardPage />} />
         <Route path="orders" element={<OrdersPage />} />
         <Route path="products" element={<ProductsPage />} />
+        <Route path="catalogue" element={<CataloguePage />} />
         <Route path="customers" element={<CustomersPage />} />
         <Route path="reviews" element={<ReviewsPage />} />
         <Route path="inbox" element={<InboxPage />} />

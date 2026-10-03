@@ -11,8 +11,6 @@ import FilterSidebar from "../components/product/FilterSidebar.jsx";
 import { PageHero, PageHeader } from "../components/sections/Sections.jsx";
 import NotFoundPage from "./NotFoundPage.jsx";
 import { useCatalog } from "../catalog/CatalogProvider.jsx";
-import { departmentById } from "../config/site.js";
-import { images } from "../data/images.js";
 import { filterProducts, sortProducts, sortOptions } from "../lib/catalog.js";
 import { breadcrumbSchema } from "../lib/schema.js";
 import { track } from "../analytics/tracking.js";
@@ -50,11 +48,11 @@ function paramsFromFilters(filters, sort, lockedCategory) {
   return next;
 }
 
-export default function ShopPage({ mode = "all", collection, department }) {
-  const { category: categorySlug } = useParams();
+export default function ShopPage({ mode = "all", collection }) {
+  const { category: categorySlug, department } = useParams();
   const [params, setParams] = useSearchParams();
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const { products, categories, categoryBySlug, collections } = useCatalog();
+  const { products, categories, categoryBySlug, departmentById, collections } = useCatalog();
 
   const category = mode === "category" ? categoryBySlug[categorySlug] : null;
   const collectionDef = mode === "collection" ? collections[collection] : null;
@@ -80,9 +78,14 @@ export default function ShopPage({ mode = "all", collection, department }) {
   const visible = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const title = category?.name || collectionDef?.name || departmentDef?.name || "All Products";
-  const description = category?.description || collectionDef?.description || departmentDef?.description || "Everything we carry across beauty, electronics and kitchen, in one place.";
-  const path = category ? `/shop/${category.slug}` : collectionDef ? `/${collectionDef.slug}` : departmentDef ? departmentDef.to : "/shop";
-  const crumbs = category ? [{ label: "Shop", to: "/shop" }, { label: category.name, to: path }] : [{ label: title, to: path }];
+  const description = category?.description || collectionDef?.description || departmentDef?.description || "Everything we carry, across every department, in one place.";
+  const path = category ? `/shop/${category.slug}` : collectionDef ? `/${collectionDef.slug}` : departmentDef ? `/department/${departmentDef.id}` : "/shop";
+  const parent = category ? departmentById[category.department] : null;
+  const crumbs = category
+    ? [{ label: "Shop", to: "/shop" }, ...(parent ? [{ label: parent.name, to: `/department/${parent.id}` }] : []), { label: category.name, to: path }]
+    : departmentDef
+      ? [{ label: "Shop", to: "/shop" }, { label: title, to: path }]
+      : [{ label: title, to: path }];
 
   useSeo({ title: `${title} in Pakistan`, description, path, jsonLd: [breadcrumbSchema(crumbs)] });
 
@@ -111,7 +114,7 @@ export default function ShopPage({ mode = "all", collection, department }) {
           <Breadcrumbs items={crumbs} className="mt-6" />
         </PageHero>
       ) : departmentDef ? (
-        <PageHero eyebrow={`Shop ${departmentDef.name}`} title={departmentDef.tagline} description={departmentDef.description} image={images.departments[departmentDef.id]} compact>
+        <PageHero eyebrow={`Shop ${departmentDef.name}`} title={departmentDef.tagline} description={departmentDef.description} image={departmentDef.image} compact>
           <Breadcrumbs items={crumbs} className="mt-6" />
         </PageHero>
       ) : (

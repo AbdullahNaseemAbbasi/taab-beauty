@@ -1,15 +1,14 @@
 # Step 9 · Folder structure
 
 ```
-taab-beauty/                   (folder and repository keep the working name; the store is Naaz & CO)
+taab-beauty/                   (folder and repository keep the working name; the store is Naz & CO)
 ├── index.html                 Fonts, meta, hidden Netlify forms (fallback), #root
 ├── netlify.toml               Build command and publish folder
 ├── .env.example               Supabase keys, tracking IDs, payment flags
 ├── public/
 │   ├── _redirects             SPA fallback for client-side routing
+│   ├── sitemap.xml · robots.txt   Generated before every build, not committed
 │   ├── favicon.svg
-│   ├── robots.txt
-│   └── sitemap.xml
 ├── supabase/
 │   ├── config.toml            Supabase CLI config
 │   └── migrations/            SQL schema, functions, RLS (applied with npm run db:push)
@@ -49,7 +48,8 @@ taab-beauty/                   (folder and repository keep the working name; the
     ├── data/                  Mock dataset (also the seed source)
     │   ├── images.js          Photo slug map
     │   ├── categories.js · brands.js · concerns.js · products.js (beauty) · products-home.js (electronics, kitchen)
-    │   ├── reviews.js · journal.js · faqs.js · policies.js
+    │   ├── departments.js · products-clothes.js (clothes)
+    │   ├── reviews.js · faqs.js · policies.js
     │   └── misc.js            Coupons, sample orders, order statuses, cities, Instagram
     ├── lib/
     │   ├── images.js          CDN URL and srcset builders
@@ -69,7 +69,7 @@ taab-beauty/                   (folder and repository keep the working name; the
     │   ├── product/           ProductCard, ProductGrid (+Carousel), ProductGallery, ReviewSection, FilterSidebar
     │   ├── commerce/          CartItem, FreeShippingBar, OrderSummary, OrderTimeline
     │   └── sections/          Sections.jsx (hero, headers, grids, banners, feeds)
-    └── pages/                 One file per route (18 pages)
+    └── pages/                 One file per route
 ```
 
 ## Data flow

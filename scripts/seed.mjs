@@ -12,7 +12,7 @@ import { categories } from "../src/data/categories.js";
 import { brands } from "../src/data/brands.js";
 import { concerns } from "../src/data/concerns.js";
 import { reviews } from "../src/data/reviews.js";
-import { articles } from "../src/data/journal.js";
+import { departments } from "../src/data/departments.js";
 import { faqs } from "../src/data/faqs.js";
 import { coupons, sampleOrders } from "../src/data/misc.js";
 
@@ -45,8 +45,32 @@ const brandIdByName = Object.fromEntries(brands.map((brand) => [brand.name, bran
 
 await upsert("settings", [
   { key: "shipping", value: { free_shipping_threshold: 7000, shipping_fee: 250, estimated_days: "2 to 4 business days" } },
-  { key: "store", value: { name: "Naaz & CO", currency: "PKR", cod_enabled: true, bank_transfer_enabled: true, card_enabled: false } },
+  { key: "store", value: { name: "Naz & CO", currency: "PKR", card_enabled: false } },
 ], "key");
+
+/*
+ * Payment accounts and store details belong to the owner (Admin → Settings), so
+ * a reseed leaves them alone. `--reset-settings` puts the sample values back.
+ * The sample bank account is deliberately not a real one, and email and social
+ * links start empty so the site never points at somebody else's address.
+ */
+const ownerSettings = [
+  { key: "payments", value: { advance_percent: 50, methods: [
+    { id: "bank", label: "Bank Transfer", enabled: true, bank: "Meezan Bank", account_title: "Naz & CO", account_number: "PK00 MEZN 0000 0000 0000 0000" },
+    { id: "easypaisa", label: "Easypaisa", enabled: false, bank: "", account_title: "", account_number: "" },
+    { id: "jazzcash", label: "JazzCash", enabled: false, bank: "", account_title: "", account_number: "" },
+  ] } },
+  { key: "contact", value: { phone: "+92 300 1234567", whatsapp: "923001234567", email: "", hours: "Mon to Sat, 10am to 8pm PKT", address: "Suite 4, Bukhari Commercial, DHA Phase 6, Karachi, Pakistan", instagram: "", facebook: "", tiktok: "", youtube: "", announcement: "" } },
+];
+if (process.argv.includes("--reset-settings")) {
+  await upsert("settings", ownerSettings, "key");
+} else {
+  const { error } = await db.from("settings").upsert(ownerSettings, { onConflict: "key", ignoreDuplicates: true });
+  if (error) throw new Error(`settings: ${error.message}`);
+  console.log("✓ payments / contact       kept as they are (use --reset-settings to restore the samples)");
+}
+
+await upsert("departments", departments.map((department, index) => ({ id: department.id, name: department.name, tagline: department.tagline, description: department.description, image: department.image, sort_order: index, active: true })));
 
 await upsert("brands", brands.map((brand) => ({ id: brand.id, name: brand.name, tagline: brand.tagline, description: brand.description, featured: brand.featured, active: true })));
 
@@ -107,10 +131,6 @@ await upsert("reviews", reviews.map((review) => ({
 /* Approving reviews recalculates a product's rating; restore the seeded display numbers for the demo catalogue. */
 await upsert("products", products.map((product) => ({ id: product.id, sku: product.sku, name: product.name, slug: product.slug, price: product.price, rating: product.rating, review_count: product.reviewCount })));
 
-await upsert("articles", articles.map((article) => ({
-  slug: article.slug, title: article.title, excerpt: article.excerpt, topic: article.topic, author: article.author, published_at: article.date, read_time: article.readTime, image: article.image, content: article.content, active: true,
-})), "slug");
-
 const faqRows = faqs.flatMap((group, groupIndex) => group.items.map((item, index) => ({ id: groupIndex * 100 + index + 1, category: group.category, question: item.question, answer: item.answer, sort_order: groupIndex * 100 + index, active: true })));
 await upsert("faqs", faqRows);
 /* FAQs are only edited here, so rows that are no longer in the file are removed. */
@@ -138,7 +158,9 @@ for (const sample of sampleOrders) {
     customer_id: customer.id,
     status: sample.status,
     payment_method: sample.payment,
-    payment_status: sample.status === "delivered" || sample.timeline.some((entry) => entry.status === "confirmed") ? "paid" : "pending",
+    payment_status: sample.paymentStatus,
+    advance_percent: sample.advance.percent,
+    advance_amount: sample.advance.amount,
     customer: { name: sample.customer.name, phone, address: "12-C, Khayaban-e-Ittehad, DHA Phase 6", city: sample.customer.city, province: "Sindh" },
     phone,
     subtotal: sample.totals.subtotal,

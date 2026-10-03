@@ -2,7 +2,8 @@ import { Link } from "react-router-dom";
 import Logo from "../Logo.jsx";
 import Newsletter from "./Newsletter.jsx";
 import { socialIcons, PinIcon, MailIcon, PhoneIcon } from "../ui/Icons.jsx";
-import { site, footerLinks } from "../../config/site.js";
+import { site, helpLinks, companyLinks, availablePaymentMethods } from "../../config/site.js";
+import { useCatalog } from "../../catalog/CatalogProvider.jsx";
 import { track } from "../../analytics/tracking.js";
 import { EVENTS } from "../../analytics/events.js";
 
@@ -26,6 +27,18 @@ function LinkColumn({ title, links }) {
 }
 
 export default function Footer() {
+  /* Reading the catalogue here re-renders the footer when departments or store details change. */
+  const { departments, settings } = useCatalog();
+  const shopLinks = [
+    { label: "All Products", to: "/shop" },
+    ...departments.map((department) => ({ label: department.name, to: `/department/${department.id}` })),
+    { label: "New Arrivals", to: "/new-arrivals" },
+    { label: "Best Sellers", to: "/best-sellers" },
+  ];
+  const socials = socialOrder.filter((key) => site.social[key]);
+  const percent = settings.payments.advancePercent;
+  const methods = availablePaymentMethods();
+
   return (
     <footer className="relative bg-navy-900 text-white print:hidden">
       <svg className="absolute inset-x-0 top-0 h-5 w-full text-white" viewBox="0 0 1440 20" preserveAspectRatio="none" aria-hidden="true">
@@ -47,42 +60,46 @@ export default function Footer() {
             <Logo variant="light" />
             <p className="mt-4 max-w-sm text-[14px] leading-[1.7] text-white/80">{site.description}</p>
             <ul className="mt-5 space-y-2 text-[14px] text-white/80">
-              <li className="flex items-start gap-2"><PinIcon className="mt-0.5 size-4 shrink-0 text-cyan" /> {site.contact.address}</li>
-              <li className="flex items-center gap-2"><PhoneIcon className="size-4 text-cyan" /> <a href={`tel:${site.contact.phone}`} className="hover:text-coral">{site.contact.phone}</a></li>
-              <li className="flex items-center gap-2"><MailIcon className="size-4 text-cyan" /> <a href={`mailto:${site.contact.email}`} className="hover:text-coral">{site.contact.email}</a></li>
+              {site.contact.address && <li className="flex items-start gap-2"><PinIcon className="mt-0.5 size-4 shrink-0 text-cyan" /> {site.contact.address}</li>}
+              {site.contact.phone && <li className="flex items-center gap-2"><PhoneIcon className="size-4 text-cyan" /> <a href={`tel:${site.contact.phone}`} className="hover:text-coral">{site.contact.phone}</a></li>}
+              {site.contact.email && <li className="flex items-center gap-2"><MailIcon className="size-4 text-cyan" /> <a href={`mailto:${site.contact.email}`} className="hover:text-coral">{site.contact.email}</a></li>}
             </ul>
-            <ul className="mt-5 flex gap-3">
-              {socialOrder.map((key) => {
-                const Icon = socialIcons[key];
-                return (
-                  <li key={key}>
-                    <a
-                      href={site.social[key]}
-                      target="_blank"
-                      rel="noreferrer"
-                      aria-label={`${site.name} on ${key.charAt(0).toUpperCase() + key.slice(1)}`}
-                      title={`${site.name} on ${key.charAt(0).toUpperCase() + key.slice(1)}`}
-                      onClick={() => track(EVENTS.SOCIAL_CLICK, { network: key, placement: "footer" })}
-                      className="grid size-10 place-items-center rounded-full bg-white/10 text-white transition-colors hover:bg-coral"
-                    >
-                      <Icon className="size-5" />
-                    </a>
-                  </li>
-                );
-              })}
-            </ul>
+            {socials.length > 0 && (
+              <ul className="mt-5 flex gap-3">
+                {socials.map((key) => {
+                  const Icon = socialIcons[key];
+                  const label = `${site.name} on ${key.charAt(0).toUpperCase() + key.slice(1)}`;
+                  return (
+                    <li key={key}>
+                      <a
+                        href={site.social[key]}
+                        target="_blank"
+                        rel="noreferrer"
+                        aria-label={label}
+                        title={label}
+                        onClick={() => track(EVENTS.SOCIAL_CLICK, { network: key, placement: "footer" })}
+                        className="grid size-10 place-items-center rounded-full bg-white/10 text-white transition-colors hover:bg-coral"
+                      >
+                        <Icon className="size-5" />
+                      </a>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </div>
-          <LinkColumn title="Shop" links={footerLinks.shop} />
-          <LinkColumn title="Help" links={footerLinks.help} />
-          <LinkColumn title="Company" links={footerLinks.company} />
+          <LinkColumn title="Shop" links={shopLinks} />
+          <LinkColumn title="Help" links={helpLinks} />
+          <LinkColumn title="Company" links={companyLinks} />
         </div>
 
         <div className="mt-12 flex flex-col gap-4 border-t border-white/10 pt-6 text-[12px] text-white/70 sm:flex-row sm:items-center sm:justify-between">
           <p>© {new Date().getFullYear()} {site.legalName}. All rights reserved.</p>
           <p className="flex flex-wrap gap-x-4 gap-y-1">
-            <span>Cash on Delivery</span>
-            <span>Bank Transfer</span>
-            <span>Visa / Mastercard</span>
+            <span>{percent >= 100 ? "Advance payment" : `${percent}% advance, ${100 - percent}% on delivery`}</span>
+            {methods.map((method) => (
+              <span key={method.id}>{method.label}</span>
+            ))}
             <span>TCS · Leopards · M&P</span>
           </p>
         </div>

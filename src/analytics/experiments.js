@@ -15,7 +15,7 @@ export const experiments = {
   productCardCta: { variants: ["A", "B"], description: "Product card button label" },
 };
 
-const STORAGE_KEY = "naaz:experiments";
+const STORAGE_KEY = "naz:experiments";
 const exposed = new Set();
 
 function readAssignments() {

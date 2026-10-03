@@ -1,7 +1,7 @@
 /* Small helpers shared by the admin pages. */
 
 export const ORDER_STATUSES = [
-  { id: "created", label: "Awaiting payment" },
+  { id: "created", label: "Awaiting advance" },
   { id: "confirmed", label: "Confirmed" },
   { id: "processing", label: "Processing" },
   { id: "packed", label: "Packed" },
@@ -42,6 +42,7 @@ export function mapOrder(row) {
     courier: row.courier,
     trackingCode: row.tracking_code,
     totals: { subtotal: row.subtotal, discount: row.discount, shipping: row.shipping, total: row.total },
+    advance: { percent: row.advance_percent || 0, amount: row.advance_amount || 0, balance: row.total - (row.advance_amount || 0) },
     lines: (row.order_items || []).map((item) => ({
       productId: item.product_id,
       sku: item.sku,
@@ -75,5 +76,8 @@ export function downloadCsv(filename, rows) {
   link.click();
   URL.revokeObjectURL(url);
 }
+
+/* Turns a name into a URL-safe id, e.g. "Home & Living" → "home-living". */
+export const toSlug = (value) => String(value || "").toLowerCase().replace(/&/g, " ").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
 
 export const percent = (part, whole) => (whole ? `${((part / whole) * 100).toFixed(1)}%` : "0%");

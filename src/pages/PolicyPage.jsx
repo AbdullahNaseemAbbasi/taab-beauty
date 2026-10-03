@@ -2,10 +2,12 @@ import useSeo from "../hooks/useSeo.js";
 import { PageHeader } from "../components/sections/Sections.jsx";
 import { policies } from "../data/policies.js";
 import { formatDate } from "../lib/format.js";
+import { useStoreText } from "../lib/storeText.js";
 
 export default function PolicyPage({ policy }) {
   const doc = policies[policy];
-  useSeo({ title: doc.title, description: doc.sections[0].body[0], path: `/${doc.slug}` });
+  const fill = useStoreText();
+  useSeo({ title: doc.title, description: fill(doc.sections[0].body[0]), path: `/${doc.slug}` });
 
   return (
     <>
@@ -16,7 +18,7 @@ export default function PolicyPage({ policy }) {
             <div key={section.heading}>
               <h2>{section.heading}</h2>
               {section.body.map((paragraph) => (
-                <p key={paragraph}>{paragraph}</p>
+                <p key={paragraph}>{fill(paragraph)}</p>
               ))}
             </div>
           ))}

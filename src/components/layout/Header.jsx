@@ -4,16 +4,21 @@ import Logo from "../Logo.jsx";
 import MegaMenu from "./MegaMenu.jsx";
 import { IconButton } from "../ui/Button.jsx";
 import { BagIcon, HeartIcon, MenuIcon, SearchIcon, UserIcon } from "../ui/Icons.jsx";
-import { nav, site } from "../../config/site.js";
+import { site } from "../../config/site.js";
 import { useStore } from "../../store/StoreProvider.jsx";
+import { useCatalog } from "../../catalog/CatalogProvider.jsx";
 
-const linkClass = ({ isActive }, accent) =>
-  `relative py-1 text-[15px] font-semibold transition-colors hover:text-coral ${accent ? "text-coral" : "text-navy"} ${
+/* Departments shown in the bar; any beyond this are reached through the Shop menu. */
+const MAX_NAV_DEPARTMENTS = 6;
+
+const linkClass = ({ isActive }) =>
+  `relative whitespace-nowrap py-1 text-[15px] font-semibold text-navy transition-colors hover:text-coral ${
     isActive ? "after:absolute after:inset-x-0 after:-bottom-1.5 after:h-[2px] after:rounded-full after:bg-coral" : ""
   }`;
 
 export default function Header() {
   const { cart, wishlist, setUI } = useStore();
+  const { departments } = useCatalog();
   const [megaOpen, setMegaOpen] = useState(false);
 
   return (
@@ -30,20 +35,20 @@ export default function Header() {
         </Link>
 
         <nav aria-label="Primary" className="hidden items-center gap-7 lg:flex" onMouseLeave={() => setMegaOpen(false)}>
-          {nav.map((item) =>
-            item.mega ? (
-              <div key={item.to} className="relative" onMouseEnter={() => setMegaOpen(true)}>
-                <NavLink to={item.to} end className={(state) => linkClass(state, false)} aria-haspopup="true" aria-expanded={megaOpen} onFocus={() => setMegaOpen(true)}>
-                  {item.label}
-                </NavLink>
-                <MegaMenu open={megaOpen} onClose={() => setMegaOpen(false)} />
-              </div>
-            ) : (
-              <NavLink key={item.to} to={item.to} className={(state) => linkClass(state, item.accent)} onFocus={() => setMegaOpen(false)}>
-                {item.label}
-              </NavLink>
-            )
-          )}
+          <div className="relative" onMouseEnter={() => setMegaOpen(true)}>
+            <NavLink to="/shop" end className={linkClass} aria-haspopup="true" aria-expanded={megaOpen} onFocus={() => setMegaOpen(true)}>
+              Shop
+            </NavLink>
+            <MegaMenu open={megaOpen} onClose={() => setMegaOpen(false)} />
+          </div>
+          {departments.slice(0, MAX_NAV_DEPARTMENTS).map((department) => (
+            <NavLink key={department.id} to={`/department/${department.id}`} className={linkClass} onFocus={() => setMegaOpen(false)}>
+              {department.name}
+            </NavLink>
+          ))}
+          <NavLink to="/new-arrivals" className={linkClass} onFocus={() => setMegaOpen(false)}>
+            New In
+          </NavLink>
         </nav>
 
         <div className="flex items-center gap-1">

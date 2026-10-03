@@ -1,12 +1,14 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { fetchCatalog, mockCatalog } from "../api/catalog.js";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { fetchCatalog, mockCatalog, subscribeToCatalogChanges } from "../api/catalog.js";
 import { isLive } from "../api/client.js";
 import { collections } from "../lib/collections.js";
 
 /*
  * Loads the storefront dataset once and exposes it to every page. In mock
  * mode the data is available synchronously; in live mode pages see a loading
- * state (handled in Layout) until Supabase responds.
+ * state (handled in Layout) until Supabase responds. In live mode the data
+ * also refreshes by itself whenever an admin changes a product, category,
+ * department, brand, review or setting (Supabase Realtime).
  */
 const CatalogContext = createContext(null);
 
@@ -16,6 +18,7 @@ function index(list, key = "id") {
 
 export function CatalogProvider({ children }) {
   const [state, setState] = useState(() => (isLive ? { status: "loading", data: null, error: null } : { status: "ready", data: mockCatalog(), error: null }));
+  const refreshTimer = useRef(null);
 
   const load = useCallback(async () => {
     setState((current) => ({ ...current, status: current.data ? "refreshing" : "loading", error: null }));
@@ -28,7 +31,17 @@ export function CatalogProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    if (isLive) load();
+    if (!isLive) return undefined;
+    load();
+    /* Several rows often change together (e.g. an order touches stock), so wait a moment and reload once. */
+    const unsubscribe = subscribeToCatalogChanges(() => {
+      clearTimeout(refreshTimer.current);
+      refreshTimer.current = setTimeout(load, 800);
+    });
+    return () => {
+      clearTimeout(refreshTimer.current);
+      unsubscribe();
+    };
   }, [load]);
 
   /* Lets the UI patch one product locally (e.g. fresh stock) without a full reload. */
@@ -42,6 +55,7 @@ export function CatalogProvider({ children }) {
 
   const value = useMemo(() => {
     const data = state.data || mockCatalog();
+    const categoryBySlug = index(data.categories, "slug");
     return {
       status: state.status,
       error: state.error,
@@ -52,13 +66,15 @@ export function CatalogProvider({ children }) {
       productById: index(data.products),
       productBySlug: index(data.products, "slug"),
       categories: data.categories,
-      categoryBySlug: index(data.categories, "slug"),
+      categoryBySlug,
+      departments: data.departments,
+      departmentById: index(data.departments),
+      /* Department a product belongs to, through its category. */
+      departmentOf: (product) => categoryBySlug[product.category]?.department || "other",
       brands: data.brands,
       concerns: data.concerns,
       concernById: index(data.concerns),
       reviews: data.reviews,
-      articles: data.articles,
-      articleBySlug: index(data.articles, "slug"),
       faqs: data.faqs,
       settings: data.settings,
       collections,

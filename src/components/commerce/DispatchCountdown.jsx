@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { dispatchWindow } from "../../lib/shipping.js";
 import { ClockIcon } from "../ui/Icons.jsx";
 
-/* "Order within 2h 15m for same-day dispatch" — refreshes every minute. */
+/* "Send your advance within 2h 15m and it ships today" (orders ship once the advance arrives); refreshes every minute. */
 export default function DispatchCountdown({ className = "" }) {
   const [window, setWindow] = useState(() => dispatchWindow());
 
@@ -16,10 +16,10 @@ export default function DispatchCountdown({ className = "" }) {
       <ClockIcon className="size-4 shrink-0 text-teal" />
       {window.sameDay ? (
         <span>
-          Order within <strong>{window.hours > 0 ? `${window.hours}h ` : ""}{window.minutes}m</strong> for same-day dispatch.
+          Send your advance within <strong>{window.hours > 0 ? `${window.hours}h ` : ""}{window.minutes}m</strong> and it ships today.
         </span>
       ) : (
-        <span>Order now and it ships {window.nextLabel} morning.</span>
+        <span>Send your advance today and it ships {window.nextLabel} morning.</span>
       )}
     </p>
   );

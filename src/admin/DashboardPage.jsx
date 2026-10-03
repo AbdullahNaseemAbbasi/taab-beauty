@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { fetchStats, fetchOrders } from "../api/admin.js";
+import { fetchStats, fetchOrders, subscribeToAdminChanges } from "../api/admin.js";
 import { formatDate, formatPrice } from "../lib/format.js";
 import { Async, Card, Chips, DataTable, PageTitle, Stat, StatusBadge, useAsync } from "./ui.jsx";
 import { percent } from "./helpers.js";
@@ -65,6 +65,17 @@ export default function DashboardPage() {
   const stats = useAsync(() => fetchStats(days), [days]);
   const recent = useAsync(() => fetchOrders({ limit: 8 }), []);
 
+  /* Live numbers: refresh when an order changes. */
+  useEffect(
+    () =>
+      subscribeToAdminChanges(({ table }) => {
+        if (table !== "orders") return;
+        stats.reload();
+        recent.reload();
+      }),
+    [stats.reload, recent.reload]
+  );
+
   return (
     <div className="space-y-6">
       <PageTitle title="Dashboard" subtitle="How the store is doing and what needs your attention.">
@@ -79,7 +90,7 @@ export default function DashboardPage() {
               <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
                 <Stat label="Revenue" value={formatPrice(s.revenue)} hint={`${s.orders} order${s.orders === 1 ? "" : "s"}`} tone="teal" />
                 <Stat label="Average order" value={formatPrice(s.orders ? s.revenue / s.orders : 0)} hint="Revenue ÷ orders" />
-                <Stat label="Open orders" value={s.pending} hint={s.awaiting_payment ? `${s.awaiting_payment} awaiting bank transfer` : "To pack or ship"} tone={s.pending ? "coral" : "navy"} />
+                <Stat label="Open orders" value={s.pending} hint={s.awaiting_payment ? `${s.awaiting_payment} awaiting the advance` : "To pack or ship"} tone={s.pending ? "coral" : "navy"} />
                 <Stat label="Conversion" value={percent(purchases, s.sessions)} hint={`${(s.sessions || 0).toLocaleString()} visitors`} />
               </div>
 
@@ -87,7 +98,7 @@ export default function DashboardPage() {
                 <Card title="Needs attention">
                   <div className="flex flex-wrap gap-2">
                     {s.pending > 0 && <Link to="/admin/orders" className="rounded-full bg-coral px-4 py-2 text-[13px] font-semibold text-white hover:bg-coral-600">{s.pending} open order{s.pending === 1 ? "" : "s"}</Link>}
-                    {s.awaiting_payment > 0 && <Link to="/admin/orders" className="rounded-full bg-gold px-4 py-2 text-[13px] font-semibold text-navy">{s.awaiting_payment} bank transfer{s.awaiting_payment === 1 ? "" : "s"} to confirm</Link>}
+                    {s.awaiting_payment > 0 && <Link to="/admin/orders" className="rounded-full bg-gold px-4 py-2 text-[13px] font-semibold text-navy">{s.awaiting_payment} order{s.awaiting_payment === 1 ? "" : "s"} awaiting the advance</Link>}
                     {s.pending_reviews > 0 && <Link to="/admin/reviews" className="rounded-full bg-navy px-4 py-2 text-[13px] font-semibold text-white">{s.pending_reviews} review{s.pending_reviews === 1 ? "" : "s"} to approve</Link>}
                     {s.new_messages > 0 && <Link to="/admin/inbox" className="rounded-full bg-teal px-4 py-2 text-[13px] font-semibold text-white">{s.new_messages} new message{s.new_messages === 1 ? "" : "s"}</Link>}
                     {s.low_stock.length > 0 && <Link to="/admin/products" className="rounded-full border border-coral px-4 py-2 text-[13px] font-semibold text-coral">{s.low_stock.length} product{s.low_stock.length === 1 ? "" : "s"} low on stock</Link>}
@@ -149,7 +160,7 @@ export default function DashboardPage() {
                 <Stat label="New customers" value={s.new_customers} hint="In this period" />
                 <Stat label="Repeat customers" value={s.repeat_customers} hint="Ordered twice or more" tone="success" />
                 <Stat label="WhatsApp clicks" value={s.funnel?.whatsapp_click || 0} hint="From the storefront" />
-                <Stat label="Subscribers" value={s.subscribers} hint="Newsletter list" />
+                <Stat label="Balance to collect" value={formatPrice(s.balance_due || 0)} hint={`${formatPrice(s.advance_collected || 0)} received in this period`} />
               </div>
             </>
           );

@@ -14,15 +14,17 @@ specs[ { label, value } ], warranty,
 featured, bestSeller, newArrival
 ```
 
-Beauty products fill `ingredients`, `howToUse` and `concerns`. Electronics and kitchen products leave `ingredients` empty and fill `specs` (shown as a table under Specifications), `warranty` and `size` (shown as "In the box"). The product page chooses its labels from the category's department.
+Beauty products fill `ingredients`, `howToUse` and `concerns`. Products in other departments leave `ingredients` empty and fill `specs` (shown as a table under Specifications), `warranty` (appliances) and `size` (shown as "In the box"). The product page chooses its labels from the category's department.
+
+`variants.display` is `swatch` (colour circles, each option has a `hex`) or `text` (buttons, used for clothing sizes).
 
 Derived: `discount = round((compareAtPrice - price) / compareAtPrice * 100)`, `inStock = stock > 0` (or the selected variant's stock). "In stock" is never shown when stock is 0; the stepper and add-to-bag enforce the limit.
 
 ## Category · Brand · Concern
 
 ```
-category: id, name, slug, department (beauty | electronics | kitchen), tagline, description, image, subcategories[]
-department: id, name, to, tagline, description   (static, in src/config/site.js)
+department: id, name, tagline, description, image, sort_order, active     (table `departments`, edited in Admin → Catalogue)
+category: id, name, slug, department (→ departments.id), tagline, description, image, subcategories[], sort_order, active
 brand:    id, name, tagline, description, featured
 concern:  id, name, description, image
 collection: slug, name, tagline, description, filter(product) → bool
@@ -34,13 +36,6 @@ collection: slug, name, tagline, description, filter(product) → bool
 id, productId, author, city, rating(1-5), date, verified, title, body, photo?, helpful
 ```
 Production: `status` (pending | approved | rejected) added for moderation; `orderId` links a verified purchase.
-
-## Journal article
-
-```
-slug, title, excerpt, topic, author, date, readTime, image,
-content[ { type: p | h2 | ul | tip | product, text? | items? | slug? } ]
-```
 
 ## Cart (client state)
 
@@ -58,7 +53,9 @@ code, type (percent | fixed | shipping), value, minOrder, description, creatorId
 ## Order
 
 ```
-id (NZ-YYMMDD-NNNN), placedAt, status, payment (cod | bank | card), notes,
+id (NZ-YYMMDD-NNNN), placedAt, status, payment (bank | easypaisa | jazzcash), notes,
+paymentStatus (pending | advance_paid | paid | failed | refunded),
+advance { percent, amount, balance },
 customer { name, phone, email, address, city, province, postalCode, instructions },
 lines[ { productId, slug, variant, quantity, unitPrice } ],
 totals { subtotal, discount, shipping, total, itemCount },
@@ -94,6 +91,18 @@ source, campaign, ad_content, creator_ref,
 value?, currency, items[]?, ...event-specific fields
 ```
 
+## Settings (table `settings`, one JSON value per key)
+
+```
+shipping      free_shipping_threshold, shipping_fee, estimated_days                    public
+store         name, currency, card_enabled                                           public
+payments      advance_percent, methods[ { id, label, enabled, bank, account_title, account_number } ]   public
+contact       phone, whatsapp, email, hours, address, instagram, facebook, tiktok, youtube, announcement   public
+notifications ntfy_topic, admin_url                                                  admins only
+```
+
+There is no cash on delivery. `place_order` saves `advance_percent` and `advance_amount` on the order from the `payments` setting at that moment, so later changes to the percentage do not alter existing orders.
+
 ## Accounts and admin
 
 ```
@@ -103,4 +112,4 @@ product_costs product_id, cost          admin-only, kept out of the public produ
 orders.user_id                          set when the order is placed while signed in
 ```
 
-The admin panel manages Products, Orders, Customers, Coupons and creators, Reviews, Inbox (messages, abandoned checkouts, stock alerts, subscribers), Analytics and Settings. Categories, brands, blog and courier zones are still edited through the seed data or the Supabase table editor.
+The admin panel manages Products, the Catalogue (departments, categories, brands), Orders and payments, Customers, Coupons and creators, Reviews, Inbox (messages, abandoned checkouts, stock alerts, subscribers), Analytics and Settings (payment accounts, advance, delivery, store details, notifications, team). FAQs and concerns are still edited through the seed data or the Supabase table editor.

@@ -1,38 +1,40 @@
 /*
- * Central site configuration. Every brand-level value lives here so nothing is
- * scattered through components. Secrets and tracking IDs come from environment
- * variables (see .env.example); Vite exposes variables prefixed with VITE_.
+ * Central site configuration. Brand-level values live here. Contact details,
+ * social links, the announcement and the payment accounts are defaults only:
+ * the live values are edited in Admin → Settings and merged in by
+ * applyStoreSettings() when the catalogue loads. Secrets and tracking IDs come
+ * from environment variables (see .env.example).
  */
 const env = import.meta.env;
+const origin = typeof window !== "undefined" ? window.location.origin : "";
+
+const paymentDescriptions = {
+  bank: "Transfer the advance to our bank account.",
+  easypaisa: "Send the advance to our Easypaisa account.",
+  jazzcash: "Send the advance to our JazzCash account.",
+  card: "Secure online payment.",
+};
 
 export const site = {
-  name: "Naaz & CO",
-  legalName: "Naaz & CO",
+  name: "Naz & CO",
+  legalName: "Naz & CO",
   tagline: "Good things for you and your home.",
   description:
-    "Naaz & CO is an online store from Karachi for beauty, electronics and kitchenware, delivered across Pakistan with cash on delivery.",
-  domain: "naazandco.com",
-  url: env.VITE_SITE_URL || "https://naazandco.com",
+    "Naz & CO is an online store from Karachi for beauty, appliances, clothes and more, delivered across Pakistan. Pay part in advance and the rest when your order arrives.",
+  url: env.VITE_SITE_URL || origin,
   launchYear: 2026,
   locale: "en-PK",
   currency: { code: "PKR", symbol: "Rs.", locale: "en-PK" },
 
   contact: {
-    email: "hello@naazandco.com",
+    email: "",
     phone: "+92 300 1234567",
     whatsapp: "923001234567",
     hours: "Mon to Sat, 10am to 8pm PKT",
     address: "Suite 4, Bukhari Commercial, DHA Phase 6, Karachi, Pakistan",
   },
 
-  social: {
-    handle: "@naazandco",
-    instagram: "https://instagram.com/naazandco",
-    facebook: "https://facebook.com/naazandco",
-    tiktok: "https://tiktok.com/@naazandco",
-    youtube: "https://youtube.com/@naazandco",
-    whatsapp: "https://wa.me/923001234567",
-  },
+  social: { instagram: "", facebook: "", tiktok: "", youtube: "", whatsapp: "https://wa.me/923001234567" },
 
   shipping: {
     freeShippingThreshold: 7000,
@@ -44,13 +46,15 @@ export const site = {
     couriers: ["TCS", "Leopards", "M&P"],
   },
 
+  /* No cash on delivery: an advance confirms the order and the balance is paid on delivery. */
   payments: {
+    advancePercent: 50,
     methods: [
-      { id: "cod", label: "Cash on Delivery", description: "Pay in cash when your order arrives.", enabled: true },
-      { id: "bank", label: "Bank Transfer", description: "Transfer to our bank account and share the receipt on WhatsApp.", enabled: true },
-      { id: "card", label: "Debit / Credit Card", description: "Secure online payment.", enabled: env.VITE_ONLINE_PAYMENTS === "true", provider: env.VITE_PAYMENT_PROVIDER || "" },
+      { id: "bank", label: "Bank Transfer", description: paymentDescriptions.bank, enabled: true, bank: "", accountTitle: "", accountNumber: "" },
+      { id: "easypaisa", label: "Easypaisa", description: paymentDescriptions.easypaisa, enabled: false, bank: "", accountTitle: "", accountNumber: "" },
+      { id: "jazzcash", label: "JazzCash", description: paymentDescriptions.jazzcash, enabled: false, bank: "", accountTitle: "", accountNumber: "" },
     ],
-    bankDetails: { bank: "Meezan Bank", title: "Naaz & CO", iban: "PK00 MEZN 0000 0000 0000 0000" },
+    onlineCard: { enabled: env.VITE_ONLINE_PAYMENTS === "true", provider: env.VITE_PAYMENT_PROVIDER || "" },
   },
 
   analytics: {
@@ -61,79 +65,69 @@ export const site = {
     debug: env.DEV || env.VITE_ANALYTICS_DEBUG === "true",
   },
 
-  announcement: {
-    message: "Free delivery on orders over Rs. 7,000. Cash on delivery across Pakistan.",
-    link: { label: "Shop new arrivals", to: "/new-arrivals" },
-  },
-
-  trustSignals: [
-    { icon: "shield", title: "100% Genuine", text: "Sourced directly, checked and sealed." },
-    { icon: "truck", title: "Nationwide Delivery", text: "2 to 4 days anywhere in Pakistan." },
-    { icon: "cash", title: "Cash on Delivery", text: "Pay when your order arrives." },
-    { icon: "refresh", title: "7-Day Returns", text: "Unused items in original packaging." },
-  ],
+  /* Empty = build the line from the delivery and advance settings. */
+  announcement: { message: "", link: { label: "Shop new arrivals", to: "/new-arrivals" } },
 };
 
-/*
- * Departments group the categories. Beauty spans several categories and has
- * its own landing page; Electronics and Kitchen are one category each.
- */
-export const departments = [
-  {
-    id: "beauty",
-    name: "Beauty",
-    to: "/beauty",
-    tagline: "Makeup, skincare, haircare and fragrance.",
-    description: "Makeup, skincare, haircare, fragrance and tools chosen for Pakistani skin tones and Pakistani weather.",
-  },
-  {
-    id: "electronics",
-    name: "Electronics",
-    to: "/shop/electronics",
-    tagline: "Everyday tech that just works.",
-    description: "Audio, wearables, chargers and gadgets, checked before dispatch and covered by warranty.",
-  },
-  {
-    id: "kitchen",
-    name: "Kitchen",
-    to: "/shop/kitchen",
-    tagline: "Cook, serve and store better.",
-    description: "Cookware, knives, teaware, storage and serveware for busy kitchens.",
-  },
+export const paymentLabel = (id) => site.payments.methods.find((method) => method.id === id)?.label || { card: "Debit / Credit Card", cod: "Cash on Delivery" }[id] || id;
+
+/* Payment methods a customer can actually use: switched on and with an account to pay into. */
+export const availablePaymentMethods = () => site.payments.methods.filter((method) => method.enabled && method.accountNumber.trim());
+
+/* Splits an order total into the advance and the balance due on delivery. */
+export function splitPayment(total, percent = site.payments.advancePercent) {
+  const advance = Math.ceil((total * percent) / 100);
+  return { percent, advance, balance: Math.max(total - advance, 0) };
+}
+
+/* Merges the settings saved in the database into the config object above. */
+export function applyStoreSettings({ contact, payments } = {}) {
+  if (contact) {
+    const clean = (value) => String(value ?? "").trim();
+    Object.assign(site.contact, {
+      email: clean(contact.email),
+      phone: clean(contact.phone) || site.contact.phone,
+      whatsapp: clean(contact.whatsapp).replace(/\D/g, "") || site.contact.whatsapp,
+      hours: clean(contact.hours) || site.contact.hours,
+      address: clean(contact.address) || site.contact.address,
+    });
+    Object.assign(site.social, {
+      instagram: clean(contact.instagram),
+      facebook: clean(contact.facebook),
+      tiktok: clean(contact.tiktok),
+      youtube: clean(contact.youtube),
+      whatsapp: `https://wa.me/${site.contact.whatsapp}`,
+    });
+    site.announcement.message = clean(contact.announcement);
+  }
+  if (payments) {
+    const percent = Number(payments.advance_percent);
+    site.payments.advancePercent = Number.isFinite(percent) ? Math.min(100, Math.max(0, Math.round(percent))) : 50;
+    if (Array.isArray(payments.methods)) {
+      site.payments.methods = payments.methods.map((method) => ({
+        id: method.id,
+        label: method.label || method.id,
+        description: paymentDescriptions[method.id] || "",
+        enabled: Boolean(method.enabled),
+        bank: method.bank || "",
+        accountTitle: method.account_title || "",
+        accountNumber: method.account_number || "",
+      }));
+    }
+  }
+}
+
+export const helpLinks = [
+  { label: "Track Order", to: "/track-order" },
+  { label: "Payment & Advance", to: "/payment-policy" },
+  { label: "Shipping Policy", to: "/shipping-policy" },
+  { label: "Returns & Warranty", to: "/returns" },
+  { label: "FAQ", to: "/faq" },
+  { label: "Contact Us", to: "/contact" },
 ];
 
-export const departmentById = Object.fromEntries(departments.map((department) => [department.id, department]));
-
-export const nav = [
-  { label: "Shop", to: "/shop", mega: true },
-  { label: "Beauty", to: "/beauty" },
-  { label: "Electronics", to: "/shop/electronics" },
-  { label: "Kitchen", to: "/shop/kitchen" },
-  { label: "Sale", to: "/sale" },
-  { label: "Journal", to: "/journal" },
+export const companyLinks = [
+  { label: "About Naz & CO", to: "/about" },
+  { label: "Privacy Policy", to: "/privacy-policy" },
+  { label: "Terms & Conditions", to: "/terms" },
 ];
-
-export const footerLinks = {
-  shop: [
-    { label: "All Products", to: "/shop" },
-    { label: "Beauty", to: "/beauty" },
-    { label: "Electronics", to: "/shop/electronics" },
-    { label: "Kitchen", to: "/shop/kitchen" },
-    { label: "New Arrivals", to: "/new-arrivals" },
-    { label: "Best Sellers", to: "/best-sellers" },
-    { label: "Sale", to: "/sale" },
-  ],
-  help: [
-    { label: "Track Order", to: "/track-order" },
-    { label: "Shipping Policy", to: "/shipping-policy" },
-    { label: "Returns & Warranty", to: "/returns" },
-    { label: "FAQ", to: "/faq" },
-    { label: "Contact Us", to: "/contact" },
-  ],
-  company: [
-    { label: "About Naaz & CO", to: "/about" },
-    { label: "Journal", to: "/journal" },
-    { label: "Privacy Policy", to: "/privacy-policy" },
-    { label: "Terms & Conditions", to: "/terms" },
-  ],
-};

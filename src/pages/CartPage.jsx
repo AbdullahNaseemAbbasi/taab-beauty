@@ -29,7 +29,7 @@ export default function CartPage() {
 
   return (
     <>
-      <PageHeader title={`Your Bag (${cart.totals.itemCount})`} description="Review your items, add a code and head to checkout. Cash on delivery is available on every order." />
+      <PageHeader title={`Your Bag (${cart.totals.itemCount})`} description="Review your items, add a code and head to checkout. You pay part in advance and the rest on delivery." />
       <section className="wrap py-8 sm:py-10">
         {cart.lines.length === 0 ? (
           <EmptyState icon={BagIcon} title="Your bag is empty" text="Browse the best sellers or pick up where you left off." action={{ label: "Shop best sellers", to: "/best-sellers" }} secondary={{ label: "View wishlist", to: "/wishlist" }} />

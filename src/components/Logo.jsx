@@ -2,7 +2,7 @@ import { mark, wordmark } from "./logoPaths.js";
 import { site } from "../config/site.js";
 
 /*
- * Naaz & CO logo: the N monogram (letter, profile and leaves) beside the
+ * Naz & CO logo: the N monogram (letter, profile and leaves) beside the
  * wordmark. The shapes are the owner's artwork traced to vector and coloured
  * from the site palette; `light` is for navy backgrounds.
  */

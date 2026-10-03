@@ -1,11 +1,19 @@
 import { orderStatuses, terminalStatuses } from "../../data/misc.js";
 import { formatDate } from "../../lib/format.js";
-import { CheckIcon } from "../ui/Icons.jsx";
+import { CheckIcon, CashIcon } from "../ui/Icons.jsx";
+
+/* Timeline entries written when only the payment changed (see update_order_status); they are listed separately from the delivery steps. */
+const paymentLabels = ["Advance payment received", "Full payment received", "Payment refunded", "Payment marked as pending"];
+const isPaymentEntry = (entry) => paymentLabels.includes(entry.label);
+
+const when = (value) => formatDate(value, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 
 export default function OrderTimeline({ order }) {
-  const reached = new Set(order.timeline.map((entry) => entry.status));
+  const steps = order.timeline.filter((entry) => !isPaymentEntry(entry));
+  const payments = order.timeline.filter(isPaymentEntry);
+  const reached = new Set(steps.map((entry) => entry.status));
   const terminal = terminalStatuses[order.status];
-  const latestByStatus = Object.fromEntries(order.timeline.map((entry) => [entry.status, entry]));
+  const latestByStatus = Object.fromEntries(steps.map((entry) => [entry.status, entry]));
 
   return (
     <div>
@@ -32,7 +40,7 @@ export default function OrderTimeline({ order }) {
               {entry && (
                 <>
                   <p className="text-[13px] text-ink">
-                    {formatDate(entry.at, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                    {when(entry.at)}
                     {entry.tracking && (
                       <span className="ml-2 rounded-full bg-tint px-2 py-0.5 text-[12px] font-semibold text-navy">Tracking {entry.tracking}</span>
                     )}
@@ -44,6 +52,19 @@ export default function OrderTimeline({ order }) {
           );
         })}
       </ol>
+      {payments.length > 0 && (
+        <ul className="mt-6 space-y-2 border-t border-line pt-4">
+          {payments.map((entry) => (
+            <li key={`${entry.label}-${entry.at}`} className="flex items-start gap-2 text-[13px] text-ink">
+              <CashIcon className="mt-0.5 size-4 shrink-0 text-teal" />
+              <span>
+                <span className="font-semibold text-navy">{entry.label}</span> · {when(entry.at)}
+                {entry.note && <span className="block text-ink-light">{entry.note}</span>}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

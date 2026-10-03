@@ -9,3 +9,7 @@ dist
 # Supabase CLI local state
 supabase/.temp/
 supabase/.branches/
+
+# Generated before every build (scripts/sitemap.mjs)
+public/sitemap.xml
+public/robots.txt

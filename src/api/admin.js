@@ -40,8 +40,12 @@ export async function updateOrderStatus(id, { status, note, courier, tracking })
   );
 }
 
-export async function setPaymentStatus(id, paymentStatus) {
-  unwrap(await supabase.from("orders").update({ payment_status: paymentStatus }).eq("id", id), "Could not update the payment status.");
+/* Payment changes go through the same function as status changes, so they appear on the order timeline. */
+export async function setPaymentStatus(id, paymentStatus, { status = null, note = null } = {}) {
+  return unwrap(
+    await supabase.rpc("update_order_status", { p_order_id: id, p_status: status, p_note: note, p_courier: null, p_tracking: null, p_payment_status: paymentStatus }),
+    "Could not update the payment."
+  );
 }
 
 /* ------------------------------------------------------------- products */
@@ -132,4 +136,53 @@ export async function grantAdmin(email) {
 }
 export async function revokeAdmin(userId) {
   unwrap(await supabase.rpc("revoke_admin", { p_user_id: userId }), "Could not remove access.");
+}
+
+/* ------------------------------------------------------------ catalogue */
+const inUse = (error, fallback, hint) => (error && /foreign key|violates/i.test(error.message) ? new Error(hint) : toError(error, fallback));
+
+export async function fetchDepartmentsAdmin() {
+  return unwrap(await supabase.from("departments").select("*").order("sort_order").order("name"), "Could not load departments.");
+}
+export async function saveDepartment(row) {
+  unwrap(await supabase.from("departments").upsert(row, { onConflict: "id" }), "Could not save the department.");
+}
+export async function deleteDepartment(id) {
+  const { error } = await supabase.from("departments").delete().eq("id", id);
+  if (error) throw inUse(error, "Could not delete the department.", "This department still has categories. Move or delete them first, or hide the department instead.");
+}
+
+export async function fetchCategoriesAdmin() {
+  return unwrap(await supabase.from("categories").select("*").order("sort_order").order("name"), "Could not load categories.");
+}
+export async function saveCategory(row) {
+  unwrap(await supabase.from("categories").upsert(row, { onConflict: "id" }), "Could not save the category.");
+}
+export async function deleteCategory(id) {
+  const { error } = await supabase.from("categories").delete().eq("id", id);
+  if (error) throw inUse(error, "Could not delete the category.", "This category still has products. Move or delete them first, or hide the category instead.");
+}
+
+export async function fetchBrandsAdmin() {
+  return unwrap(await supabase.from("brands").select("*").order("name"), "Could not load brands.");
+}
+export async function saveBrand(row) {
+  unwrap(await supabase.from("brands").upsert(row, { onConflict: "id" }), "Could not save the brand.");
+}
+export async function deleteBrand(id) {
+  const { error } = await supabase.from("brands").delete().eq("id", id);
+  if (error) throw inUse(error, "Could not delete the brand.", "This brand still has products. Move them to another brand first, or hide the brand instead.");
+}
+
+/* ------------------------------------------------------------- realtime */
+/* Calls back when an order, message or review is added or changed, so admin screens stay current without refreshing. */
+export function subscribeToAdminChanges(onChange) {
+  const channel = supabase.channel(`admin-live-${Math.random().toString(36).slice(2, 8)}`);
+  ["orders", "contact_messages", "reviews"].forEach((table) => {
+    channel.on("postgres_changes", { event: "*", schema: "public", table }, (payload) => onChange({ table, event: payload.eventType, row: payload.new || {} }));
+  });
+  channel.subscribe();
+  return () => {
+    supabase.removeChannel(channel);
+  };
 }

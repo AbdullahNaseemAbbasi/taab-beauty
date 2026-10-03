@@ -20,8 +20,8 @@ const columns = {
     { key: "revenue", label: "Revenue", align: "right", render: (row) => <strong>{formatPrice(row.revenue)}</strong> },
     { key: "average_order", label: "Avg order", align: "right", render: (row) => formatPrice(row.average_order) },
     { key: "discounts", label: "Discounts", align: "right", render: (row) => formatPrice(row.discounts) },
-    { key: "cod_orders", label: "COD", align: "right" },
-    { key: "bank_orders", label: "Bank", align: "right" },
+    { key: "payments_received", label: "Payments received", align: "right", render: (row) => formatPrice(row.payments_received) },
+    { key: "awaiting_advance", label: "Awaiting advance", align: "right", render: (row) => <span className={row.awaiting_advance ? "text-coral" : ""}>{row.awaiting_advance}</span> },
     { key: "delivered", label: "Delivered", align: "right" },
     { key: "lost", label: "Cancelled / returned", align: "right", render: (row) => <span className={row.lost ? "text-danger" : ""}>{row.lost}</span> },
   ],
@@ -72,7 +72,7 @@ export default function AnalyticsPage() {
   return (
     <div className="space-y-5">
       <PageTitle title="Analytics" subtitle="Sales, the customer journey, campaigns and product performance.">
-        <button type="button" onClick={() => downloadCsv(`naaz-${view}.csv`, report.data || [])} className="h-10 rounded-full border border-line bg-white px-4 text-[14px] font-semibold text-navy hover:border-navy" disabled={!report.data?.length}>
+        <button type="button" onClick={() => downloadCsv(`naz-${view}.csv`, report.data || [])} className="h-10 rounded-full border border-line bg-white px-4 text-[14px] font-semibold text-navy hover:border-navy" disabled={!report.data?.length}>
           Export CSV
         </button>
       </PageTitle>

@@ -10,7 +10,6 @@ export const images = {
     makeup: "profile-of-a-person-adding-blush-to-her-cheeks-with-a-brush",
     about: "young-man-preparing-a-package-for-fulfillment",
     aboutAlt: "Packing an order into a box",
-    journal: "mirror-view-of-putting-on-makeup",
     contact: "beauty-product-flatlay",
     sale: "beauty-products-and-makeup-on-black-background",
     shop: "makeup-on-marble",
@@ -23,11 +22,15 @@ export const images = {
     tools: "makeup-brush-set",
     electronics: "flat-lay-of-phone-and-wireless-earbuds",
     kitchen: "beautiful-kitchen-utensils-in-bright-wooden-kitchen",
+    women: "woman-wearing-floral-dress",
+    men: "light-men-s-dress-shirt",
+    kids: "kids-dragon-hoodie",
+    accessories: "red-handbag-with-gold-detail",
   },
   departments: {
     beauty: "makeup-on-marble",
-    electronics: "a-flatlay-view-of-a-minimalist-workspace",
-    kitchen: "kitchen-ready-for-cooking",
+    appliances: "a-flatlay-view-of-a-minimalist-workspace",
+    clothes: "clothing-on-retail-rack",
   },
   concerns: {
     dryness: "two-hands-running-in-skincare-treatment",
@@ -45,10 +48,10 @@ export const images = {
   instagram: [
     "pink-flatlay",
     "drone-knoll-flatlay",
-    "colorful-ingredients-flat-lay",
+    "clothing-accessories-flatlay",
     "makeup-beauty-flatlay",
     "videogame-knoll",
-    "flatlay-with-knife-and-vegatables",
+    "womens-fashion-on-hangers",
   ],
   about: ["young-man-preparing-a-package-for-fulfillment", "small-business-interior", "beauty-products-and-flower"],
   avatars: [

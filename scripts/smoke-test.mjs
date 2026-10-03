@@ -25,7 +25,7 @@ check("brand join works", products?.[0]?.brands?.name != null, products?.[0]?.br
 
 const { data: categoryRows } = await db.from("categories").select("id, department").eq("active", true);
 const departmentsFound = [...new Set((categoryRows || []).map((row) => row.department))].sort();
-check("categories carry a department", ["beauty", "electronics", "kitchen"].every((name) => departmentsFound.includes(name)), departmentsFound.join(","));
+check("categories carry a department", (categoryRows || []).length > 0 && categoryRows.every((row) => Boolean(row.department)), departmentsFound.join(","));
 const gadget = (products || []).find((row) => row.category_id === "electronics" && row.warranty);
 check("electronics carry specifications and warranty", Boolean(gadget) && Array.isArray(gadget.specs) && gadget.specs.length > 0, gadget ? `${gadget.name}: ${gadget.specs.length} specs` : "none found");
 
@@ -39,7 +39,7 @@ check("orders table is not readable", Boolean(ordersError) || (ordersLeak || [])
 
 const { data: couponOk } = await db.rpc("validate_coupon", { p_code: "welcome10", p_subtotal: 5000 });
 check("validate_coupon WELCOME10 on 5000", couponOk?.valid && couponOk.discount === 500, JSON.stringify(couponOk));
-const { data: couponLow } = await db.rpc("validate_coupon", { p_code: "NAAZ500", p_subtotal: 1000 });
+const { data: couponLow } = await db.rpc("validate_coupon", { p_code: "NAZ500", p_subtotal: 1000 });
 check("validate_coupon rejects below minimum", couponLow?.valid === false, couponLow?.error);
 
 const { data: sample } = await db.rpc("get_order", { p_order_id: "NZ-241001-0211", p_phone: "0300 1234567" });
@@ -52,7 +52,7 @@ const variantProduct = products.find((product) => product.slug === "velvet-matte
 const variantBefore = variantProduct.variants.options.find((option) => option.id === "rooh").stock;
 const payload = {
   customer: { name: "Smoke Test", phone: "03009998877", email: "", address: "Test street 123, DHA Phase 6", city: "Karachi", province: "Sindh" },
-  payment: "cod",
+  payment: "bank",
   couponCode: "WELCOME10",
   notes: "automated smoke test",
   attribution: { source: "smoke-test" },
@@ -68,8 +68,15 @@ if (order) {
   check("server-side pricing", order.totals.subtotal === expectedSubtotal, `${order.totals.subtotal} vs ${expectedSubtotal}`);
   check("coupon applied server-side", order.totals.discount === Math.round(expectedSubtotal * 0.1), `${order.totals.discount}`);
   check("shipping fee below threshold", order.totals.shipping === 250, `${order.totals.shipping}`);
-  check("status confirmed for COD", order.status === "confirmed", order.status);
-  check("timeline recorded", Array.isArray(order.timeline) && order.timeline.length === 2);
+  const { data: paymentSetting } = await db.from("settings").select("value").eq("key", "payments").single();
+  const percent = paymentSetting?.value?.advance_percent ?? 50;
+  check("order waits for the advance", order.status === "created" && order.paymentStatus === "pending", `${order.status}, ${order.paymentStatus}`);
+  check(
+    "advance and balance follow the setting",
+    order.advance?.percent === percent && order.advance.amount === Math.ceil((order.totals.total * percent) / 100) && order.advance.amount + order.advance.balance === order.totals.total,
+    JSON.stringify(order.advance)
+  );
+  check("timeline recorded", Array.isArray(order.timeline) && order.timeline.length === 1);
 
   const { data: after } = await db.from("products").select("slug, stock, variants").in("id", [simple.id, variantProduct.id]);
   const simpleAfter = after.find((product) => product.slug === simple.slug);
@@ -84,6 +91,16 @@ if (order) {
 
 const { error: oversell } = await db.rpc("place_order", { p_payload: { ...payload, lines: [{ productId: variantProduct.id, variantId: "mitti", quantity: 1 }] } });
 check("sold-out variant is rejected", Boolean(oversell), oversell?.message);
+
+const { error: codError } = await db.rpc("place_order", { p_payload: { ...payload, payment: "cod", couponCode: null, lines: [{ productId: simple.id, quantity: 1 }] } });
+check("cash on delivery is refused", Boolean(codError), codError?.message);
+const { error: offMethodError } = await db.rpc("place_order", { p_payload: { ...payload, payment: "easypaisa", couponCode: null, lines: [{ productId: simple.id, quantity: 1 }] } });
+check("a switched-off payment method is refused", Boolean(offMethodError), offMethodError?.message);
+
+const { data: departmentRows } = await db.from("departments").select("id");
+const { data: categoryCheck } = await db.from("categories").select("id, department");
+const departmentIds = (departmentRows || []).map((row) => row.id);
+check("departments are public and every category belongs to one", departmentIds.length > 0 && (categoryCheck || []).every((row) => departmentIds.includes(row.department)), departmentIds.join(","));
 
 const { error: eventError } = await db.from("events").insert({ event: "smoke_test", session_id: "smoke", page_path: "/", payload: { ok: true } });
 check("events insert allowed", !eventError, eventError?.message);
@@ -122,7 +139,8 @@ if (process.env.NTFY_TOPIC && order) {
 
 /* ------------------------------------------------ privacy of settings and costs */
 const { data: settingsRows } = await db.from("settings").select("key");
-check("public settings expose only shipping and store", (settingsRows || []).length === 2 && settingsRows.every((row) => ["shipping", "store"].includes(row.key)), (settingsRows || []).map((row) => row.key).join(","));
+const publicKeys = ["contact", "payments", "shipping", "store"];
+check("public settings expose only store details, payments and delivery", (settingsRows || []).length > 0 && settingsRows.every((row) => publicKeys.includes(row.key)), (settingsRows || []).map((row) => row.key).sort().join(","));
 const { error: topicError } = await db.rpc("ntfy_topic");
 check("notification topic not callable by public", Boolean(topicError));
 const { data: costLeak, error: costError } = await db.from("product_costs").select("cost").limit(1);
@@ -171,6 +189,16 @@ if (process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD) {
   check("admin_stats works", !statsError && typeof stats?.orders === "number", statsError?.message || `orders ${stats?.orders}, pending ${stats?.pending}`);
   const { data: staffOrders, error: staffOrdersError } = await staff.from("orders").select("id, order_items(id)").order("created_at", { ascending: false }).limit(5);
   check("admin reads orders with items", !staffOrdersError && staffOrders.length > 0 && Array.isArray(staffOrders[0].order_items), staffOrdersError?.message);
+  if (order) {
+    const { data: confirmed, error: advanceError } = await staff.rpc("update_order_status", { p_order_id: order.id, p_status: "confirmed", p_note: "Advance received (smoke test)", p_courier: null, p_tracking: null, p_payment_status: "advance_paid" });
+    check("admin records the advance and the order is confirmed", !advanceError && confirmed?.status === "confirmed" && confirmed?.paymentStatus === "advance_paid", advanceError?.message || `${confirmed?.status}, ${confirmed?.paymentStatus}`);
+    const { data: seen } = await db.rpc("get_order", { p_order_id: order.id, p_phone: "03009998877" });
+    check("customer sees the advance as received", seen?.paymentStatus === "advance_paid" && seen?.timeline?.some((entry) => /advance received/i.test(entry.label)), seen?.timeline?.map((entry) => entry.label).join(" | "));
+    const { data: delivered, error: deliverError } = await staff.rpc("update_order_status", { p_order_id: order.id, p_status: "delivered", p_note: null, p_courier: null, p_tracking: null, p_payment_status: null });
+    check("delivery marks the balance as paid", !deliverError && delivered?.status === "delivered" && delivered?.paymentStatus === "paid", deliverError?.message || delivered?.paymentStatus);
+    const { data: statsAfter } = await staff.rpc("admin_stats", { p_days: 1 });
+    check("payments received are counted", typeof statsAfter?.advance_collected === "number" && statsAfter.advance_collected >= order.totals.total, `${statsAfter?.advance_collected}`);
+  }
   if (customerOrderId) {
     const { data: shipped, error: shipError } = await staff.rpc("update_order_status", { p_order_id: customerOrderId, p_status: "shipped", p_note: "Smoke test note", p_courier: "TCS", p_tracking: "SMOKE123", p_payment_status: null });
     check("admin marks an order shipped", !shipError && shipped?.status === "shipped" && shipped?.trackingCode === "SMOKE123", shipError?.message);

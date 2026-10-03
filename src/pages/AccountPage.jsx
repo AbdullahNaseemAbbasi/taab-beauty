@@ -94,7 +94,7 @@ function AuthForms() {
               <Field label="Full name" required>
                 <Input required value={form.name} onChange={update("name")} autoComplete="name" />
               </Field>
-              <Field label="Mobile number" required hint="Used for order updates on SMS and WhatsApp.">
+              <Field label="Mobile number" required hint="Used for order updates on WhatsApp.">
                 <Input required type="tel" inputMode="tel" value={form.phone} onChange={update("phone")} autoComplete="tel" placeholder="0300 1234567" />
               </Field>
             </>

@@ -1,6 +1,6 @@
 import { images } from "./images.js";
 
-/* Each category belongs to a department (see `departments` in src/config/site.js). */
+/* Each category belongs to a department (src/data/departments.js; edited in Admin → Catalogue). */
 export const categories = [
   {
     id: "makeup",
@@ -55,9 +55,9 @@ export const categories = [
   },
   {
     id: "electronics",
-    name: "Electronics",
+    name: "Tech & Gadgets",
     slug: "electronics",
-    department: "electronics",
+    department: "appliances",
     tagline: "Everyday tech that just works.",
     description: "Audio, wearables, chargers and gadgets. Every unit is checked before dispatch and covered by warranty.",
     image: images.categories.electronics,
@@ -65,13 +65,53 @@ export const categories = [
   },
   {
     id: "kitchen",
-    name: "Kitchen & Dining",
+    name: "Kitchen & Home",
     slug: "kitchen",
-    department: "kitchen",
+    department: "appliances",
     tagline: "Cook, serve and store better.",
     description: "Cookware, knives, storage and serveware that stand up to daily cooking, from the first chai to the last roti.",
     image: images.categories.kitchen,
     subcategories: ["Cookware", "Knives & Tools", "Tea & Coffee", "Storage", "Dinnerware"],
+  },
+  {
+    id: "women",
+    name: "Women",
+    slug: "women",
+    department: "clothes",
+    tagline: "Dresses, knits and jackets.",
+    description: "Easy pieces in breathable fabrics, cut for everyday wear and for dressing up.",
+    image: images.categories.women,
+    subcategories: ["Dresses", "Tops & Knitwear", "Jackets"],
+  },
+  {
+    id: "men",
+    name: "Men",
+    slug: "men",
+    department: "clothes",
+    tagline: "Tees, shirts, hoodies and denim.",
+    description: "Well-made basics that fit properly and keep their shape after the wash.",
+    image: images.categories.men,
+    subcategories: ["T-Shirts & Shirts", "Hoodies & Jackets", "Jeans"],
+  },
+  {
+    id: "kids",
+    name: "Kids",
+    slug: "kids",
+    department: "clothes",
+    tagline: "Soft, tough and washable.",
+    description: "Clothes that survive the playground and the washing machine, in sizes from 3 to 8 years.",
+    image: images.categories.kids,
+    subcategories: ["Tops & Hoodies", "Bottoms", "Jackets"],
+  },
+  {
+    id: "accessories",
+    name: "Bags & Accessories",
+    slug: "accessories",
+    department: "clothes",
+    tagline: "The finishing touches.",
+    description: "Bags, scarves, sunglasses and shoes to finish an outfit.",
+    image: images.categories.accessories,
+    subcategories: ["Bags", "Scarves", "Sunglasses", "Shoes"],
   },
 ];
 

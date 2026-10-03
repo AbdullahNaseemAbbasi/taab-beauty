@@ -10,10 +10,10 @@ export function organizationSchema() {
     legalName: site.legalName,
     url: site.url,
     logo: `${site.url}/favicon.svg`,
-    email: site.contact.email,
+    ...(site.contact.email ? { email: site.contact.email } : {}),
     telephone: site.contact.phone,
     address: { "@type": "PostalAddress", addressLocality: "Karachi", addressCountry: "PK" },
-    sameAs: [site.social.instagram, site.social.facebook, site.social.tiktok, site.social.youtube],
+    sameAs: [site.social.instagram, site.social.facebook, site.social.tiktok, site.social.youtube].filter(Boolean),
   };
 }
 
@@ -72,20 +72,6 @@ export function breadcrumbSchema(items) {
       name: item.label,
       item: `${site.url}${item.to}`,
     })),
-  };
-}
-
-export function articleSchema(article) {
-  return {
-    "@context": "https://schema.org",
-    "@type": "Article",
-    headline: article.title,
-    description: article.excerpt,
-    image: img(article.image, 1200),
-    datePublished: article.date,
-    author: { "@type": "Person", name: article.author },
-    publisher: { "@type": "Organization", name: site.name, logo: { "@type": "ImageObject", url: `${site.url}/favicon.svg` } },
-    mainEntityOfPage: `${site.url}/journal/${article.slug}`,
   };
 }
 

@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
 import Layout from "./components/layout/Layout.jsx";
 import HomePage from "./pages/HomePage.jsx";
 
@@ -18,8 +18,6 @@ const AboutPage = lazy(() => import("./pages/AboutPage.jsx"));
 const ContactPage = lazy(() => import("./pages/ContactPage.jsx"));
 const FaqPage = lazy(() => import("./pages/FaqPage.jsx"));
 const PolicyPage = lazy(() => import("./pages/PolicyPage.jsx"));
-const JournalPage = lazy(() => import("./pages/JournalPage.jsx"));
-const ArticlePage = lazy(() => import("./pages/ArticlePage.jsx"));
 const NotFoundPage = lazy(() => import("./pages/NotFoundPage.jsx"));
 const AdminApp = lazy(() => import("./admin/AdminApp.jsx"));
 
@@ -56,10 +54,11 @@ export default function App() {
               <Routes>
                 <Route path="shop" element={<ShopPage mode="all" />} />
                 <Route path="shop/:category" element={<ShopPage mode="category" />} />
-                <Route path="beauty" element={<ShopPage mode="department" department="beauty" />} />
+                {/* Departments come from the database, so any slug is accepted here and checked in the page. */}
+                <Route path="department/:department" element={<ShopPage mode="department" />} />
+                <Route path="beauty" element={<Navigate to="/department/beauty" replace />} />
                 <Route path="new-arrivals" element={<ShopPage mode="collection" collection="new-arrivals" />} />
                 <Route path="best-sellers" element={<ShopPage mode="collection" collection="best-sellers" />} />
-                <Route path="sale" element={<ShopPage mode="collection" collection="sale" />} />
                 <Route path="search" element={<SearchPage />} />
                 <Route path="product/:slug" element={<ProductPage />} />
                 <Route path="cart" element={<CartPage />} />
@@ -72,12 +71,11 @@ export default function App() {
                 <Route path="about" element={<AboutPage />} />
                 <Route path="contact" element={<ContactPage />} />
                 <Route path="faq" element={<FaqPage />} />
+                <Route path="payment-policy" element={<PolicyPage policy="payment" />} />
                 <Route path="shipping-policy" element={<PolicyPage policy="shipping" />} />
                 <Route path="returns" element={<PolicyPage policy="returns" />} />
                 <Route path="privacy-policy" element={<PolicyPage policy="privacy" />} />
                 <Route path="terms" element={<PolicyPage policy="terms" />} />
-                <Route path="journal" element={<JournalPage />} />
-                <Route path="journal/:slug" element={<ArticlePage />} />
                 <Route path="*" element={<NotFoundPage />} />
               </Routes>
             </Suspense>

@@ -1,7 +1,7 @@
 export const brands = [
   {
-    id: "naaz-co",
-    name: "Naaz & CO",
+    id: "naz-co",
+    name: "Naz & CO",
     tagline: "The house line",
     description: "Our own makeup, tools and everyday essentials, developed in Karachi and tested in real Pakistani homes and weather.",
     featured: true,
@@ -46,6 +46,13 @@ export const brands = [
     name: "Roshan Tech",
     tagline: "Power and desk essentials",
     description: "Chargers, power banks, wearables and accessories that survive load-shedding and long days.",
+    featured: true,
+  },
+  {
+    id: "libaas-studio",
+    name: "Libaas Studio",
+    tagline: "Everyday clothing",
+    description: "Well-cut basics and easy dresses for women, men and kids, in fabrics that suit our weather.",
     featured: true,
   },
   {

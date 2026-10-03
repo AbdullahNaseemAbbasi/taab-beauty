@@ -26,7 +26,7 @@ if (!url || !key) {
   console.error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in .env");
   process.exit(1);
 }
-const password = givenPassword || `Naaz-${randomBytes(9).toString("base64url")}`;
+const password = givenPassword || `Naz-${randomBytes(9).toString("base64url")}`;
 const admin = createClient(url, key, { auth: { persistSession: false } });
 const normalised = email.trim().toLowerCase();
 

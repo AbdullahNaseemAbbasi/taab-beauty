@@ -37,7 +37,7 @@ Everything is a plain React function component. Props in, JSX out; state lives i
 
 ## Sections (`src/components/sections/Sections.jsx`)
 
-`PageHero`, `PageHeader`, `Section`, `TrustSignals`, `CategoryGrid`, `ConcernGrid`, `BrandStrip`, `PromoBanner`, `Testimonials`, `InstagramFeed`, `JournalCard`.
+`PageHero`, `PageHeader`, `Section`, `HeroCarousel`, `TrustSignals`, `CategoryCollage`, `DepartmentGrid`, `BrandStrip`, `Testimonials`, `InstagramFeed`, `JournalCard`.
 
 ## Pages (`src/pages`)
 

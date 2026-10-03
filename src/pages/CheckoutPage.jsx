@@ -8,7 +8,7 @@ import { BagIcon, ShieldIcon, WhatsAppIcon, InfoIcon } from "../components/ui/Ic
 import { PageHeader } from "../components/sections/Sections.jsx";
 import OrderSummary from "../components/commerce/OrderSummary.jsx";
 import { whatsappLink } from "../components/layout/WhatsAppButton.jsx";
-import { site } from "../config/site.js";
+import { site, availablePaymentMethods } from "../config/site.js";
 import { cities } from "../data/misc.js";
 import { placeOrder, saveCheckout, cachedCreatorOffer } from "../api/orders.js";
 import { isLive } from "../api/client.js";
@@ -16,12 +16,14 @@ import { hydrateOrder } from "../lib/cart.js";
 import { estimateDelivery, formatDeliveryRange } from "../lib/shipping.js";
 import { getAttribution, attributionForOrder } from "../analytics/attribution.js";
 import DispatchCountdown from "../components/commerce/DispatchCountdown.jsx";
+import { AccountDetails, paymentPlan } from "../components/commerce/PaymentPlan.jsx";
+import { formatPrice } from "../lib/format.js";
 import { useCatalog } from "../catalog/CatalogProvider.jsx";
 import { useStore } from "../store/StoreProvider.jsx";
 import { useAuth } from "../auth/AuthProvider.jsx";
 import { ecommerce } from "../analytics/ecommerce.js";
 
-const CUSTOMER_KEY = "naaz:customer";
+const CUSTOMER_KEY = "naz:customer";
 const phonePattern = /^(\+92|0)?3\d{9}$/;
 
 function loadSavedCustomer() {
@@ -51,12 +53,13 @@ export default function CheckoutPage() {
   const navigate = useNavigate();
   useSeo({ title: "Checkout", path: "/checkout", noindex: true });
 
-  /* Card needs both the admin switch and a configured gateway, so it can never be offered by accident. */
-  const enabledMethods = site.payments.methods.filter(
-    (method) => (method.id === "cod" && settings.store.codEnabled) || (method.id === "bank" && settings.store.bankTransferEnabled) || (method.id === "card" && settings.store.cardEnabled && method.enabled)
-  );
+  /* Only methods that are switched on and have an account to pay into (set in Admin → Settings). */
+  const enabledMethods = availablePaymentMethods();
+  const plan = { ...paymentPlan(cart.totals.total, null), percent: settings.payments.advancePercent };
   const auth = useAuth();
-  const [form, setForm] = useState(() => ({ name: "", phone: "", email: "", address: "", city: "Karachi", province: "Sindh", postalCode: "", instructions: "", notes: "", payment: enabledMethods[0]?.id || "cod", ...loadSavedCustomer() }));
+  const [form, setForm] = useState(() => ({ name: "", phone: "", email: "", address: "", city: "Karachi", province: "Sindh", postalCode: "", instructions: "", notes: "", payment: "", ...loadSavedCustomer() }));
+  /* A method remembered from an earlier visit may have been switched off since. */
+  const payment = enabledMethods.some((method) => method.id === form.payment) ? form.payment : enabledMethods[0]?.id || "";
   const [errors, setErrors] = useState({});
 
   /* Signed-in customers get their saved details filled in (without overwriting what they already typed). */
@@ -110,8 +113,12 @@ export default function CheckoutPage() {
       document.querySelector("[aria-invalid='true']")?.focus();
       return;
     }
+    if (!payment) {
+      setSubmitError("Online payment is being set up. Please message us on WhatsApp to place this order.");
+      return;
+    }
     setSubmitting(true);
-    ecommerce.addPaymentInfo(cart.lines, form.payment);
+    ecommerce.addPaymentInfo(cart.lines, payment);
     const customer = {
       name: form.name.trim(),
       phone: form.phone.replace(/[\s-]/g, ""),
@@ -123,12 +130,12 @@ export default function CheckoutPage() {
       instructions: form.instructions.trim(),
     };
     try {
-      localStorage.setItem(CUSTOMER_KEY, JSON.stringify({ ...customer, payment: form.payment }));
+      localStorage.setItem(CUSTOMER_KEY, JSON.stringify({ ...customer, payment }));
     } catch {
       /* ignore */
     }
     try {
-      const placed = await placeOrder({ customer, lines: cart.lines, coupon: cart.coupon, payment: form.payment, notes: form.notes, totals: cart.totals });
+      const placed = await placeOrder({ customer, lines: cart.lines, coupon: cart.coupon, payment, notes: form.notes, totals: cart.totals });
       const order = hydrateOrder(placed, { productById, productBySlug });
       ecommerce.purchase(order);
       saveCheckout({ ...checkoutSnapshot(form, cart), converted: true, orderId: order.id });
@@ -179,7 +186,7 @@ export default function CheckoutPage() {
               <Field label="Full name" required error={errors.name}>
                 <Input value={form.name} onChange={update("name")} autoComplete="name" aria-invalid={Boolean(errors.name)} />
               </Field>
-              <Field label="Mobile number" required error={errors.phone} hint="We send order updates by SMS and WhatsApp.">
+              <Field label="Mobile number" required error={errors.phone} hint="We send order updates on WhatsApp.">
                 <Input type="tel" value={form.phone} onChange={update("phone")} autoComplete="tel" inputMode="tel" placeholder="0300 1234567" aria-invalid={Boolean(errors.phone)} />
               </Field>
               <Field label="Email (optional)" error={errors.email} className="sm:col-span-2">
@@ -225,18 +232,32 @@ export default function CheckoutPage() {
 
           <fieldset className="rounded-2xl border border-line bg-white p-4 sm:p-6">
             <legend className="px-1 font-display text-[20px] font-extrabold text-navy">3. Payment</legend>
-            <div className="mt-4 grid gap-3">
-              {enabledMethods.map((method) => (
-                <Radio key={method.id} name="payment" value={method.id} label={method.label} description={method.description} checked={form.payment === method.id} onChange={() => { setForm({ ...form, payment: method.id }); ecommerce.addPaymentInfo(cart.lines, method.id); }} />
-              ))}
+            <div className="mt-4 rounded-xl bg-coral-50 p-4 text-[14px] text-navy">
+              <p className="font-semibold">
+                {plan.balance > 0 ? `Pay ${formatPrice(plan.advance)} (${plan.percent}%) now, and ${formatPrice(plan.balance)} when your order arrives.` : `Pay ${formatPrice(plan.advance)} now to confirm your order.`}
+              </p>
+              <p className="mt-1 text-ink">
+                We do not offer cash on delivery for the full amount. Your order is confirmed and packed as soon as the advance is received.{" "}
+                <Link to="/payment-policy" className="font-semibold text-teal hover:underline">How payment works</Link>
+              </p>
             </div>
-            {form.payment === "bank" && (
-              <div className="mt-4 rounded-xl bg-tint p-4 text-[14px] text-navy">
-                <p className="font-semibold">Bank transfer details</p>
-                <p className="mt-1">{site.payments.bankDetails.bank} · {site.payments.bankDetails.title}</p>
-                <p className="font-mono text-[13px]">{site.payments.bankDetails.iban}</p>
-                <p className="mt-2 text-ink">Share the transfer receipt on WhatsApp with your order number. We dispatch as soon as it is confirmed.</p>
-              </div>
+            {enabledMethods.length > 0 ? (
+              <>
+                <p className="mt-5 text-[14px] font-semibold text-navy">Send the advance by</p>
+                <div className="mt-2 grid gap-3">
+                  {enabledMethods.map((method) => (
+                    <Radio key={method.id} name="payment" value={method.id} label={method.label} description={method.description} checked={payment === method.id} onChange={() => { setForm({ ...form, payment: method.id }); ecommerce.addPaymentInfo(cart.lines, method.id); }} />
+                  ))}
+                </div>
+                <div className="mt-4 rounded-xl bg-tint p-4">
+                  <AccountDetails methodId={payment} />
+                  <p className="mt-3 text-[13px] text-ink">Place the order first, then send {formatPrice(plan.advance)} and share the receipt on WhatsApp with your order number. The details are repeated on the next page.</p>
+                </div>
+              </>
+            ) : (
+              <p role="alert" className="mt-4 rounded-xl border border-coral/40 bg-white p-4 text-[14px] text-navy">
+                Online payment is being set up. Please message us on WhatsApp to place this order.
+              </p>
             )}
             <Field label="Order notes (optional)" className="mt-4">
               <Textarea rows={3} value={form.notes} onChange={update("notes")} placeholder="Gift message, product questions, anything we should know." />
@@ -246,8 +267,8 @@ export default function CheckoutPage() {
 
         <div className="lg:sticky lg:top-24">
           <OrderSummary lines={cart.lines} totals={cart.totals} coupon={cart.coupon} />
-          <Button type="submit" variant="navy" arrow className="mt-4 w-full" disabled={submitting}>
-            {submitting ? "Placing order…" : `Place order · ${site.currency.symbol} ${cart.totals.total.toLocaleString()}`}
+          <Button type="submit" variant="navy" arrow className="mt-4 w-full" disabled={submitting || !payment}>
+            {submitting ? "Placing order…" : `Place order · pay ${formatPrice(plan.advance)} advance`}
           </Button>
           <p className="mt-3 flex items-start gap-2 text-[12px] text-ink-light">
             <ShieldIcon className="mt-0.5 size-4 shrink-0 text-teal" />
@@ -255,7 +276,7 @@ export default function CheckoutPage() {
               Your details are used only to deliver this order. By placing it you agree to our <Link to="/terms" className="underline">terms</Link>.
             </span>
           </p>
-          <a href={whatsappLink("Hi Naaz & CO, I need help with my checkout.")} target="_blank" rel="noreferrer" onClick={() => ecommerce.whatsapp("checkout_help")} className="mt-4 flex items-center justify-center gap-2 rounded-full border border-line py-3 text-[14px] font-semibold text-navy hover:border-navy">
+          <a href={whatsappLink(`Hi ${site.name}, I need help with my checkout.`)} target="_blank" rel="noreferrer" onClick={() => ecommerce.whatsapp("checkout_help")} className="mt-4 flex items-center justify-center gap-2 rounded-full border border-line py-3 text-[14px] font-semibold text-navy hover:border-navy">
             <WhatsAppIcon className="size-4 text-[#25D366]" /> Need help? Chat with us
           </a>
         </div>

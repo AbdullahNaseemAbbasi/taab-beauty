@@ -30,7 +30,7 @@ export default function CustomersPage() {
   return (
     <div className="space-y-5">
       <PageTitle title="Customers" subtitle="Everyone who has ordered, grouped by how they buy.">
-        <button type="button" onClick={() => downloadCsv("naaz-customers.csv", visible)} className="h-10 rounded-full border border-line bg-white px-4 text-[14px] font-semibold text-navy hover:border-navy">
+        <button type="button" onClick={() => downloadCsv("naz-customers.csv", visible)} className="h-10 rounded-full border border-line bg-white px-4 text-[14px] font-semibold text-navy hover:border-navy">
           Export CSV
         </button>
       </PageTitle>

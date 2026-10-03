@@ -31,6 +31,8 @@ import { EVENTS } from "../analytics/events.js";
 function VariantSelector({ product, value, onChange }) {
   if (!product.variants) return null;
   const selected = product.variants.options.find((option) => option.id === value);
+  /* Sizes and other options without a colour are shown as text buttons instead of swatches. */
+  const asText = product.variants.display === "text" || product.variants.options.every((option) => !option.hex);
   return (
     <div>
       <p className="text-[14px] font-semibold text-navy">
@@ -48,10 +50,14 @@ function VariantSelector({ product, value, onChange }) {
               aria-pressed={active}
               aria-label={`${option.name}${out ? " (sold out)" : ""}`}
               title={out ? `${option.name} (sold out, tap to get notified)` : option.name}
-              className={`relative size-10 rounded-full border-2 transition-transform ${active ? "scale-110 border-navy" : "border-white"} ${out ? "opacity-40" : ""} hover:scale-105 shadow-card`}
-              style={{ backgroundColor: option.hex }}
+              className={
+                asText
+                  ? `min-w-11 rounded-full border-2 px-4 py-2 text-[14px] font-semibold transition-colors ${active ? "border-navy bg-navy text-white" : "border-line bg-white text-navy hover:border-navy"} ${out ? "line-through opacity-50" : ""}`
+                  : `relative size-10 rounded-full border-2 transition-transform ${active ? "scale-110 border-navy" : "border-white"} ${out ? "opacity-40" : ""} hover:scale-105 shadow-card`
+              }
+              style={asText ? undefined : { backgroundColor: option.hex }}
             >
-              {out && <span className="absolute inset-0 grid place-items-center text-white">✕</span>}
+              {asText ? option.name : out && <span className="absolute inset-0 grid place-items-center text-white">✕</span>}
             </button>
           );
         })}

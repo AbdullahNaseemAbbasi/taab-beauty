@@ -3,44 +3,94 @@ import { Link, useLocation, useParams } from "react-router-dom";
 import useSeo from "../hooks/useSeo.js";
 import Button from "../components/ui/Button.jsx";
 import { ErrorState, Skeleton } from "../components/ui/Feedback.jsx";
-import { CheckIcon, WhatsAppIcon, TruckIcon, PackageIcon, ExternalIcon } from "../components/ui/Icons.jsx";
+import { CheckIcon, WhatsAppIcon, TruckIcon, PackageIcon, ExternalIcon, CashIcon } from "../components/ui/Icons.jsx";
 import OrderSummary from "../components/commerce/OrderSummary.jsx";
 import OrderTimeline from "../components/commerce/OrderTimeline.jsx";
+import { AccountDetails, paymentPlan, paymentStatusLabel } from "../components/commerce/PaymentPlan.jsx";
 import { whatsappLink } from "../components/layout/WhatsAppButton.jsx";
 import { getOrder, phoneForOrder } from "../api/orders.js";
 import { isLive } from "../api/client.js";
 import { hydrateOrder } from "../lib/cart.js";
 import { formatDate, formatPrice } from "../lib/format.js";
 import { estimateDelivery, formatDeliveryRange, courierInfo } from "../lib/shipping.js";
-import { site } from "../config/site.js";
+import { site, paymentLabel } from "../config/site.js";
 import { useCatalog } from "../catalog/CatalogProvider.jsx";
 import { ecommerce } from "../analytics/ecommerce.js";
 import { track } from "../analytics/tracking.js";
 import { EVENTS } from "../analytics/events.js";
 
-/* Prefilled WhatsApp message the customer sends us to confirm the order (instant notification, no API needed). */
+const closed = ["cancelled", "failed", "returned", "refunded"];
+
+/* Prefilled WhatsApp message the customer sends with the payment receipt. */
 export function orderWhatsAppMessage(order) {
-  const method = site.payments.methods.find((entry) => entry.id === order.payment)?.label || order.payment;
+  const plan = paymentPlan(order.totals.total, order.advance);
+  const method = paymentLabel(order.payment);
   const items = order.lines.map((line) => `• ${line.quantity} × ${line.product?.name || line.name}${line.variant?.name || line.variant ? ` (${line.variant?.name || line.variant})` : ""}`).join("\n");
   return [
-    `Hi Naaz & CO, confirming my order ${order.id}.`,
+    `Hi ${site.name}, this is my order ${order.id}.`,
     "",
     items,
     "",
-    `Total: ${formatPrice(order.totals.total)} (${method})`,
+    `Total: ${formatPrice(order.totals.total)}`,
+    plan.advance > 0 ? `Advance sent: ${formatPrice(plan.advance)} by ${method} (receipt attached)` : `Payment: ${method}`,
+    plan.balance > 0 && plan.advance > 0 ? `Balance on delivery: ${formatPrice(plan.balance)}` : null,
     `Name: ${order.customer?.name || ""}`,
     `Address: ${order.customer?.address || ""}, ${order.customer?.city || ""}`,
-  ].join("\n");
+  ]
+    .filter((line) => line !== null)
+    .join("\n");
+}
+
+/* What the customer still has to pay, and how. */
+export function PaymentCard({ order, whatsapp, onShare }) {
+  const plan = paymentPlan(order.totals.total, order.advance);
+  if (closed.includes(order.status) || plan.advance <= 0) return null;
+
+  if (order.paymentStatus === "pending") {
+    return (
+      <div className="rounded-2xl border-2 border-coral/50 bg-white p-4 sm:p-5">
+        <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-coral">One step left</p>
+        <p className="mt-1 font-display text-[22px] font-extrabold text-navy sm:text-[26px]">Send {formatPrice(plan.advance)} to confirm this order</p>
+        <p className="mt-1 text-[14px] text-ink">
+          {plan.balance > 0 ? `That is the ${plan.percent}% advance. The remaining ${formatPrice(plan.balance)} is paid when your order arrives.` : "We pack your order as soon as the payment is received."}
+        </p>
+        <div className="mt-4 rounded-xl bg-tint p-4">
+          <AccountDetails methodId={order.payment} />
+          <p className="mt-3 text-[13px] text-ink">
+            Write <strong className="text-navy">{order.id}</strong> in the transfer note if your app allows it, then send us the receipt.
+          </p>
+        </div>
+        <Button href={whatsapp} target="_blank" rel="noreferrer" variant="whatsapp" className="mt-4 w-full sm:w-auto print:hidden" onClick={onShare}>
+          <WhatsAppIcon className="size-5" /> Send the receipt on WhatsApp
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-2xl border border-success/40 bg-white p-4 text-[14px] text-navy sm:p-5">
+      <p className="flex items-center gap-2 font-semibold">
+        <CheckIcon className="size-5 text-success" /> {order.paymentStatus === "paid" ? "Paid in full. Thank you!" : `Advance of ${formatPrice(plan.advance)} received.`}
+      </p>
+      {order.paymentStatus === "advance_paid" && plan.balance > 0 && <p className="mt-1 text-ink">Please keep {formatPrice(plan.balance)} ready for the courier when your order arrives.</p>}
+    </div>
+  );
 }
 
 function NextSteps({ order }) {
+  const plan = paymentPlan(order.totals.total, order.advance);
   const delivery = estimateDelivery(order.customer?.city, order.placedAt);
+  const awaiting = order.paymentStatus === "pending";
   const steps = [
-    order.payment === "bank" && order.status === "created"
-      ? { Icon: CheckIcon, title: "Complete the bank transfer", text: "Send the receipt on WhatsApp quoting your order number. We dispatch as soon as it is confirmed." }
-      : { Icon: CheckIcon, title: "Order confirmed", text: "We have your order and will start packing it in our Karachi studio." },
-    { Icon: PackageIcon, title: "Packed and handed to the courier", text: "Orders placed before 2pm ship the same working day. You receive the tracking number by SMS." },
-    { Icon: TruckIcon, title: `Delivered ${delivery.express ? "next business day" : "in a few days"}`, text: `Expected ${formatDeliveryRange(delivery)}. ${order.payment === "cod" ? "Please keep the exact amount ready for the courier." : ""}` },
+    awaiting
+      ? { Icon: CashIcon, title: `Send the ${formatPrice(plan.advance)} advance`, text: "Transfer it to the account shown above and share the receipt on WhatsApp with your order number." }
+      : { Icon: CheckIcon, title: "Advance received", text: "Your order is confirmed and we are getting it ready." },
+    { Icon: PackageIcon, title: "Packed and handed to the courier", text: "Confirmed orders are dispatched the same or next working day. The tracking number appears on the Track Order page." },
+    {
+      Icon: TruckIcon,
+      title: `Delivered ${delivery.express ? "next business day" : "in a few days"}`,
+      text: plan.balance > 0 && order.paymentStatus !== "paid" ? `Pay the remaining ${formatPrice(plan.balance)} to the courier on delivery.` : `Expected ${formatDeliveryRange(delivery)}.`,
+    },
   ];
   return (
     <ol className="grid gap-4 sm:grid-cols-3">
@@ -124,7 +174,7 @@ export default function OrderConfirmationPage() {
       <section className="wrap py-16">
         <ErrorState
           title={status === "needs-phone" ? "Verify this order with your phone number" : "We could not find that order"}
-          text={status === "needs-phone" ? "For your privacy, orders can only be viewed with the phone number used at checkout." : "Check the order number from your confirmation SMS, or track it with your phone number."}
+          text={status === "needs-phone" ? "For your privacy, orders can only be viewed with the phone number used at checkout." : "Check the order number, or track it with your phone number."}
           action={{ label: "Track an order", to: `/track-order?id=${encodeURIComponent(id)}` }}
         />
       </section>
@@ -132,8 +182,12 @@ export default function OrderConfirmationPage() {
   }
 
   const justPlaced = state?.justPlaced;
-  const method = site.payments.methods.find((entry) => entry.id === order.payment);
+  const plan = paymentPlan(order.totals.total, order.advance);
   const whatsapp = whatsappLink(orderWhatsAppMessage(order));
+  const share = () => {
+    ecommerce.whatsapp("order_confirmation_share");
+    track(EVENTS.ORDER_WHATSAPP_SHARE, { transaction_id: order.id, value: order.totals.total });
+  };
 
   return (
     <section className="wrap py-8 sm:py-10 lg:py-14">
@@ -143,28 +197,15 @@ export default function OrderConfirmationPage() {
             <CheckIcon className="size-7" />
           </span>
           <h1 className="mt-5 font-display text-[28px] font-extrabold tracking-[-0.02em] text-navy sm:text-[38px]">
-            {justPlaced ? "Shukriya! Your order is confirmed." : `Order ${order.id}`}
+            {justPlaced ? "Shukriya! We have your order." : `Order ${order.id}`}
           </h1>
           <p className="mt-3 text-[16px] text-ink">
-            Order <strong className="text-navy">{order.id}</strong> placed on {formatDate(order.placedAt, { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}.
-            {order.customer?.phone && <> A confirmation SMS is on its way to {order.customer.phone}.</>}
+            Order <strong className="text-navy">{order.id}</strong> placed on {formatDate(order.placedAt, { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}. Keep this number; you need it to track the order.
           </p>
 
-          <div className="mt-6 rounded-2xl border border-[#25D366]/40 bg-white p-4 print:hidden sm:p-5">
-            <p className="text-[15px] font-semibold text-navy">Confirm faster on WhatsApp</p>
-            <p className="mt-1 text-[14px] text-ink">Send us your order summary in one tap. We reply with the dispatch time and you can ask anything about your order in the same chat.</p>
-            <Button href={whatsapp} target="_blank" rel="noreferrer" variant="whatsapp" className="mt-3 w-full sm:w-auto" onClick={() => { ecommerce.whatsapp("order_confirmation_share"); track(EVENTS.ORDER_WHATSAPP_SHARE, { transaction_id: order.id, value: order.totals.total }); }}>
-              <WhatsAppIcon className="size-5" /> Send order details on WhatsApp
-            </Button>
+          <div className="mt-6">
+            <PaymentCard order={order} whatsapp={whatsapp} onShare={share} />
           </div>
-
-          {order.payment === "bank" && order.status === "created" && (
-            <div className="mt-5 rounded-xl border border-coral/30 bg-white p-4 text-[14px] text-navy">
-              <p className="font-semibold">One more step: complete your bank transfer</p>
-              <p className="mt-1">{site.payments.bankDetails.bank} · {site.payments.bankDetails.title} · <span className="font-mono">{site.payments.bankDetails.iban}</span></p>
-              <p className="mt-1 text-ink">Send the receipt on WhatsApp quoting {order.id}. We dispatch as soon as it is confirmed.</p>
-            </div>
-          )}
 
           <div className="mt-6 flex flex-wrap gap-3 print:hidden">
             <Button to={`/track-order?id=${encodeURIComponent(order.id)}`} variant="navy" arrow>
@@ -179,12 +220,14 @@ export default function OrderConfirmationPage() {
           </div>
         </div>
 
-        <div className="mt-8 print:hidden">
-          <h2 className="font-display text-[20px] font-extrabold text-navy">What happens next</h2>
-          <div className="mt-4">
-            <NextSteps order={order} />
+        {!closed.includes(order.status) && (
+          <div className="mt-8 print:hidden">
+            <h2 className="font-display text-[20px] font-extrabold text-navy">What happens next</h2>
+            <div className="mt-4">
+              <NextSteps order={order} />
+            </div>
           </div>
-        </div>
+        )}
 
         <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_380px] lg:items-start">
           <div className="space-y-6 sm:space-y-8">
@@ -206,16 +249,20 @@ export default function OrderConfirmationPage() {
               </div>
               <div>
                 <h3 className="text-[12px] font-bold uppercase tracking-[0.2em] text-teal">Payment</h3>
-                <p className="mt-2 text-[15px] font-semibold text-navy">{method?.label || order.payment}</p>
-                <p className="text-[14px] text-ink">{method?.description}</p>
-                {order.paymentStatus && <p className="mt-1 text-[13px] capitalize text-ink-light">Status: {order.paymentStatus}</p>}
+                <p className="mt-2 text-[15px] font-semibold text-navy">{paymentLabel(order.payment)}</p>
+                {plan.advance > 0 && (
+                  <p className="text-[14px] text-ink">
+                    {formatPrice(plan.advance)} in advance{plan.balance > 0 ? `, ${formatPrice(plan.balance)} on delivery` : ""}
+                  </p>
+                )}
+                {order.paymentStatus && <p className="mt-1 text-[13px] font-semibold text-navy">{paymentStatusLabel(order.paymentStatus)}</p>}
               </div>
             </div>
             <p className="text-[13px] text-ink-light print:hidden">
-              Need to change something? <Link to="/contact" className="font-semibold text-teal hover:underline">Contact us</Link> within 2 hours of ordering.
+              Need to change something? <Link to="/contact" className="font-semibold text-teal hover:underline">Contact us</Link> before the order is packed.
             </p>
           </div>
-          <OrderSummary lines={order.lines} totals={order.totals} coupon={order.coupon} editable={false} title="Items" />
+          <OrderSummary lines={order.lines} totals={order.totals} coupon={order.coupon} advance={order.advance || { percent: 0, amount: 0, balance: order.totals.total }} editable={false} title="Items" />
         </div>
       </div>
     </section>

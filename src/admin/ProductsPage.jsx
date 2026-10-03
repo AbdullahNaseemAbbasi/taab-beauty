@@ -26,7 +26,7 @@ const textToSpecs = (text) =>
 
 function toForm(row, defaults) {
   if (!row) {
-    return { id: "", sku: "", name: "", slug: "", brandId: defaults.brandId, category: defaults.category, subcategory: "", price: "", compareAtPrice: "", cost: "", stock: 0, lowStockThreshold: 5, size: "", description: "", benefits: "", ingredients: "", howToUse: "", specs: "", warranty: "", tags: "", concerns: [], images: [], hasVariants: false, variantLabel: "Shade", options: [], featured: false, bestSeller: false, newArrival: true, active: true };
+    return { id: "", sku: "", name: "", slug: "", brandId: defaults.brandId, category: defaults.category, subcategory: "", price: "", compareAtPrice: "", cost: "", stock: 0, lowStockThreshold: 5, size: "", description: "", benefits: "", ingredients: "", howToUse: "", specs: "", warranty: "", tags: "", concerns: [], images: [], hasVariants: false, variantLabel: "Shade", variantDisplay: "swatch", options: [], featured: false, bestSeller: false, newArrival: true, active: true };
   }
   const cost = Array.isArray(row.product_costs) ? row.product_costs[0]?.cost : row.product_costs?.cost;
   return {
@@ -54,6 +54,7 @@ function toForm(row, defaults) {
     images: row.images || [],
     hasVariants: Boolean(row.variants?.options?.length),
     variantLabel: row.variants?.label || "Shade",
+    variantDisplay: row.variants?.display || ((row.variants?.options || []).some((option) => option.hex) || !row.variants ? "swatch" : "text"),
     options: (row.variants?.options || []).map((option) => ({ ...option })),
     featured: row.featured,
     bestSeller: row.best_seller,
@@ -68,7 +69,7 @@ function toRow(form) {
   const options = form.hasVariants
     ? form.options
         .filter((option) => option.name.trim())
-        .map((option) => ({ id: option.id || slugify(option.name), name: option.name.trim(), hex: option.hex || "#cccccc", stock: Math.max(0, Math.round(Number(option.stock) || 0)) }))
+        .map((option) => ({ id: option.id || slugify(option.name), name: option.name.trim(), ...(form.variantDisplay === "text" ? {} : { hex: option.hex || "#cccccc" }), stock: Math.max(0, Math.round(Number(option.stock) || 0)) }))
     : [];
   return {
     id: form.id || `p-${Date.now().toString(36)}`,
@@ -92,7 +93,7 @@ function toRow(form) {
     low_stock_threshold: Math.max(0, Math.round(Number(form.lowStockThreshold) || 0)),
     tags: commas(form.tags),
     concerns: form.concerns,
-    variants: options.length ? { label: form.variantLabel || "Option", options } : null,
+    variants: options.length ? { label: form.variantLabel || "Option", display: form.variantDisplay, options } : null,
     featured: form.featured,
     best_seller: form.bestSeller,
     new_arrival: form.newArrival,
@@ -214,11 +215,19 @@ function ProductEditor({ row, onClose, onSaved }) {
             <Checkbox label="This product has options (shades, colours, sizes)" checked={form.hasVariants} onChange={set("hasVariants")} />
             {form.hasVariants && (
               <div className="mt-4 space-y-3">
-                <Field label="Option name"><Input value={form.variantLabel} onChange={set("variantLabel")} placeholder="Shade" /></Field>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Field label="What is the option called?"><Input value={form.variantLabel} onChange={set("variantLabel")} placeholder="Shade, Colour or Size" /></Field>
+                  <Field label="Show options as">
+                    <Select value={form.variantDisplay} onChange={set("variantDisplay")}>
+                      <option value="swatch">Colour circles (shades, colours)</option>
+                      <option value="text">Text buttons (sizes: S, M, L)</option>
+                    </Select>
+                  </Field>
+                </div>
                 {form.options.map((option, index) => (
-                  <div key={index} className="grid grid-cols-[44px_1fr_90px_36px] items-end gap-2">
-                    <input type="color" aria-label="Colour" value={option.hex || "#cccccc"} onChange={(event) => setOption(index, { hex: event.target.value })} className="h-[50px] w-11 cursor-pointer rounded-xl border border-line bg-white p-1" />
-                    <Input aria-label="Option name" value={option.name} onChange={(event) => setOption(index, { name: event.target.value })} placeholder="e.g. Rooh (true red)" />
+                  <div key={index} className={`grid items-end gap-2 ${form.variantDisplay === "text" ? "grid-cols-[1fr_90px_36px]" : "grid-cols-[44px_1fr_90px_36px]"}`}>
+                    {form.variantDisplay !== "text" && <input type="color" aria-label="Colour" value={option.hex || "#cccccc"} onChange={(event) => setOption(index, { hex: event.target.value })} className="h-[50px] w-11 cursor-pointer rounded-xl border border-line bg-white p-1" />}
+                    <Input aria-label="Option name" value={option.name} onChange={(event) => setOption(index, { name: event.target.value })} placeholder={form.variantDisplay === "text" ? "e.g. M" : "e.g. Rooh (true red)"} />
                     <Input aria-label="Stock" type="number" min="0" value={option.stock} onChange={(event) => setOption(index, { stock: event.target.value })} />
                     <button type="button" aria-label="Remove option" title="Remove option" onClick={() => setForm({ ...form, options: form.options.filter((_, position) => position !== index) })} className="grid h-[50px] place-items-center rounded-xl text-ink-light hover:text-danger">
                       <TrashIcon className="size-4" />

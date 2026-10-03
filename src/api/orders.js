@@ -6,9 +6,10 @@
 import { supabase, isLive, toError } from "./client.js";
 import { findCoupon, sampleOrders } from "../data/misc.js";
 import { attributionForOrder } from "../analytics/attribution.js";
+import { splitPayment } from "../config/site.js";
 
-const ORDERS_KEY = "naaz:orders";
-const PLACED_KEY = "naaz:orders:placed"; // [{ id, phone }] for orders placed on this device
+const ORDERS_KEY = "naz:orders";
+const PLACED_KEY = "naz:orders:placed"; // [{ id, phone }] for orders placed on this device
 
 function readJson(key, fallback) {
   try {
@@ -64,8 +65,10 @@ function mockPlaceOrder({ customer, lines, coupon, payment, notes, totals }) {
   const order = {
     id: orderId(),
     placedAt: now,
-    status: payment === "cod" ? "confirmed" : "created",
+    status: "created",
     payment,
+    paymentStatus: "pending",
+    advance: (({ percent, advance, balance }) => ({ percent, amount: advance, balance }))(splitPayment(totals.total)),
     notes: notes || "",
     customer,
     phone: customer.phone,
@@ -83,10 +86,7 @@ function mockPlaceOrder({ customer, lines, coupon, payment, notes, totals }) {
     })),
     totals,
     attribution: attributionForOrder(),
-    timeline: [
-      { status: "created", label: "Order placed", at: now },
-      ...(payment === "cod" ? [{ status: "confirmed", label: "Order confirmed (cash on delivery)", at: now }] : []),
-    ],
+    timeline: [{ status: "created", label: "Order placed, awaiting advance payment", at: now }],
   };
   writeJson(ORDERS_KEY, [order, ...readJson(ORDERS_KEY, [])]);
   return order;
@@ -137,7 +137,7 @@ export async function getOrder(id, phone) {
 }
 
 /* -------------------------------------------------- creator / affiliate */
-const OFFER_KEY = "naaz:creatorOffer";
+const OFFER_KEY = "naz:creatorOffer";
 
 export async function fetchCreatorOffer(ref) {
   if (!ref) return null;

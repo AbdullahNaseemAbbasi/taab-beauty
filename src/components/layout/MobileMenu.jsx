@@ -1,15 +1,16 @@
 import { Link } from "react-router-dom";
 import Overlay from "../ui/Modal.jsx";
 import Logo from "../Logo.jsx";
+import { departmentLinks } from "./MegaMenu.jsx";
 import { ChevronRightIcon, HeartIcon, PackageIcon, UserIcon, WhatsAppIcon } from "../ui/Icons.jsx";
 import { useCatalog } from "../../catalog/CatalogProvider.jsx";
-import { site, departments } from "../../config/site.js";
+import { site } from "../../config/site.js";
 import { useStore } from "../../store/StoreProvider.jsx";
 import { ecommerce } from "../../analytics/ecommerce.js";
 
 export default function MobileMenu() {
   const { ui, setUI } = useStore();
-  const { categories, collections } = useCatalog();
+  const { departments, categories, collections } = useCatalog();
   const close = () => setUI({ menuOpen: false });
 
   return (
@@ -17,43 +18,36 @@ export default function MobileMenu() {
       <div className="flex-1 overflow-y-auto">
         <nav aria-label="Mobile" className="px-2 py-3">
           <div className="divide-y divide-line">
-            {departments.map((department) => {
-              const own = categories.filter((category) => category.department === department.id);
-              const links =
-                own.length > 1
-                  ? own.map((category) => ({ label: category.name, to: `/shop/${category.slug}` }))
-                  : (own[0]?.subcategories || []).map((sub) => ({ label: sub, to: `/shop/${own[0].slug}?sub=${encodeURIComponent(sub)}` }));
-              return (
-                <details key={department.id} className="group">
-                  <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-3.5 text-[16px] font-semibold text-navy [&::-webkit-details-marker]:hidden">
-                    {department.name}
-                    <ChevronRightIcon className="size-5 text-ink-light transition-transform group-open:rotate-90" />
-                  </summary>
-                  <ul className="pb-3 pl-6">
-                    <li>
-                      <Link to={department.to} onClick={close} className="block py-2 text-[15px] font-semibold text-teal">
-                        All {department.name}
+            <Link to="/shop" onClick={close} className="block px-3 py-3.5 text-[16px] font-semibold text-navy">
+              All Products
+            </Link>
+            {departments.map((department) => (
+              <details key={department.id} className="group">
+                <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-3.5 text-[16px] font-semibold text-navy [&::-webkit-details-marker]:hidden">
+                  {department.name}
+                  <ChevronRightIcon className="size-5 text-ink-light transition-transform group-open:rotate-90" />
+                </summary>
+                <ul className="pb-3 pl-6">
+                  <li>
+                    <Link to={`/department/${department.id}`} onClick={close} className="block py-2 text-[15px] font-semibold text-teal">
+                      All {department.name}
+                    </Link>
+                  </li>
+                  {departmentLinks(department, categories).map((link) => (
+                    <li key={link.to}>
+                      <Link to={link.to} onClick={close} className="block py-2 text-[15px] text-ink">
+                        {link.label}
                       </Link>
                     </li>
-                    {links.map((link) => (
-                      <li key={link.to}>
-                        <Link to={link.to} onClick={close} className="block py-2 text-[15px] text-ink">
-                          {link.label}
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                </details>
-              );
-            })}
+                  ))}
+                </ul>
+              </details>
+            ))}
             {Object.values(collections).map((collection) => (
               <Link key={collection.slug} to={`/${collection.slug}`} onClick={close} className="block px-3 py-3.5 text-[16px] font-semibold text-navy">
                 {collection.name}
               </Link>
             ))}
-            <Link to="/journal" onClick={close} className="block px-3 py-3.5 text-[16px] font-semibold text-navy">
-              Journal
-            </Link>
           </div>
         </nav>
 

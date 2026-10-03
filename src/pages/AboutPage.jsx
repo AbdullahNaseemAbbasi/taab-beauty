@@ -11,20 +11,21 @@ import { organizationSchema } from "../lib/schema.js";
 import { useCatalog } from "../catalog/CatalogProvider.jsx";
 
 const values = [
-  { Icon: SunIcon, tone: "bg-mint", title: "Chosen for life here", text: "Makeup that holds in humidity, chargers that cope with load-shedding and cookware made for daily desi cooking." },
-  { Icon: ShieldIcon, tone: "bg-sky", title: "Genuine, always", text: "Bought from the brand or its authorised distributor. Sealed beauty, boxed electronics, nothing grey-market." },
-  { Icon: LeafIcon, tone: "bg-coral-100", title: "Honest details", text: "Full ingredient lists, real specifications and plain warranty terms on every product page." },
+  { Icon: SunIcon, tone: "bg-mint", title: "Chosen for life here", text: "Makeup that holds in humidity, chargers that cope with load-shedding and clothes cut for our weather." },
+  { Icon: ShieldIcon, tone: "bg-sky", title: "Genuine, always", text: "Bought from the brand or its authorised distributor. Sealed beauty, boxed appliances, nothing grey-market." },
+  { Icon: LeafIcon, tone: "bg-coral-100", title: "Honest details", text: "Full ingredient lists, real specifications, true sizes and plain warranty terms on every product page." },
   { Icon: ZapIcon, tone: "bg-lavender", title: "Fast, friendly delivery", text: "Same-day dispatch, next-day in Karachi, and a real human on WhatsApp when you need one." },
 ];
 
 export default function AboutPage() {
-  const { settings } = useCatalog();
-  useSeo({ title: `About ${site.name}`, description: `${site.name} is a Karachi store for beauty, electronics and kitchenware, delivered across Pakistan with cash on delivery.`, path: "/about", jsonLd: [organizationSchema()] });
+  const { settings, departments } = useCatalog();
+  const percent = settings.payments.advancePercent;
+  useSeo({ title: `About ${site.name}`, description: site.description, path: "/about", jsonLd: [organizationSchema()] });
 
   const facts = [
-    { value: "3", label: "Departments, one checkout" },
+    { value: String(departments.length), label: "Departments, one checkout" },
     { value: "2 to 4 days", label: "Delivery across Pakistan" },
-    { value: "7 days", label: "To return an unused item" },
+    { value: percent >= 100 ? "Advance" : `${percent}% + ${100 - percent}%`, label: percent >= 100 ? "Payment before dispatch" : "Advance, then the rest on delivery" },
     { value: formatPrice(settings.shipping.freeShippingThreshold), label: "Free delivery above this" },
   ];
 
@@ -33,11 +34,11 @@ export default function AboutPage() {
       <PageHero
         eyebrow={`About ${site.name}`}
         title="Things you will be proud to bring home."
-        description="Naaz means pride. We started in Karachi in 2026 to make it easy to buy good beauty, electronics and kitchenware from one store you can trust."
+        description="Naz means pride. We started in Karachi in 2026 to make it easy to buy good beauty, appliances and clothes from one store you can trust."
         image={images.hero.about}
         imageAlt={images.hero.aboutAlt}
         primary={{ label: "Shop best sellers", to: "/best-sellers" }}
-        secondary={{ label: "Read the Journal", to: "/journal" }}
+        secondary={{ label: "How payment works", to: "/payment-policy" }}
       />
 
       <section className="bg-white py-14 lg:py-20">
@@ -46,7 +47,7 @@ export default function AboutPage() {
             <Eyebrow>Our story</Eyebrow>
             <h2 className="mt-3 font-display text-[30px] font-extrabold leading-[1.15] tracking-[-0.02em] text-navy sm:text-[36px]">Shopping online should not feel like a gamble.</h2>
             <p className="mt-5 text-[16px] leading-[1.7] text-ink">Too many orders arrive as the wrong shade, a copy of the real thing or a gadget that stops working in a week. {site.name} exists to take that risk away: a short, carefully chosen range, described honestly and checked before it leaves us.</p>
-            <p className="mt-4 text-[16px] leading-[1.7] text-ink">We began with beauty and now carry electronics and kitchenware too, because the same promise matters everywhere in the house. Every product page tells you exactly what you are getting and what it costs, with cash on delivery so you can order without worry.</p>
+            <p className="mt-4 text-[16px] leading-[1.7] text-ink">We began with beauty and now carry appliances, clothes and more, because the same promise matters everywhere in the house. Every product page tells you exactly what you are getting and what it costs. You pay part in advance to confirm the order and the rest only when it arrives.</p>
           </div>
           <img {...imageProps(images.about[1], { width: 1000, sizes: "(min-width: 1024px) 50vw, 100vw", alt: "" })} className="aspect-[4/3] w-full rounded-2xl object-cover shadow-float" />
         </div>
@@ -81,8 +82,8 @@ export default function AboutPage() {
         <ol className="grid gap-6 lg:grid-cols-3">
           {[
             ["01", "Sourced properly", "We buy from the brand or its authorised distributor, so the warranty is real and the batch codes check out."],
-            ["02", "Checked before dispatch", "Seals and expiry dates on beauty, a power-on test for electronics, and a chip-and-crack check on kitchenware."],
-            ["03", "Described honestly", "Ingredients, specifications, what is in the box and what the warranty covers, written in plain words."],
+            ["02", "Checked before dispatch", "Seals and expiry dates on beauty, a power-on test for appliances, and a stitch-and-size check on clothes."],
+            ["03", "Described honestly", "Ingredients, specifications, sizes, what is in the box and what the warranty covers, written in plain words."],
           ].map(([number, title, text]) => (
             <li key={number} className="rounded-2xl bg-tint p-6">
               <span className="font-display text-[32px] font-extrabold text-coral">{number}</span>

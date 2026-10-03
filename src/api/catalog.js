@@ -6,17 +6,33 @@
 import { supabase, isLive, toError } from "./client.js";
 import { products as mockProducts } from "../data/products.js";
 import { categories as mockCategories } from "../data/categories.js";
+import { departments as mockDepartments } from "../data/departments.js";
 import { brands as mockBrands } from "../data/brands.js";
 import { concerns as mockConcerns } from "../data/concerns.js";
 import { reviews as mockReviews } from "../data/reviews.js";
-import { articles as mockArticles } from "../data/journal.js";
 import { faqs as mockFaqs } from "../data/faqs.js";
-import { site } from "../config/site.js";
+import { site, applyStoreSettings } from "../config/site.js";
 
-const defaultSettings = {
-  shipping: { freeShippingThreshold: site.shipping.freeShippingThreshold, shippingFee: site.shipping.standardFee, estimatedDays: site.shipping.estimatedDays },
-  store: { codEnabled: true, bankTransferEnabled: true, cardEnabled: false },
-};
+/* Mock mode has no settings table, so give the demo checkout a bank account to show. */
+if (!isLive) {
+  applyStoreSettings({
+    payments: { advance_percent: 50, methods: [{ id: "bank", label: "Bank Transfer", enabled: true, bank: "Demo Bank", account_title: site.name, account_number: "PK00 DEMO 0000 0000 0000 0000" }] },
+  });
+}
+
+function buildSettings(shipping = {}, store = {}) {
+  return {
+    shipping: {
+      freeShippingThreshold: shipping.free_shipping_threshold ?? site.shipping.freeShippingThreshold,
+      shippingFee: shipping.shipping_fee ?? site.shipping.standardFee,
+      estimatedDays: shipping.estimated_days ?? site.shipping.estimatedDays,
+    },
+    store: { cardEnabled: store.card_enabled ?? false },
+    /* Snapshots of the values merged into `site`, so components re-render when they change. */
+    payments: { advancePercent: site.payments.advancePercent, methods: site.payments.methods },
+    contact: { ...site.contact, ...site.social, announcement: site.announcement.message },
+  };
+}
 
 export function mapProduct(row) {
   return {
@@ -53,6 +69,10 @@ function mapCategory(row) {
   return { id: row.id, slug: row.id, department: row.department || "beauty", name: row.name, tagline: row.tagline, description: row.description, image: row.image, subcategories: row.subcategories || [] };
 }
 
+function mapDepartment(row) {
+  return { id: row.id, name: row.name, tagline: row.tagline || "", description: row.description || "", image: row.image || "" };
+}
+
 function mapReview(row) {
   return {
     id: row.id,
@@ -69,10 +89,6 @@ function mapReview(row) {
   };
 }
 
-function mapArticle(row) {
-  return { slug: row.slug, title: row.title, excerpt: row.excerpt, topic: row.topic, author: row.author, date: row.published_at, readTime: row.read_time, image: row.image, content: row.content || [] };
-}
-
 function groupFaqs(rows) {
   const groups = new Map();
   rows.forEach((row) => {
@@ -82,37 +98,16 @@ function groupFaqs(rows) {
   return [...groups.values()];
 }
 
-function mapSettings(rows) {
-  const settings = { ...defaultSettings };
-  rows.forEach((row) => {
-    if (row.key === "shipping") {
-      settings.shipping = {
-        freeShippingThreshold: row.value.free_shipping_threshold ?? defaultSettings.shipping.freeShippingThreshold,
-        shippingFee: row.value.shipping_fee ?? defaultSettings.shipping.shippingFee,
-        estimatedDays: row.value.estimated_days ?? defaultSettings.shipping.estimatedDays,
-      };
-    }
-    if (row.key === "store") {
-      settings.store = {
-        codEnabled: row.value.cod_enabled ?? true,
-        bankTransferEnabled: row.value.bank_transfer_enabled ?? true,
-        cardEnabled: row.value.card_enabled ?? false,
-      };
-    }
-  });
-  return settings;
-}
-
 export function mockCatalog() {
   return {
     products: mockProducts,
     categories: mockCategories,
+    departments: mockDepartments,
     brands: mockBrands,
     concerns: mockConcerns,
     reviews: mockReviews,
-    articles: mockArticles,
     faqs: mockFaqs,
-    settings: defaultSettings,
+    settings: buildSettings(),
     source: "mock",
   };
 }
@@ -120,29 +115,35 @@ export function mockCatalog() {
 export async function fetchCatalog() {
   if (!isLive) return mockCatalog();
 
-  const [products, categories, brands, concerns, reviews, articles, faqs, settings] = await Promise.all([
+  const [products, categories, departments, brands, concerns, reviews, faqs, settings] = await Promise.all([
     supabase.from("products").select("*, brands(name)").eq("active", true).order("created_at", { ascending: true }),
     supabase.from("categories").select("*").eq("active", true).order("sort_order"),
+    supabase.from("departments").select("*").eq("active", true).order("sort_order"),
     supabase.from("brands").select("*").eq("active", true).order("name"),
     supabase.from("concerns").select("*").order("sort_order"),
     supabase.from("reviews").select("*").eq("status", "approved").order("created_at", { ascending: false }),
-    supabase.from("articles").select("*").eq("active", true).order("published_at", { ascending: false }),
     supabase.from("faqs").select("*").eq("active", true).order("sort_order"),
     supabase.from("settings").select("*"),
   ]);
 
-  const failed = [products, categories, brands, concerns, reviews, articles, faqs, settings].find((result) => result.error);
+  const failed = [products, categories, departments, brands, concerns, reviews, faqs, settings].find((result) => result.error);
   if (failed) throw toError(failed.error, "Could not load the catalogue.");
 
+  /* Contact details and payment accounts are merged into the shared config before anything renders. */
+  const byKey = Object.fromEntries(settings.data.map((row) => [row.key, row.value]));
+  applyStoreSettings({ contact: byKey.contact, payments: byKey.payments });
+
+  const departmentIds = new Set(departments.data.map((row) => row.id));
   return {
     products: products.data.map(mapProduct),
-    categories: categories.data.map(mapCategory),
+    /* A category whose department is hidden is hidden with it. */
+    categories: categories.data.map(mapCategory).filter((category) => departmentIds.has(category.department)),
+    departments: departments.data.map(mapDepartment),
     brands: brands.data.map((row) => ({ id: row.id, name: row.name, tagline: row.tagline, description: row.description, featured: row.featured })),
     concerns: concerns.data.map((row) => ({ id: row.id, name: row.name, description: row.description, image: row.image })),
     reviews: reviews.data.map(mapReview),
-    articles: articles.data.map(mapArticle),
     faqs: groupFaqs(faqs.data),
-    settings: mapSettings(settings.data),
+    settings: buildSettings(byKey.shipping, byKey.store),
     source: "supabase",
   };
 }
@@ -153,6 +154,19 @@ export async function fetchProductBySlug(slug) {
   const { data, error } = await supabase.from("products").select("*, brands(name)").eq("slug", slug).eq("active", true).maybeSingle();
   if (error) throw toError(error);
   return data ? mapProduct(data) : null;
+}
+
+/* Calls back (debounced by the caller) whenever the admin changes something the storefront shows. */
+export function subscribeToCatalogChanges(onChange) {
+  if (!isLive) return () => {};
+  const channel = supabase.channel("storefront-catalog");
+  ["products", "categories", "departments", "brands", "settings", "reviews"].forEach((table) => {
+    channel.on("postgres_changes", { event: "*", schema: "public", table }, () => onChange(table));
+  });
+  channel.subscribe();
+  return () => {
+    supabase.removeChannel(channel);
+  };
 }
 
 export async function submitReview(review) {

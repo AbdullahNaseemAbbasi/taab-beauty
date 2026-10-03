@@ -4,6 +4,8 @@ import { formatPrice } from "../../lib/format.js";
 import { Input } from "../ui/Form.jsx";
 import { TagIcon, CloseIcon } from "../ui/Icons.jsx";
 import { useStore } from "../../store/StoreProvider.jsx";
+import { useCatalog } from "../../catalog/CatalogProvider.jsx";
+import { PaymentSplitRows, paymentPlan } from "./PaymentPlan.jsx";
 
 export function CouponInput() {
   const { cart, applyCoupon, removeCoupon } = useStore();
@@ -53,7 +55,11 @@ function LineImage({ product }) {
   return <img {...imageProps(product.images[0], { width: 120, sizes: "56px", alt: product.name })} className="size-14 rounded-lg object-cover" />;
 }
 
-export default function OrderSummary({ lines, totals, coupon, showItems = true, editable = true, title = "Order summary" }) {
+/* `advance` is the split saved on an order; without it the split comes from the current setting. */
+export default function OrderSummary({ lines, totals, coupon, advance, showItems = true, editable = true, title = "Order summary" }) {
+  const { settings } = useCatalog();
+  const plan = advance ? paymentPlan(totals.total, advance) : paymentPlan(totals.total, null);
+  const percent = advance ? plan.percent : settings.payments.advancePercent;
   return (
     <aside className="rounded-2xl border border-line bg-white p-5 sm:p-6">
       <h2 className="font-display text-[20px] font-extrabold text-navy">{title}</h2>
@@ -98,8 +104,9 @@ export default function OrderSummary({ lines, totals, coupon, showItems = true, 
           <dt className="font-semibold text-navy">Total</dt>
           <dd className="font-display text-[22px] font-extrabold text-navy">{formatPrice(totals.total)}</dd>
         </div>
+        {totals.total > 0 && <PaymentSplitRows plan={{ ...plan, percent }} />}
       </dl>
-      <p className="mt-3 text-[12px] text-ink-light">Prices include all taxes. Cash on delivery available across Pakistan.</p>
+      <p className="mt-3 text-[12px] text-ink-light">Prices include all taxes. {plan.advance > 0 ? "Your order is confirmed once the advance is received." : ""}</p>
     </aside>
   );
 }

@@ -7,7 +7,8 @@ import { WhatsAppIcon, TruckIcon } from "../components/ui/Icons.jsx";
 import { PageHeader } from "../components/sections/Sections.jsx";
 import OrderTimeline from "../components/commerce/OrderTimeline.jsx";
 import OrderSummary from "../components/commerce/OrderSummary.jsx";
-import { TrackingCard } from "./OrderConfirmationPage.jsx";
+import { TrackingCard, PaymentCard, orderWhatsAppMessage } from "./OrderConfirmationPage.jsx";
+import { site } from "../config/site.js";
 import { whatsappLink } from "../components/layout/WhatsAppButton.jsx";
 import { getOrder, rememberPlacedOrder, phoneForOrder } from "../api/orders.js";
 import { hydrateOrder } from "../lib/cart.js";
@@ -18,7 +19,7 @@ import { EVENTS } from "../analytics/events.js";
 import { ecommerce } from "../analytics/ecommerce.js";
 
 export default function TrackOrderPage() {
-  useSeo({ title: "Track Your Order", description: "Enter your Naaz & CO order number and phone number to see delivery progress.", path: "/track-order" });
+  useSeo({ title: "Track Your Order", description: "Enter your Naz & CO order number and phone number to see delivery progress.", path: "/track-order" });
   const { productById, productBySlug } = useCatalog();
   const [params] = useSearchParams();
   const [form, setForm] = useState(() => ({ id: (params.get("id") || "").toUpperCase(), phone: params.get("phone") || phoneForOrder(params.get("id") || "") || "" }));
@@ -34,7 +35,7 @@ export default function TrackOrderPage() {
       track(EVENTS.TRACK_ORDER, { found: Boolean(order) });
       if (!order) {
         setResult(null);
-        setError("No order matches that number and phone. Check the confirmation SMS or message us on WhatsApp.");
+        setError("No order matches that number and phone. Check the order number on your confirmation page, or message us on WhatsApp.");
       } else {
         rememberPlacedOrder(order.id, phone);
         setResult(hydrateOrder(order, { productById, productBySlug }));
@@ -46,12 +47,14 @@ export default function TrackOrderPage() {
     }
   }
 
-  /* Links from SMS/WhatsApp (?id=...&phone=...) open the order straight away. */
+  /* Links shared on WhatsApp (?id=...&phone=...) open the order straight away. */
   useEffect(() => {
     if (form.id && form.phone && !result) lookup(form.id, form.phone);
   }, []);
 
-  const delivery = result && !["delivered", "cancelled", "failed", "returned", "refunded"].includes(result.status) ? estimateDelivery(result.customer?.city, result.placedAt) : null;
+  /* No delivery date while the advance is unpaid: the order is not dispatched until it arrives. */
+  const delivery =
+    result && result.paymentStatus !== "pending" && !["delivered", "cancelled", "failed", "returned", "refunded"].includes(result.status) ? estimateDelivery(result.customer?.city, result.placedAt) : null;
 
   return (
     <>
@@ -78,9 +81,11 @@ export default function TrackOrderPage() {
               {error}
             </p>
           )}
-          <p className="text-[12px] text-ink-light sm:col-span-3">
-            Demo tip: try order <button type="button" onClick={() => setForm({ id: "NZ-241001-0211", phone: "03001234567" })} className="font-semibold text-teal underline">NZ-241001-0211</button> with phone 0300 1234567.
-          </p>
+          {import.meta.env.DEV && (
+            <p className="text-[12px] text-ink-light sm:col-span-3">
+              Demo tip (only shown while developing): try order <button type="button" onClick={() => setForm({ id: "NZ-241001-0211", phone: "03001234567" })} className="font-semibold text-teal underline">NZ-241001-0211</button> with phone 0300 1234567.
+            </p>
+          )}
         </form>
 
         {result && (
@@ -102,9 +107,10 @@ export default function TrackOrderPage() {
                   <OrderTimeline order={result} />
                 </div>
               </div>
+              <PaymentCard order={result} whatsapp={whatsappLink(orderWhatsAppMessage(result))} onShare={() => ecommerce.whatsapp("track_order_receipt")} />
               <TrackingCard order={result} />
               <a
-                href={whatsappLink(`Hi Naaz & CO, I have a question about order ${result.id}.`)}
+                href={whatsappLink(`Hi ${site.name}, I have a question about order ${result.id}.`)}
                 target="_blank"
                 rel="noreferrer"
                 onClick={() => ecommerce.whatsapp("track_order")}
@@ -113,7 +119,7 @@ export default function TrackOrderPage() {
                 <WhatsAppIcon className="size-4 text-[#25D366]" /> Ask about this order on WhatsApp
               </a>
             </div>
-            <OrderSummary lines={result.lines} totals={result.totals} coupon={result.coupon} editable={false} title="Items" />
+            <OrderSummary lines={result.lines} totals={result.totals} coupon={result.coupon} advance={result.advance || { percent: 0, amount: 0, balance: result.totals.total }} editable={false} title="Items" />
           </div>
         )}
       </section>

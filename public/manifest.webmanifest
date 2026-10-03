@@ -1,7 +1,7 @@
 {
-  "name": "Naaz & CO",
-  "short_name": "Naaz & CO",
-  "description": "Beauty, electronics and kitchenware, delivered across Pakistan.",
+  "name": "Naz & CO",
+  "short_name": "Naz & CO",
+  "description": "Beauty, appliances, clothes and more, delivered across Pakistan.",
   "start_url": "/?utm_source=pwa&utm_medium=homescreen",
   "scope": "/",
   "display": "standalone",

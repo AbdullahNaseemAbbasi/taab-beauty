@@ -1,59 +1,59 @@
 # Launch checklist · what is done, what you must do, how to run the store day to day
 
-## Done and tested (3 October 2026)
+## Done and tested (4 October 2026)
 
-- Storefront: Naaz & CO, three departments (Beauty, Electronics, Kitchen) with 55 sample products, 18 page types, mobile-first (320 to 2560 px), bag, guest checkout, wishlist, compare, search, journal, FAQ, policies.
-- Logo: the owner's N monogram and wordmark, redrawn as vector in the site colours (header, footer, admin, favicon, app icons).
-- Backend: Supabase project `taab-beauty` (Mumbai). Orders are priced, stock-checked and written server-side. Coupons and creator codes validated server-side. Max 5 orders per phone per hour.
-- Customer accounts (`/account`): sign up and sign in with email + password, saved delivery details that prefill checkout, and a list of every order placed while signed in. Guest checkout still works without an account.
-- Admin panel (`/admin`): dashboard, orders, products, customers, reviews, inbox, coupons and creators, analytics, settings. Same colours and components as the store, works on a phone. Only accounts listed in Settings → Team can open it; the database enforces this, not just the screen.
-- Order tracking: by order number + phone, with courier name, tracking code and courier link, expected delivery date, and a WhatsApp link from SMS/WhatsApp messages (`/track-order?id=TB-...&phone=03...`).
-- Notifications: every new order and contact message is pushed to your phone through the **ntfy** app (free). Tapping the notification opens that order in the admin panel. Customers can also send you their order summary on WhatsApp in one tap from the confirmation page.
-- Growth: creator links (`?ref=creator`) show a banner and auto-apply the creator's code; back-in-stock alerts; abandoned checkouts saved with phone number for follow-up; same-day-dispatch countdown; first-party analytics events; A/B test scaffold; SEO (sitemap, structured data, share image); PWA (add to home screen).
+- Storefront: Naz & CO with three departments to start (Beauty, Appliances, Clothes), 11 categories and 73 sample products. Mobile-first (320 to 2560 px), bag, guest checkout, wishlist, compare, search, FAQ, policies.
+- Home page: hero that changes slide by itself (one slide per department), every category shown with two product photos, department cards, best sellers, a row per department and a mixed product feed.
+- **Everything is managed from the admin panel and shows on the site straight away, without a refresh:** departments, categories, brands, products, prices, stock, sizes, photos, delivery fee, payment accounts, advance percentage, phone, WhatsApp, email, address, social links and the announcement bar.
+- **Payment: no cash on delivery.** The customer pays an advance (50% now, changeable in Settings) by bank transfer, Easypaisa or JazzCash and the rest on delivery. Orders wait as "Awaiting advance" until you confirm the payment.
+- Policies written for this model: Payment & Advance, Shipping, Returns & Warranty, Privacy, Terms. The percentages and fees in them follow your settings.
+- Customer accounts (`/account`), order tracking by order number + phone, coupons and creator codes, back-in-stock alerts, abandoned-checkout follow-up, analytics, SEO, PWA.
+- Admin panel (`/admin`): dashboard, orders, products, catalogue, customers, reviews, inbox, coupons, analytics, settings. Works on a phone. New orders appear live and ring your phone through the ntfy app.
+- Logo: your N monogram and wordmark as vector in the site colours, with the wordmark changed to "Naz & CO".
 
-## Before you announce the store (your side)
+## Before you share the link (your side)
 
-1. **Deploy on Netlify**: import the GitHub repo, add the environment variables `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (values are in `.env`), deploy. Without them the live site runs on mock data and the admin panel cannot open. Then point your domain (`naazandco.com` had no registration on 3 Oct 2026) at Netlify and set `VITE_SITE_URL` to it.
-2. **Sign in to the admin panel** at `<your site>/admin`. Email and first password are in `D:\taab-beauty\.env.supabase.local` (`ADMIN_EMAIL`, `ADMIN_PASSWORD`). Change the password straight away in Settings → Your password.
-3. **Settings → Order notifications**: set "Store address" to the live URL (for example `https://naazandco.com`) so notification taps open the right site. Install the **ntfy** app (Play Store / App Store), choose "Subscribe to topic" and enter the topic shown on that settings card. Keep the topic private; change it there if it ever leaks.
-4. **Password-reset links**: once the live address exists and is yours, open `supabase/config.toml`, set `site_url` to it, add `"<live address>/**"` to `additional_redirect_urls` and run `npx supabase config push` (or do the same in Supabase → Authentication → URL configuration). Until then it points at `localhost`, on purpose: reset links carry a sign-in token, so they must only ever go to a domain you own.
-5. **Real information** → send it and it goes live in minutes. Phone, WhatsApp number, email, address, bank account, social links and hours are in `src/config/site.js`. Products, prices, stock and photos are edited in Admin → Products.
-6. **Register the domain and handles**: naazandco.com (no registration found on 3 Oct 2026, see `docs/01-brand-naming.md`), naazandco.pk at PKNIC, and @naazandco on Instagram, TikTok and Facebook. Trademark search at ipo.gov.pk (classes 3, 9, 21 and 35).
-7. **Courier account**: open a TCS or Leopards business account for pickups and COD remittance. Confirm the public tracking URLs in `src/lib/shipping.js` still match their websites.
-8. **Pixels** (when the ad accounts exist): add `VITE_META_PIXEL_ID`, `VITE_TIKTOK_PIXEL_ID`, `VITE_GA_ID` or `VITE_GTM_ID` in Netlify environment variables and redeploy.
-9. **Supabase plan**: the free tier pauses a project after 7 days without any request and keeps no backups. A live store receives requests daily, so pausing is unlikely, but move to the Pro plan ($25/month) once orders start; it adds daily backups.
+1. **Deploy on Netlify**: import the GitHub repo, add the environment variables `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (values are in `.env`), deploy. Without them the live site runs on sample data and the admin panel cannot open.
+2. **Sign in to the admin panel** at `<your site>/admin`. Email and first password are in `D:\taab-beauty\.env.supabase.local` (`ADMIN_EMAIL`, `ADMIN_PASSWORD`). Change the password in Settings → Your password.
+3. **Settings → Payment**: put in your real bank account, and switch on Easypaisa / JazzCash with your numbers if you use them. The sample account shows a red warning until you replace it. Set the advance percentage you want.
+4. **Settings → Store details**: your phone and WhatsApp numbers (the sample numbers show a red warning), email, address and social links. Empty fields are simply not shown on the site.
+5. **Settings → Order notifications**: set "Store address" to the live URL, install the **ntfy** app on your phone and subscribe to the topic shown there.
+6. **Products**: every product, brand, price, specification, warranty line and review on the site is sample data. Replace them in Admin → Products and Admin → Catalogue, or hide them, before customers can order. Reviews, star ratings and the customer quotes on the home page are also samples: showing invented reviews to real customers is misleading, so remove them (Admin → Reviews, and tell the developer to remove the quotes) or replace them with real ones.
+7. **Read the policies** (`/payment-policy`, `/returns`, `/shipping-policy`). They are sensible defaults, not your confirmed rules: 48 hours to pay the advance, advance refunded in full if cancelled before dispatch, courier charges deducted if a parcel is refused, 7-day returns, warranty terms. Tell the developer what to change.
+8. **Domain**: `nazandco.com` is already registered by someone else (see `docs/01-brand-naming.md` for the free alternatives). After you register one, point it at Netlify and set `VITE_SITE_URL`.
+9. **Password-reset emails**: open `supabase/config.toml`, set `site_url` to the live address, add `"<live address>/**"` to `additional_redirect_urls` and run `npx supabase config push`. Connect a mail provider (for example Resend) under Supabase → Authentication → SMTP, because the built-in mail service is for testing only.
+10. **Courier**: open a TCS or Leopards business account that can collect the balance on delivery, and confirm the tracking links in `src/lib/shipping.js`.
+11. **Supabase plan**: the free tier keeps no backups. Move to Pro ($25/month) once orders start.
 
 ## Running the store every day (Admin panel)
 
 | Task | Where in `/admin` |
 |------|-------------------|
-| See new orders | Phone notification → tap it, or Orders → Open |
-| Confirm a bank transfer | Open the order → Payment → change `pending` to `paid`, then save the status as Confirmed |
-| Pack / ship / deliver | Open the order → Update order: the next status is preselected; for Shipped choose the courier and paste the tracking number. The customer sees it on Track Order immediately. |
-| Message the customer | Open the order → "Message on WhatsApp", or "Send this update on WhatsApp" next to the save button. The text is already written for that status (confirmed, shipped with tracking link, delivered…). |
-| Cancel or return | Open the order → set the status to Cancelled or Returned. Stock goes back automatically. |
-| Change price, stock, shades, photos | Products → tap the product. "Hidden" removes it from the store without deleting it. |
-| Add a product | Products → Add product. Upload photos or paste image links. |
+| See new orders | They appear live on Orders and Dashboard, and ring your phone. Filter "Awaiting advance". |
+| Ask for the advance | Open the order → "Ask for the advance on WhatsApp" (the message with the amount and your account is already written). |
+| Confirm an advance | Check your bank or wallet app, then open the order → **Advance received, confirm order**. |
+| Pack / ship | Open the order → Update order: choose the courier and paste the tracking number. Book the parcel with the courier to collect the balance. |
+| Delivered | Set the status to Delivered: the balance is recorded as paid. (Or press "Balance received" if the customer paid it earlier.) |
+| Cancel or return | Set the status to Cancelled or Returned: stock goes back automatically. Refund the advance yourself, then set the payment to Refunded. |
+| Advance never arrives | After 48 hours, cancel the order so the stock is released (this is not automatic). |
+| Add / change a product | Products → Add product. Choose swatches for colours or text buttons for sizes. "Hidden" removes it from the store without deleting it. |
+| Add a department or category | Catalogue → Departments / Categories. It appears in the menu, the home page hero and the category grid at once. |
+| Add a brand | Catalogue → Brands, then choose it in the product form. |
 | Approve reviews | Reviews → Waiting for approval |
-| Read contact messages | Inbox → Messages |
-| Follow up abandoned checkouts | Inbox → Abandoned checkouts → WhatsApp |
-| Tell customers an item is back | Inbox → Back-in-stock requests |
-| Newsletter list | Inbox → Newsletter → Export CSV |
-| Discount codes and influencer codes | Coupons & creators. A creator name gives the link `/?ref=name`, and their sales show under Analytics → Sources & campaigns. |
-| Delivery fee, free-delivery limit, payment methods | Settings |
+| Messages, abandoned checkouts, stock requests, newsletter | Inbox |
+| Discount and influencer codes | Coupons & creators |
+| Delivery fee, advance %, payment accounts, phone, announcement | Settings |
 | Give a team member access | They create an account on the store first, then Settings → Team → Add admin |
-| Numbers | Dashboard (today / 7 / 30 / 90 days) and Analytics (daily sales, funnel, sources, products, each with CSV export) |
+| Numbers | Dashboard and Analytics (daily sales with payments received, funnel, sources, products; CSV export) |
 
-If you are ever locked out: `npm run create-admin -- you@example.com` from the project folder creates the admin or resets its password (needs the service key in `.env`).
+If you are ever locked out: `npm run create-admin -- you@example.com` from the project folder creates the admin or resets its password.
 
-## Known limits (by design for day one)
+## Known limits
 
-- No automatic SMS/email to customers (needs an SMS gateway or email provider). The WhatsApp buttons in the order screen cover confirmations for now.
-- "Forgot password" emails go through Supabase's built-in mail service, which is meant for testing: it sends only a few emails per hour and may refuse addresses outside the project team. Before relying on it, connect a mail provider (for example Resend) under Supabase → Authentication → SMTP. Until then you can reset a customer's password in Supabase → Authentication → Users.
-- New accounts are not asked to confirm their email (so sign-up works without a mail provider). Turn confirmation on in `supabase/config.toml` once SMTP is connected.
-- Orders placed as a guest are not attached to an account created later; the customer can always find them on Track Order with the order number and phone.
-- Card payments stay off until a payment gateway is integrated; the switch in Settings is locked until then.
-- Product photos are licensed stock placeholders; replace with your own before advertising.
-- **Sample content to replace before you advertise:** every product, brand name, price, specification and warranty term is sample data, and so are the customer reviews, the star ratings, the home page line "4.8/5 from 2,100+ reviews" and the testimonials. Showing invented reviews or ratings to real customers is misleading, so remove them (Admin → Reviews, and `src/pages/HomePage.jsx` / `src/data/reviews.js`) or replace them with real ones as they arrive.
-- The warranty and return rules in the FAQ and on the Returns page are sensible defaults, not your confirmed policy. Read them and tell the developer what to change.
-- Ratings on the seeded products are sample values; each product's rating is recalculated from approved reviews as soon as a real review is approved for it.
+- Payments are manual transfers confirmed by you; there is no online card payment and no automatic check of the bank account.
+- Unpaid orders are not cancelled automatically after 48 hours; cancel them yourself.
+- No automatic SMS or email to customers. The WhatsApp buttons in the order screen cover every step.
+- New accounts are not asked to confirm their email (so sign-up works without a mail provider).
+- Orders placed as a guest are not attached to an account created later; they can always be found on Track Order.
+- Product photos are licensed stock placeholders.
+- FAQs are stored in the database but have no admin screen yet; policies, the About page and the home-page headings are in the code. Ask the developer to change them.

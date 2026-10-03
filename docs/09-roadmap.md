@@ -2,7 +2,7 @@
 
 ## Phase 0 (this repository) · done
 
-Storefront with the complete customer-facing experience on a Supabase backend: catalogue, search, filters, product pages, bag, guest checkout (server-validated `place_order`), order confirmation and tracking (`get_order` by order id + phone), wishlist, compare, journal, trust pages, analytics events stored in the database, attribution, A/B scaffold, SEO. Customer accounts (email + password, saved details, order history). Admin panel at `/admin`: dashboard, orders, products, customers, reviews, inbox, coupons and creators, analytics, settings, team. Mock data seeded; the storefront also runs on local mock data when no keys are present.
+Multi-department storefront on a Supabase backend: departments, categories and brands managed in the database, search, filters, product pages (ingredients for beauty, specifications and warranty for appliances, sizes for clothes), bag, guest checkout with a server-validated `place_order`, advance payment instead of cash on delivery, order confirmation and tracking, wishlist, compare, customer accounts, trust pages and policies that follow the live settings, analytics events, attribution, SEO. Admin panel at `/admin`: dashboard, orders and payments, products, catalogue, customers, reviews, inbox, coupons and creators, analytics, settings, team. Storefront and admin update live through Supabase Realtime. Sample data seeded; the storefront also runs on local mock data when no keys are present.
 
 ## Phase 1 · Operations (2 to 3 weeks)
 
@@ -11,7 +11,7 @@ Storefront with the complete customer-facing experience on a Supabase backend: c
 - SMS confirmation via a local gateway and a WhatsApp template message, triggered by a database webhook on `orders` insert (Supabase Edge Function).
 - Courier integration: TCS / Leopards API for booking and tracking numbers, written back to `orders.courier` and `orders.tracking_code`; status updates append to `timeline`.
 - Phone OTP sign-in as an alternative to email + password.
-- Payments: COD and bank transfer are live; add a card gateway behind `settings.store.card_enabled` and `payments.methods`.
+- Payments: advance by bank transfer, Easypaisa or JazzCash is confirmed by hand today. Add a payment gateway (card, wallet APIs) so advances are confirmed automatically, and a scheduled job that cancels orders whose advance has not arrived in 48 hours.
 
 ## Phase 2 · Measurement (1 to 2 weeks, parallel)
 
@@ -22,7 +22,7 @@ Storefront with the complete customer-facing experience on a Supabase backend: c
 
 ## Phase 3 · Admin, second pass
 
-The first admin panel is live (see Phase 0). Still to add: category and brand editors, journal (blog) editor, UTM link builder, ad-spend import for ROAS, roles narrower than full admin (for example a packer who only sees orders), audit log on order and inventory changes.
+The admin panel is live (see Phase 0). Still to add: FAQ and policy editors, home-page content editor, UTM link builder, ad-spend import for ROAS, roles narrower than full admin (for example a packer who only sees orders), audit log on order and inventory changes.
 
 ## Phase 4 · Retention
 

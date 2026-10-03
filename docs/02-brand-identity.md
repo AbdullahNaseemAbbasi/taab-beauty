@@ -2,10 +2,10 @@
 
 ## Positioning
 
-Naaz & CO is a Karachi online store with three departments, beauty, electronics and kitchen, chosen for Pakistani homes and delivered nationwide with cash on delivery.
+Naz & CO is a Karachi online store with many departments (beauty, appliances and clothes to start), chosen for Pakistani homes and delivered nationwide. Customers pay part in advance and the rest on delivery.
 
 **Promise:** good things you will be proud to bring home, without the gamble of buying online.
-**Proof:** genuine products from authorised sources, honest ingredient lists and specifications, warranty on electronics, 7-day returns, a human on WhatsApp.
+**Proof:** genuine products from authorised sources, honest ingredient lists, specifications and sizes, warranty on appliances, a clear advance-and-balance payment policy, 7-day returns, a human on WhatsApp.
 
 ## Personality
 
@@ -50,12 +50,12 @@ Rule: one coral element per viewport. Coral is the thing to click; everything el
 
 ### Logo
 
-The owner's logo: a tall serif **N** that flows into a woman's profile with leaves, above the wordmark **Naaz & CO**. The original artwork is a rose-gold 3D render; for the site it was redrawn as flat vector shapes in two layers and recoloured to the palette:
+The owner's logo: a tall serif **N** that flows into a woman's profile with leaves, above the wordmark **Naz & CO**. The original artwork is a rose-gold 3D render reading "Naaz&CO"; for the site it was redrawn as flat vector shapes, the wordmark was shortened to the new spelling, and the colours come from the palette:
 
-| Variant | Outlines and line-art | Filled shapes | Used on |
-|---------|----------------------|---------------|---------|
-| Default | navy #072B4B | coral #F3685E | white and tint backgrounds (header, admin sign-in) |
-| Light | white | coral #F3685E | navy backgrounds (footer, admin sidebar) |
+| Variant | Letter N, profile and wordmark | Large leaf | Small sprig | Used on |
+|---------|-------------------------------|------------|-------------|---------|
+| Default | navy #072B4B | coral #F3685E | teal #1F8DA6 | white and tint backgrounds (header, admin sign-in) |
+| Light | white | coral #F3685E | cyan #51DBDF | navy backgrounds (footer, admin sidebar) |
 
 - Header and footer use the horizontal lockup: monogram on the left, wordmark on the right.
 - The monogram alone is the favicon and app icon (on a navy rounded square).

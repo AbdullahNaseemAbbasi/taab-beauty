@@ -1,16 +1,16 @@
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import Button from "../ui/Button.jsx";
 import RatingStars from "../ui/RatingStars.jsx";
-import { Badge, Eyebrow, SectionHeading } from "../ui/Typography.jsx";
-import { trustIcons, InstagramIcon, ClockIcon, ArrowIcon } from "../ui/Icons.jsx";
+import { SectionHeading } from "../ui/Typography.jsx";
+import { trustIcons, InstagramIcon, ArrowIcon, ChevronLeftIcon, ChevronRightIcon } from "../ui/Icons.jsx";
+import { departmentLinks } from "../layout/MegaMenu.jsx";
 import { imageProps } from "../../lib/images.js";
-import { formatDate } from "../../lib/format.js";
-import { site, departments } from "../../config/site.js";
-import { images } from "../../data/images.js";
+import { sortProducts } from "../../lib/catalog.js";
+import { site } from "../../config/site.js";
 import { useCatalog } from "../../catalog/CatalogProvider.jsx";
 import { testimonials } from "../../data/reviews.js";
 import { instagramPosts } from "../../data/misc.js";
-import { journalTopics } from "../../data/journal.js";
 import { track } from "../../analytics/tracking.js";
 import { EVENTS } from "../../analytics/events.js";
 
@@ -62,14 +62,139 @@ export function PageHeader({ title, description, children }) {
   );
 }
 
-/* ---------- Trust signals ---------- */
+/* ---------- Home hero: one slide per department, changing by itself ---------- */
+export function HeroCarousel({ slides, interval = 6000 }) {
+  const [index, setIndex] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const touchStart = useRef(null);
+  const count = slides.length;
+  const active = count ? index % count : 0;
+  const go = useCallback((next) => setIndex(((next % count) + count) % count), [count]);
+
+  useEffect(() => {
+    if (paused || count < 2) return undefined;
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return undefined;
+    const timer = setInterval(() => setIndex((current) => (current + 1) % count), interval);
+    return () => clearInterval(timer);
+  }, [paused, count, interval]);
+
+  if (!count) return null;
+
+  return (
+    <section
+      className="relative overflow-hidden bg-tint"
+      aria-roledescription="carousel"
+      aria-label="Featured departments"
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      onFocusCapture={() => setPaused(true)}
+      onBlurCapture={() => setPaused(false)}
+      onTouchStart={(event) => {
+        touchStart.current = event.touches[0].clientX;
+      }}
+      onTouchEnd={(event) => {
+        if (touchStart.current == null) return;
+        const moved = event.changedTouches[0].clientX - touchStart.current;
+        touchStart.current = null;
+        if (Math.abs(moved) > 50) go(active + (moved < 0 ? 1 : -1));
+      }}
+    >
+      <div className="grid">
+        {slides.map((slide, position) => {
+          const current = position === active;
+          const Heading = position === 0 ? "h1" : "h2";
+          return (
+            <div
+              key={slide.id}
+              role="group"
+              aria-roledescription="slide"
+              aria-label={`${position + 1} of ${count}`}
+              aria-hidden={!current}
+              inert={!current}
+              className={`relative col-start-1 row-start-1 transition-opacity duration-700 ${current ? "opacity-100" : "pointer-events-none opacity-0"}`}
+            >
+              <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-[60%] max-w-[1000px] lg:block" aria-hidden="true">
+                <img {...imageProps(slide.image, { width: 1600, sizes: "60vw", alt: "", eager: position === 0 })} className="h-full w-full object-cover object-center [mask-image:linear-gradient(to_right,transparent,black_16%)]" />
+              </div>
+              <div className="wrap relative">
+                <div className="flex max-w-[560px] flex-col justify-center py-8 sm:py-9 lg:min-h-[470px] lg:py-10">
+                  <p className="text-[13px] font-extrabold uppercase tracking-[0.24em] text-navy sm:text-[14px]">{slide.eyebrow}</p>
+                  <Heading className="mt-3 font-display text-[36px] font-extrabold leading-[1.04] tracking-[-0.03em] text-navy min-[400px]:text-[40px] sm:text-[52px] xl:text-[60px]">
+                    {slide.title}
+                    {slide.accent && (
+                      <>
+                        <br />
+                        <span className="text-coral">{slide.accent}</span>
+                      </>
+                    )}
+                  </Heading>
+                  <p className="mt-5 max-w-[480px] text-[16px] leading-[1.65] text-ink sm:text-[17px]">{slide.text}</p>
+                  <div className="mt-7 flex flex-wrap gap-3">
+                    <Button to={slide.primary.to} arrow onClick={() => track(EVENTS.PROMO_CLICK, { promotion_name: `hero_${slide.id}` })}>
+                      {slide.primary.label}
+                    </Button>
+                    {slide.secondary && (
+                      <Button to={slide.secondary.to} variant="outline">
+                        {slide.secondary.label}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                <img {...imageProps(slide.image, { width: 900, sizes: "100vw", alt: slide.imageAlt || "", eager: position === 0 })} className="mb-14 aspect-[4/3] w-full rounded-2xl object-cover lg:hidden" />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {count > 1 && (
+        <div className="wrap pointer-events-none absolute inset-x-0 bottom-4 flex items-center justify-between lg:bottom-6">
+          <div className="pointer-events-auto flex items-center gap-2" role="tablist" aria-label="Choose a slide">
+            {slides.map((slide, position) => (
+              <button
+                key={slide.id}
+                type="button"
+                role="tab"
+                aria-selected={position === active}
+                aria-label={`Show ${slide.label}`}
+                title={slide.label}
+                onClick={() => go(position)}
+                className={`h-2.5 rounded-full transition-all ${position === active ? "w-8 bg-coral" : "w-2.5 bg-navy/25 hover:bg-navy/50"}`}
+              />
+            ))}
+          </div>
+          <div className="pointer-events-auto flex gap-2">
+            <button type="button" aria-label="Previous slide" title="Previous" onClick={() => go(active - 1)} className="grid size-10 place-items-center rounded-full border border-line bg-white text-navy shadow-card hover:border-navy">
+              <ChevronLeftIcon className="size-5" />
+            </button>
+            <button type="button" aria-label="Next slide" title="Next" onClick={() => go(active + 1)} className="grid size-10 place-items-center rounded-full border border-line bg-white text-navy shadow-card hover:border-navy">
+              <ChevronRightIcon className="size-5" />
+            </button>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
+/* ---------- Trust signals (the payment one follows the advance setting) ---------- */
 export function TrustSignals({ compact = false }) {
+  const { settings } = useCatalog();
+  const percent = settings.payments.advancePercent;
+  const items = [
+    { icon: "shield", title: "100% Genuine", text: "Sourced directly, checked and sealed." },
+    { icon: "truck", title: "Nationwide Delivery", text: `${settings.shipping.estimatedDays} anywhere in Pakistan.` },
+    percent >= 100
+      ? { icon: "cash", title: "Advance Payment", text: "Pay by transfer to confirm your order." }
+      : { icon: "cash", title: `${percent}% Advance`, text: `Pay ${100 - percent}% when your order arrives.` },
+    { icon: "refresh", title: "7-Day Returns", text: "Unused items in original packaging." },
+  ];
   return (
     <ul className={`grid gap-3 sm:gap-4 ${compact ? "grid-cols-2" : "grid-cols-1 min-[400px]:grid-cols-2 lg:grid-cols-4"}`}>
-      {site.trustSignals.map((item) => {
+      {items.map((item) => {
         const Icon = trustIcons[item.icon];
         return (
-          <li key={item.title} className="flex items-center gap-3 rounded-2xl border border-line bg-white p-4">
+          <li key={item.icon} className="flex items-center gap-3 rounded-2xl border border-line bg-white p-4">
             <span className="grid size-11 shrink-0 place-items-center rounded-full bg-mint text-navy">
               <Icon className="size-5" />
             </span>
@@ -84,23 +209,60 @@ export function TrustSignals({ compact = false }) {
   );
 }
 
+/* ---------- Every category at a glance: two product photos per tile ---------- */
+export function CategoryCollage() {
+  const { categories, products, departmentById } = useCatalog();
+  const tiles = categories
+    .map((category) => {
+      const own = sortProducts(products.filter((product) => product.category === category.slug), "featured");
+      const photos = [...new Set(own.map((product) => product.images[0]).filter(Boolean))].slice(0, 2);
+      if (photos.length < 2 && category.image && !photos.includes(category.image)) photos.push(category.image);
+      return { category, count: own.length, photos };
+    })
+    .filter((tile) => tile.count > 0 && tile.photos.length > 0);
+
+  return (
+    <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-5 lg:grid-cols-4">
+      {tiles.map(({ category, count, photos }) => (
+        <li key={category.slug}>
+          <Link
+            to={`/shop/${category.slug}`}
+            onClick={() => track(EVENTS.SELECT_CATEGORY, { category: category.slug, placement: "home_collage" })}
+            className="group block overflow-hidden rounded-2xl border border-line bg-white transition-shadow hover:shadow-float"
+          >
+            <span className={`grid aspect-[4/3] gap-0.5 bg-line ${photos.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}>
+              {photos.map((photo) => (
+                <span key={photo} className="overflow-hidden bg-tint">
+                  <img {...imageProps(photo, { width: 480, sizes: "(min-width: 1024px) 12vw, 25vw", alt: "" })} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                </span>
+              ))}
+            </span>
+            <span className="block px-4 py-3">
+              <span className="block font-display text-[16px] font-extrabold text-navy group-hover:text-coral">{category.name}</span>
+              <span className="block text-[12px] text-ink-light">
+                {departmentById[category.department]?.name} · {count} product{count === 1 ? "" : "s"}
+              </span>
+            </span>
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 /* ---------- Departments ---------- */
 export function DepartmentGrid() {
-  const { categories, products } = useCatalog();
+  const { departments, categories, departmentOf, products } = useCatalog();
   return (
-    <div className="grid gap-4 sm:gap-5 lg:grid-cols-3">
+    <div className={`grid gap-4 sm:gap-5 md:grid-cols-2 ${departments.length >= 3 ? "lg:grid-cols-3" : ""}`}>
       {departments.map((department) => {
-        const own = categories.filter((category) => category.department === department.id);
-        const slugs = own.map((category) => category.slug);
-        const count = products.filter((product) => slugs.includes(product.category)).length;
-        const chips =
-          own.length > 1
-            ? own.map((category) => ({ label: category.name, to: `/shop/${category.slug}` }))
-            : (own[0]?.subcategories || []).map((sub) => ({ label: sub, to: `/shop/${own[0].slug}?sub=${encodeURIComponent(sub)}` }));
+        const count = products.filter((product) => departmentOf(product) === department.id).length;
+        const chips = departmentLinks(department, categories);
+        const to = `/department/${department.id}`;
         return (
           <article key={department.id} className="group flex flex-col overflow-hidden rounded-2xl border border-line bg-white">
-            <Link to={department.to} onClick={() => track(EVENTS.SELECT_CATEGORY, { category: department.id, placement: "home_departments" })} className="relative block aspect-[16/10] overflow-hidden bg-tint">
-              <img {...imageProps(images.departments[department.id], { width: 900, sizes: "(min-width: 1024px) 33vw, 100vw", alt: department.name })} className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+            <Link to={to} onClick={() => track(EVENTS.SELECT_CATEGORY, { category: department.id, placement: "home_departments" })} className="relative block aspect-[16/10] overflow-hidden bg-tint">
+              {department.image && <img {...imageProps(department.image, { width: 900, sizes: "(min-width: 1024px) 33vw, 100vw", alt: department.name })} className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />}
               <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-navy/85 via-navy/30 to-transparent p-5 text-white">
                 <span className="block font-display text-[24px] font-extrabold sm:text-[26px]">{department.name}</span>
                 <span className="mt-0.5 block text-[14px] text-white/85">{department.tagline}</span>
@@ -116,7 +278,7 @@ export function DepartmentGrid() {
                   </li>
                 ))}
               </ul>
-              <Link to={department.to} className="mt-auto flex items-center gap-2 pt-5 text-[14px] font-semibold text-teal hover:underline">
+              <Link to={to} className="mt-auto flex items-center gap-2 pt-5 text-[14px] font-semibold text-teal hover:underline">
                 Shop all {count} products <ArrowIcon className="size-4" />
               </Link>
             </div>
@@ -127,54 +289,13 @@ export function DepartmentGrid() {
   );
 }
 
-/* ---------- Categories (optionally limited to one department) ---------- */
-export function CategoryGrid({ department }) {
-  const catalog = useCatalog();
-  const categories = department ? catalog.categories.filter((category) => category.department === department) : catalog.categories;
-  return (
-    <div className="grid grid-cols-2 gap-4 sm:gap-5 lg:grid-cols-4">
-      {categories.map((category, index) => (
-        <Link
-          key={category.slug}
-          to={`/shop/${category.slug}`}
-          onClick={() => track(EVENTS.SELECT_CATEGORY, { category: category.slug, placement: "home_grid" })}
-          className={`group relative overflow-hidden rounded-2xl bg-tint ${index === 0 ? "col-span-2 row-span-2 aspect-square" : "aspect-[4/5] lg:aspect-auto lg:min-h-[220px]"}`}
-        >
-          <img {...imageProps(category.image, { width: 900, sizes: "(min-width: 1024px) 40vw, 50vw", alt: category.name })} className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
-          <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-navy/85 via-navy/30 to-transparent p-4 text-white sm:p-5">
-            <span className="block font-display text-[18px] font-extrabold sm:text-[22px]">{category.name}</span>
-            <span className="mt-0.5 block text-[13px] text-white/85">{category.tagline}</span>
-          </span>
-        </Link>
-      ))}
-    </div>
-  );
-}
-
-/* ---------- Concerns ---------- */
-export function ConcernGrid() {
-  const { concerns } = useCatalog();
-  return (
-    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-      {concerns.map((concern) => (
-        <Link key={concern.id} to={`/shop?concern=${concern.id}`} onClick={() => track(EVENTS.SELECT_CATEGORY, { concern: concern.id, placement: "home_concerns" })} className="group text-center">
-          <span className="mx-auto block aspect-square w-full max-w-[160px] overflow-hidden rounded-full border-4 border-white bg-tint shadow-card">
-            <img {...imageProps(concern.image, { width: 400, sizes: "160px", alt: concern.name })} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" />
-          </span>
-          <span className="mt-3 block font-display text-[15px] font-extrabold text-navy group-hover:text-coral">{concern.name}</span>
-          <span className="block text-[12px] text-ink">{concern.description}</span>
-        </Link>
-      ))}
-    </div>
-  );
-}
-
 /* ---------- Brands ---------- */
 export function BrandStrip() {
-  const { brands } = useCatalog();
+  const { brands, products } = useCatalog();
+  const stocked = new Set(products.map((product) => product.brand));
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      {brands.filter((brand) => brand.featured).map((brand) => (
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {brands.filter((brand) => brand.featured && stocked.has(brand.name)).map((brand) => (
         <Link key={brand.id} to={`/shop?brand=${encodeURIComponent(brand.name)}`} className="group rounded-2xl border border-line bg-white p-5 transition-shadow hover:shadow-float">
           <span className="block font-display text-[20px] font-extrabold tracking-wide text-navy group-hover:text-coral">{brand.name}</span>
           <span className="mt-1 block text-[13px] font-semibold text-teal">{brand.tagline}</span>
@@ -182,24 +303,6 @@ export function BrandStrip() {
         </Link>
       ))}
     </div>
-  );
-}
-
-/* ---------- Promo banner ---------- */
-export function PromoBanner({ eyebrow, title, text, image, cta, align = "left", tone = "dark" }) {
-  return (
-    <section className="relative overflow-hidden rounded-3xl bg-navy text-white">
-      <img {...imageProps(image, { width: 1600, sizes: "100vw", alt: "" })} className="absolute inset-0 h-full w-full object-cover opacity-70" />
-      <div className={`absolute inset-0 ${tone === "dark" ? "bg-gradient-to-r from-navy/90 via-navy/60 to-transparent" : "bg-gradient-to-r from-coral/90 via-coral/60 to-transparent"} ${align === "right" ? "rotate-180" : ""}`} />
-      <div className={`relative px-6 py-14 sm:px-12 sm:py-20 ${align === "right" ? "ml-auto text-right" : ""} max-w-xl`}>
-        <Eyebrow tone="cyan">{eyebrow}</Eyebrow>
-        <h2 className="mt-3 font-display text-[30px] font-extrabold leading-[1.1] sm:text-[42px]">{title}</h2>
-        <p className="mt-4 text-[16px] text-white/85">{text}</p>
-        <Button to={cta.to} arrow className="mt-7" onClick={() => track(EVENTS.PROMO_CLICK, { promotion_name: cta.id || title })}>
-          {cta.label}
-        </Button>
-      </div>
-    </section>
   );
 }
 
@@ -224,13 +327,14 @@ export function Testimonials() {
   );
 }
 
-/* ---------- Instagram ---------- */
+/* ---------- Instagram (shown only once a profile link is set in Admin → Settings) ---------- */
 export function InstagramFeed() {
+  if (!site.social.instagram) return null;
   return (
     <div>
       <div className="grid grid-cols-3 gap-2 sm:gap-3 lg:grid-cols-6">
         {instagramPosts.map((post) => (
-          <a key={post.id} href={post.url} target="_blank" rel="noreferrer" onClick={() => track(EVENTS.SOCIAL_CLICK, { network: "instagram", placement: "home_feed" })} className="group relative aspect-square overflow-hidden rounded-xl bg-tint">
+          <a key={post.id} href={site.social.instagram} target="_blank" rel="noreferrer" onClick={() => track(EVENTS.SOCIAL_CLICK, { network: "instagram", placement: "home_feed" })} className="group relative aspect-square overflow-hidden rounded-xl bg-tint">
             <img {...imageProps(post.image, { width: 480, sizes: "(min-width: 1024px) 16vw, 33vw", alt: post.caption })} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
             <span className="absolute inset-0 flex items-end bg-navy/0 p-3 text-[12px] text-white opacity-0 transition-all group-hover:bg-navy/60 group-hover:opacity-100">
               {post.caption}
@@ -240,36 +344,10 @@ export function InstagramFeed() {
       </div>
       <div className="mt-6 text-center">
         <Button href={site.social.instagram} target="_blank" rel="noreferrer" variant="outline" onClick={() => track(EVENTS.SOCIAL_CLICK, { network: "instagram", placement: "home_feed_cta" })}>
-          <InstagramIcon className="size-5" /> Follow {site.social.handle}
+          <InstagramIcon className="size-5" /> Follow us on Instagram
         </Button>
       </div>
     </div>
-  );
-}
-
-/* ---------- Journal cards ---------- */
-export function JournalCard({ article, featured = false }) {
-  const topic = journalTopics.find((entry) => entry.id === article.topic);
-  return (
-    <article className={`group flex flex-col overflow-hidden rounded-2xl border border-line bg-white ${featured ? "lg:flex-row" : ""}`}>
-      <Link to={`/journal/${article.slug}`} className={`block overflow-hidden ${featured ? "lg:w-1/2" : ""}`}>
-        <img {...imageProps(article.image, { width: 900, sizes: "(min-width: 1024px) 33vw, 100vw", alt: article.title })} className={`w-full object-cover transition-transform duration-500 group-hover:scale-105 ${featured ? "aspect-[4/3] lg:h-full" : "aspect-[16/10]"}`} />
-      </Link>
-      <div className={`flex flex-1 flex-col p-5 ${featured ? "lg:p-8" : ""}`}>
-        <div className="flex items-center gap-3 text-[12px] text-ink-light">
-          <Badge tone="mint">{topic?.name}</Badge>
-          <span className="flex items-center gap-1"><ClockIcon className="size-3.5" /> {article.readTime} min read</span>
-        </div>
-        <h3 className={`mt-3 font-display font-extrabold leading-snug text-navy ${featured ? "text-[24px] sm:text-[28px]" : "text-[18px]"}`}>
-          <Link to={`/journal/${article.slug}`} className="hover:text-coral">{article.title}</Link>
-        </h3>
-        <p className={`mt-2 text-[14px] leading-[1.65] text-ink ${featured ? "" : "line-clamp-3"}`}>{article.excerpt}</p>
-        <div className="mt-auto flex items-center justify-between pt-4 text-[13px] text-ink-light">
-          <span>{article.author.split(",")[0]} · {formatDate(article.date)}</span>
-          <Link to={`/journal/${article.slug}`} className="flex items-center gap-1 font-semibold text-teal">Read <ArrowIcon className="size-4" /></Link>
-        </div>
-      </div>
-    </article>
   );
 }
 
