@@ -64,4 +64,3 @@ export const brands = [
   },
 ];
 
-export const brandById = Object.fromEntries(brands.map((brand) => [brand.id, brand]));

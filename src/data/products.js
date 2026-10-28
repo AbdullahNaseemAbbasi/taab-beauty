@@ -829,5 +829,3 @@ export const products = [
   ...clothesProducts,
 ];
 
-export const productBySlug = Object.fromEntries(products.map((product) => [product.slug, product]));
-export const productById = Object.fromEntries(products.map((product) => [product.id, product]));

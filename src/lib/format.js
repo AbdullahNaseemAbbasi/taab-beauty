@@ -15,18 +15,10 @@ export function formatDate(value, options = { day: "numeric", month: "short", ye
   return new Intl.DateTimeFormat("en-GB", options).format(new Date(value));
 }
 
-export function pluralize(count, singular, plural = `${singular}s`) {
-  return `${count} ${count === 1 ? singular : plural}`;
-}
-
 export function slugify(text) {
   return text
     .toLowerCase()
     .replace(/&/g, " and ")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
-}
-
-export function clamp(value, min, max) {
-  return Math.min(Math.max(value, min), max);
 }

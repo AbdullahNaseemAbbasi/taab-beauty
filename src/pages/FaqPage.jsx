@@ -5,21 +5,25 @@ import { WhatsAppIcon } from "../components/ui/Icons.jsx";
 import { PageHeader } from "../components/sections/Sections.jsx";
 import { whatsappLink } from "../components/layout/WhatsAppButton.jsx";
 import { useCatalog } from "../catalog/CatalogProvider.jsx";
+import { faqs as staticFaqs } from "../data/faqs.js";
 import { faqSchema } from "../lib/schema.js";
 import { useStoreText } from "../lib/storeText.js";
 import { site } from "../config/site.js";
 import { ecommerce } from "../analytics/ecommerce.js";
 
 export default function FaqPage() {
-  const { faqs } = useCatalog();
+  const catalog = useCatalog();
   const fill = useStoreText();
+  /* The built-in answers stand in when the database has none (or could not be reached). */
+  const faqs = catalog.faqs.length ? catalog.faqs : staticFaqs;
+  const whatsapp = whatsappLink(`Hi ${site.name}, I have a question that is not in the FAQ.`);
   /* Answers quote the live settings (advance, delivery fee) through placeholders. */
   const groups = faqs.map((group) => ({ ...group, items: group.items.map((item) => ({ question: fill(item.question), answer: fill(item.answer) })) }));
   useSeo({ title: "Frequently Asked Questions", description: `Payment, delivery times, returns, warranty and product help at ${site.name}.`, path: "/faq", jsonLd: [faqSchema(groups.flatMap((group) => group.items))] });
 
   return (
     <>
-      <PageHeader title="Frequently asked questions" description="Payment, delivery, products and returns. If your question is not here, WhatsApp us." />
+      <PageHeader title="Frequently asked questions" description={`Payment, delivery, products and returns. If your question is not here, ${whatsapp ? "WhatsApp us" : "send us a message"}.`} />
       <section className="wrap grid gap-10 py-8 sm:py-12 lg:grid-cols-[1fr_320px] lg:items-start">
         <div className="space-y-10">
           {groups.map((group) => (
@@ -31,12 +35,14 @@ export default function FaqPage() {
         </div>
         <aside className="rounded-2xl bg-tint p-6 lg:sticky lg:top-24">
           <h2 className="font-display text-[20px] font-extrabold text-navy">Still stuck?</h2>
-          <p className="mt-2 text-[14px] text-ink">A real person answers WhatsApp {site.contact.hours}.</p>
-          <Button href={whatsappLink(`Hi ${site.name}, I have a question that is not in the FAQ.`)} target="_blank" rel="noreferrer" variant="whatsapp" className="mt-4 w-full" onClick={() => ecommerce.whatsapp("faq_page")}>
-            <WhatsAppIcon className="size-5" /> Chat on WhatsApp
-          </Button>
-          <Button to="/contact" variant="ghost" className="mt-2 w-full">
-            Other ways to contact us
+          <p className="mt-2 text-[14px] text-ink">{site.contact.hours ? `A real person answers ${site.contact.hours}.` : "A real person reads every message."}</p>
+          {whatsapp && (
+            <Button href={whatsapp} target="_blank" rel="noreferrer" variant="whatsapp" className="mt-4 w-full" onClick={() => ecommerce.whatsapp("faq_page")}>
+              <WhatsAppIcon className="size-5" /> Chat on WhatsApp
+            </Button>
+          )}
+          <Button to="/contact" variant={whatsapp ? "ghost" : "navy"} className={`${whatsapp ? "mt-2" : "mt-4"} w-full`}>
+            {whatsapp ? "Other ways to contact us" : "Contact us"}
           </Button>
         </aside>
       </section>

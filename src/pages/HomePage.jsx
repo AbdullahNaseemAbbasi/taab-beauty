@@ -36,7 +36,7 @@ export default function HomePage() {
         eyebrow: names.join(" · "),
         title: "Good things,",
         accent: "delivered home.",
-        text: `${listNames(names)}, chosen with care and checked before they ship. ${percent >= 100 ? "Pay in advance to confirm your order." : `Pay ${percent}% in advance and the rest when your order arrives.`}`,
+        text: `${listNames(names)}, chosen with care and checked before they ship. ${percent >= 100 ? "Pay in advance to confirm your order." : percent <= 0 ? "Pay when your order arrives." : `Pay ${percent}% in advance and the rest when your order arrives.`}`,
         image: images.hero.home,
         imageAlt: images.hero.homeAlt,
         primary: { label: "Shop best sellers", to: "/best-sellers" },
@@ -59,7 +59,9 @@ export default function HomePage() {
 
   /* Short lists take turns between departments so the page shows a bit of everything. */
   const bestSellers = interleaveBy(sortProducts(products.filter((product) => product.bestSeller), "rating"), departmentOf, order).slice(0, 12);
-  const newArrivals = interleaveBy(products.filter((product) => product.newArrival), departmentOf, order).slice(0, 8);
+  const newArrivals = interleaveBy(sortProducts(products.filter((product) => product.newArrival), "newest"), departmentOf, order).slice(0, 8);
+  /* Departments with products, so the section backgrounds keep alternating when one is empty. */
+  const stocked = departments.filter((department) => products.some((product) => departmentOf(product) === department.id));
   const feed = useMemo(() => interleaveBy(sortProducts(products, "featured"), departmentOf, order), [products, departmentOf, order.join()]);
 
   return (
@@ -84,9 +86,8 @@ export default function HomePage() {
         <ProductCarousel products={bestSellers} listName="home_best_sellers" />
       </Section>
 
-      {departments.map((department, index) => {
+      {stocked.map((department, index) => {
         const own = products.filter((product) => departmentOf(product) === department.id);
-        if (!own.length) return null;
         const picks = interleaveBy(sortProducts(own, "featured"), (product) => product.category).slice(0, 10);
         return (
           <Section key={department.id} eyebrow={department.name} title={department.tagline || department.name} action={{ label: `All ${department.name}`, to: `/department/${department.id}` }} align="left" bg={index % 2 === 0 ? "tint" : "white"}>
@@ -95,7 +96,7 @@ export default function HomePage() {
         );
       })}
 
-      <Section eyebrow="New arrivals" title="Fresh this month." action={{ label: "See all new arrivals", to: "/new-arrivals" }} align="left" bg={departments.length % 2 === 0 ? "tint" : "white"}>
+      <Section eyebrow="New arrivals" title="Fresh this month." action={{ label: "See all new arrivals", to: "/new-arrivals" }} align="left" bg={stocked.length % 2 === 0 ? "tint" : "white"}>
         <ProductGrid products={newArrivals} listName="home_new_arrivals" />
       </Section>
 
@@ -120,7 +121,7 @@ export default function HomePage() {
         <BrandStrip />
       </Section>
 
-      <Section eyebrow="Customer reviews" title="Real customers. Real results." subtitle="Every review comes from a verified order." bg="white">
+      <Section eyebrow="Customer reviews" title="What customers say." bg="white">
         <Testimonials />
       </Section>
 
@@ -134,7 +135,7 @@ export default function HomePage() {
         <div className="wrap flex flex-col items-center justify-between gap-6 text-center lg:flex-row lg:text-left">
           <div>
             <h2 className="font-display text-[26px] font-extrabold text-navy sm:text-[30px]">Not sure what to pick?</h2>
-            <p className="mt-2 text-[16px] text-ink">Message us on WhatsApp and a real person will help you choose, whether it is a foundation shade, a pair of earbuds or the right size. Free, no pressure.</p>
+            <p className="mt-2 text-[16px] text-ink">{site.contact.whatsapp ? "Message us on WhatsApp" : "Send us a message"} and a real person will help you choose, whether it is a foundation shade, a pair of earbuds or the right size. Free, no pressure.</p>
           </div>
           <Link to="/contact" className="inline-flex h-[52px] shrink-0 items-center gap-2 rounded-full bg-navy px-7 text-[15px] font-semibold text-white hover:bg-navy-800">
             Get a free recommendation

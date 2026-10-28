@@ -4,7 +4,7 @@
  * and flushed every few seconds or when the page is hidden. Failures are
  * swallowed: analytics must never break the storefront.
  */
-import { supabase, isLive } from "./client.js";
+import { supabase, isLive, supabaseUrl, supabaseAnonKey } from "./client.js";
 
 const queue = [];
 let timer = null;
@@ -56,8 +56,29 @@ export function queueEvent(record) {
   else scheduleFlush();
 }
 
+/* When the tab is hidden or closed a normal request can be cancelled, so the last events go out with keepalive. */
+function flushOnExit() {
+  if (!isLive || queue.length === 0) return;
+  clearTimeout(timer);
+  timer = null;
+  while (queue.length) {
+    const batch = queue.splice(0, MAX_BATCH);
+    try {
+      fetch(`${supabaseUrl}/rest/v1/events`, {
+        method: "POST",
+        keepalive: true,
+        headers: { apikey: supabaseAnonKey, Authorization: `Bearer ${supabaseAnonKey}`, "Content-Type": "application/json", Prefer: "return=minimal" },
+        body: JSON.stringify(batch),
+      }).catch(() => {});
+    } catch {
+      /* ignore; analytics is best-effort */
+    }
+  }
+}
+
 if (typeof document !== "undefined") {
   document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "hidden") flushEvents();
+    if (document.visibilityState === "hidden") flushOnExit();
   });
+  window.addEventListener("pagehide", flushOnExit);
 }

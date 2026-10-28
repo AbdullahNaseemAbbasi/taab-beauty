@@ -4,12 +4,14 @@ import { TrashIcon } from "../ui/Icons.jsx";
 import { imageProps } from "../../lib/images.js";
 import { formatPrice } from "../../lib/format.js";
 import { variantStock } from "../../lib/catalog.js";
+import { MAX_LINE_QUANTITY } from "../../lib/cart.js";
 import { useStore } from "../../store/StoreProvider.jsx";
 
 export default function CartItem({ line, compact = false }) {
   const { updateQuantity, removeLine, setUI } = useStore();
   const { product, variant, quantity, lineTotal, key } = line;
-  const max = variantStock(product, line.variantId);
+  const stock = variantStock(product, line.variantId);
+  const max = Math.min(stock, MAX_LINE_QUANTITY);
 
   return (
     <li className={`flex gap-4 ${compact ? "py-4" : "py-5"}`}>
@@ -33,7 +35,7 @@ export default function CartItem({ line, compact = false }) {
           <QuantityStepper value={quantity} max={max} size="sm" onChange={(next) => updateQuantity(key, next)} />
           <span className="font-display text-[16px] font-extrabold text-navy">{formatPrice(lineTotal)}</span>
         </div>
-        {max - quantity <= 2 && max > 0 && <p className="mt-1.5 text-[12px] font-medium text-coral">Only {max} left in stock</p>}
+        {stock - quantity <= 2 && stock > 0 && <p className="mt-1.5 text-[12px] font-medium text-coral">Only {stock} left in stock</p>}
       </div>
     </li>
   );

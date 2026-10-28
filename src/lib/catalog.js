@@ -28,7 +28,7 @@ export function searchProducts(query, list) {
       return { product, score };
     })
     .filter((entry) => entry.score > 0)
-    .sort((a, b) => b.score - a.score || b.rating - a.rating)
+    .sort((a, b) => b.score - a.score || b.product.rating - a.product.rating)
     .map((entry) => entry.product);
 }
 
@@ -40,7 +40,6 @@ export const defaultFilters = {
   minPrice: null,
   maxPrice: null,
   inStock: false,
-  onSale: false,
   minRating: 0,
 };
 
@@ -54,7 +53,6 @@ export function filterProducts(list, filters = {}) {
     if (f.minPrice != null && product.price < f.minPrice) return false;
     if (f.maxPrice != null && product.price > f.maxPrice) return false;
     if (f.inStock && product.stock <= 0) return false;
-    if (f.onSale && !(product.compareAtPrice && product.compareAtPrice > product.price)) return false;
     if (f.minRating && product.rating < f.minRating) return false;
     return true;
   });
@@ -79,7 +77,8 @@ export function sortProducts(list, sort = "featured") {
     case "rating":
       return copy.sort((a, b) => b.rating - a.rating || b.reviewCount - a.reviewCount);
     case "newest":
-      return copy.sort((a, b) => Number(b.newArrival) - Number(a.newArrival) || b.id.localeCompare(a.id));
+      /* New-arrival flag first, then the date the product was added (live data), then id for sample data. */
+      return copy.sort((a, b) => Number(b.newArrival) - Number(a.newArrival) || String(b.createdAt || "").localeCompare(String(a.createdAt || "")) || b.id.localeCompare(a.id));
     case "bestselling":
       return copy.sort((a, b) => Number(b.bestSeller) - Number(a.bestSeller) || b.reviewCount - a.reviewCount);
     default:
@@ -116,10 +115,6 @@ export function facetCounts(list, key) {
     });
   });
   return counts;
-}
-
-export function isOnSale(product) {
-  return Boolean(product.compareAtPrice && product.compareAtPrice > product.price);
 }
 
 export function variantStock(product, variantId) {

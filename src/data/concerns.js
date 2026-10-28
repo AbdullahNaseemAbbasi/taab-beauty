@@ -9,4 +9,3 @@ export const concerns = [
   { id: "hair-fall", name: "Hair Fall", description: "Stronger roots, less shedding.", image: images.concerns["hair-fall"] },
 ];
 
-export const concernById = Object.fromEntries(concerns.map((concern) => [concern.id, concern]));

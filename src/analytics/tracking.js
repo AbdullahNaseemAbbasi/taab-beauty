@@ -7,7 +7,7 @@
  */
 import { site } from "../config/site.js";
 import { EVENTS, VENDOR_EVENTS } from "./events.js";
-import { getAttribution } from "./attribution.js";
+import { getAttribution, getCreatorRef } from "./attribution.js";
 import { queueEvent } from "../api/events.js";
 
 const { analytics } = site;
@@ -42,21 +42,42 @@ export function initAnalytics() {
     window.gtag("config", analytics.gaId, { send_page_view: false });
   }
 
+  /* Same queue shape as Meta's official base code (fbevents.js replays `queue` and expects push/_fbq). */
   if (analytics.metaPixelId && !window.fbq) {
     const fbq = function () {
       fbq.callMethod ? fbq.callMethod.apply(fbq, arguments) : fbq.queue.push(arguments);
     };
+    fbq.push = fbq;
     fbq.queue = [];
     fbq.loaded = true;
     fbq.version = "2.0";
     window.fbq = fbq;
+    if (!window._fbq) window._fbq = fbq;
     loadScript("https://connect.facebook.net/en_US/fbevents.js", "meta-pixel");
     window.fbq("init", analytics.metaPixelId);
   }
 
+  /* TikTok's official bootstrap: an array of [method, ...args] calls plus the per-pixel `_i` record the SDK looks for. */
   if (analytics.tiktokPixelId && !window.ttq) {
-    window.ttq = { queue: [], track: (...args) => window.ttq.queue.push(["track", ...args]), page: () => window.ttq.queue.push(["page"]) };
-    loadScript(`https://analytics.tiktok.com/i18n/pixel/events.js?sdkid=${analytics.tiktokPixelId}&lib=ttq`, "tiktok-pixel");
+    const id = analytics.tiktokPixelId;
+    const ttq = [];
+    ttq.methods = ["page", "track", "identify", "instances", "debug", "on", "off", "once", "ready", "alias", "group", "enableCookie", "disableCookie", "holdConsent", "revokeConsent", "grantConsent"];
+    ttq.setAndDefer = (target, method) => {
+      target[method] = (...args) => target.push([method, ...args]);
+    };
+    ttq.methods.forEach((method) => ttq.setAndDefer(ttq, method));
+    ttq.instance = (pixel) => {
+      const instance = ttq._i[pixel] || [];
+      ttq.methods.forEach((method) => ttq.setAndDefer(instance, method));
+      return instance;
+    };
+    const src = "https://analytics.tiktok.com/i18n/pixel/events.js";
+    ttq._i = { [id]: Object.assign([], { _u: src }) };
+    ttq._t = { [id]: Date.now() };
+    ttq._o = { [id]: {} };
+    window.TiktokAnalyticsObject = "ttq";
+    window.ttq = ttq;
+    loadScript(`${src}?sdkid=${id}&lib=ttq`, "tiktok-pixel");
   }
 }
 
@@ -84,8 +105,9 @@ export function track(event, payload = {}) {
     source: attribution.last?.source || null,
     campaign: attribution.last?.utm_campaign || null,
     ad_content: attribution.last?.utm_content || null,
-    creator_ref: attribution.last?.ref || attribution.first?.ref || null,
-    page_path: window.location.pathname,
+    creator_ref: getCreatorRef(),
+    /* Page views carry the cleaned path with its query string; other events just the path. */
+    page_path: event === EVENTS.PAGE_VIEW && payload.page_path ? payload.page_path : window.location.pathname,
     timestamp: new Date().toISOString(),
   };
 
@@ -101,6 +123,23 @@ export function track(event, payload = {}) {
   return record;
 }
 
+/* Query parameters that identify a person never go to analytics or ad pixels (e.g. a tracking link with ?phone=). */
+const PRIVATE_PARAMS = ["phone", "email", "tel", "name"];
+
+export function cleanPath(path) {
+  const [pathname, query = ""] = String(path || "").split("?");
+  const params = new URLSearchParams(query);
+  PRIVATE_PARAMS.forEach((key) => params.delete(key));
+  const rest = params.toString();
+  return rest ? `${pathname}?${rest}` : pathname;
+}
+
 export function trackPageView(path, title) {
-  return track(EVENTS.PAGE_VIEW, { page_path: path, page_title: title });
+  /* Pixels read the address bar themselves, so private parameters are dropped from it too (without telling the router). */
+  if (typeof window !== "undefined") {
+    const current = window.location.pathname + window.location.search;
+    const cleaned = cleanPath(current);
+    if (cleaned !== current) window.history.replaceState(window.history.state, "", cleaned + window.location.hash);
+  }
+  return track(EVENTS.PAGE_VIEW, { page_path: cleanPath(path), page_title: title });
 }

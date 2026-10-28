@@ -1,14 +1,14 @@
-# Supabase project configuration for TAAB.
+# Supabase project configuration for Naz & CO (the project id keeps the old working name).
 # Only the settings we manage are declared here; `npx supabase config push`
 # applies exactly these to the hosted project and leaves everything else alone.
 project_id = "taab-beauty"
 
 [auth]
-# Where auth emails (password reset) send people. Keep this on an address you
-# control: it stays on local dev until the live domain is registered, then set
-# it to the live URL, add "<live URL>/**" below and run `npx supabase config push`.
-site_url = "http://localhost:5173"
-additional_redirect_urls = ["http://127.0.0.1:5173/**", "http://localhost:5173/**"]
+# Where auth emails (password reset) send people: the live store. When a custom
+# domain is added, put it here and in the list below, then run `npx supabase config push`
+# (or set the same values in Supabase → Authentication → URL Configuration).
+site_url = "https://nazandco.netlify.app"
+additional_redirect_urls = ["https://nazandco.netlify.app/**", "http://127.0.0.1:5173/**", "http://localhost:5173/**"]
 enable_signup = true
 minimum_password_length = 8
 

@@ -68,6 +68,9 @@ export const ecommerce = {
       items: order.lines.map((l) => toItem(l.product, l.quantity)),
     });
   },
+  compare(product) {
+    return track(EVENTS.ADD_TO_COMPARE, { value: product.price, items: [toItem(product)] });
+  },
   wishlist(product, added = true) {
     return track(added ? EVENTS.ADD_TO_WISHLIST : EVENTS.REMOVE_FROM_WISHLIST, { value: product.price, items: [toItem(product)] });
   },

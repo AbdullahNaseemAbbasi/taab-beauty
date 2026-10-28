@@ -14,7 +14,7 @@ import { cachedCreatorOffer } from "../api/orders.js";
 import { ecommerce } from "../analytics/ecommerce.js";
 
 export default function CartPage() {
-  const { cart, clearCart, applyCoupon } = useStore();
+  const { cart, clearCart, applyCoupon, revalidateCoupon } = useStore();
   const { products } = useCatalog();
   useSeo({ title: "Your Bag", path: "/cart", noindex: true });
 
@@ -22,6 +22,7 @@ export default function CartPage() {
     if (cart.lines.length) ecommerce.viewCart(cart.lines);
     const offer = cachedCreatorOffer();
     if (offer && !cart.coupon && cart.lines.length) applyCoupon(offer.code);
+    else revalidateCoupon();
   }, []);
 
   const inCart = new Set(cart.lines.map((line) => line.productId));

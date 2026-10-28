@@ -24,8 +24,12 @@ export default function AboutPage() {
 
   const facts = [
     { value: String(departments.length), label: "Departments, one checkout" },
-    { value: "2 to 4 days", label: "Delivery across Pakistan" },
-    { value: percent >= 100 ? "Advance" : `${percent}% + ${100 - percent}%`, label: percent >= 100 ? "Payment before dispatch" : "Advance, then the rest on delivery" },
+    { value: settings.shipping.estimatedDays.replace(/\s*business\s*/i, " "), label: "Delivery across Pakistan" },
+    percent >= 100
+      ? { value: "Advance", label: "Payment before dispatch" }
+      : percent <= 0
+        ? { value: "On delivery", label: "Pay when your order arrives" }
+        : { value: `${percent}% + ${100 - percent}%`, label: "Advance, then the rest on delivery" },
     { value: formatPrice(settings.shipping.freeShippingThreshold), label: "Free delivery above this" },
   ];
 
@@ -101,7 +105,7 @@ export default function AboutPage() {
       <section className="bg-white py-14">
         <div className="wrap flex flex-col items-center gap-5 text-center">
           <h2 className="font-display text-[28px] font-extrabold text-navy sm:text-[34px]">Ready to try {site.name}?</h2>
-          <p className="max-w-xl text-[16px] text-ink">Start with a best seller from any department, and pay when it arrives.</p>
+          <p className="max-w-xl text-[16px] text-ink">{percent >= 100 ? "Start with a best seller from any department, paid in advance and delivered to your door." : percent <= 0 ? "Start with a best seller from any department, and pay when it arrives." : `Start with a best seller from any department: pay ${percent}% in advance and the rest when it arrives.`}</p>
           <Button to="/shop" arrow>
             Shop all products
           </Button>

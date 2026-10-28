@@ -13,3 +13,7 @@ supabase/.branches/
 # Generated before every build (scripts/sitemap.mjs)
 public/sitemap.xml
 public/robots.txt
+
+# Netlify CLI local state
+.netlify/
+deno.lock

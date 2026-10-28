@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import AnnouncementBar from "./AnnouncementBar.jsx";
 import CreatorBanner from "./CreatorBanner.jsx";
@@ -16,26 +16,53 @@ import { initAnalytics, trackPageView } from "../../analytics/tracking.js";
 import { useStore } from "../../store/StoreProvider.jsx";
 import { useCatalog } from "../../catalog/CatalogProvider.jsx";
 
+/* Pages that work without the catalogue: they still open when it fails to load. */
+const STANDALONE_PAGES = ["/about", "/contact", "/faq", "/track-order", "/payment-policy", "/shipping-policy", "/returns", "/privacy-policy", "/terms"];
+
 function RouteEffects() {
   const { pathname, search, hash } = useLocation();
   const { setUI } = useStore();
+  const searchRef = useRef(search);
+  searchRef.current = search;
 
   useEffect(() => {
     initAnalytics();
   }, []);
 
+  /* Campaign and creator parameters can arrive on any URL, including a filter change. */
   useEffect(() => {
     captureAttribution(search);
+  }, [search]);
+
+  /*
+   * A new page (not a filter or sort change, which only edits the query string): close overlays,
+   * scroll to the top and record one page view once the page has set its title.
+   */
+  useEffect(() => {
     setUI({ cartOpen: false, searchOpen: false, menuOpen: false });
-    if (hash) {
-      const target = document.getElementById(hash.slice(1));
-      if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
-    } else {
-      window.scrollTo({ top: 0, left: 0, behavior: "instant" });
-    }
-    const timer = setTimeout(() => trackPageView(pathname + search, document.title), 50);
-    return () => clearTimeout(timer);
-  }, [pathname, search, hash, setUI]);
+    if (!window.location.hash) window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    const titleBefore = document.title;
+    let sent = false;
+    const send = () => {
+      if (sent) return;
+      sent = true;
+      trackPageView(pathname + searchRef.current, document.title);
+    };
+    const titleNode = document.querySelector("title");
+    const observer = titleNode ? new MutationObserver(() => document.title !== titleBefore && send()) : null;
+    observer?.observe(titleNode, { childList: true, characterData: true, subtree: true });
+    const timer = setTimeout(send, 600);
+    return () => {
+      clearTimeout(timer);
+      observer?.disconnect();
+    };
+  }, [pathname, setUI]);
+
+  useEffect(() => {
+    if (!hash) return;
+    const target = document.getElementById(hash.slice(1));
+    if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [hash]);
 
   return null;
 }
@@ -73,6 +100,8 @@ function CatalogError({ error, retry }) {
 
 export default function Layout() {
   const catalog = useCatalog();
+  const { pathname } = useLocation();
+  const standalone = STANDALONE_PAGES.includes(pathname.replace(/\/$/, ""));
   return (
     <div className="flex min-h-screen flex-col">
       <RouteEffects />
@@ -80,7 +109,7 @@ export default function Layout() {
       <Header />
       <CreatorBanner />
       <main className="flex-1">
-        {catalog.status === "loading" ? <CatalogLoading /> : catalog.status === "error" ? <CatalogError error={catalog.error} retry={catalog.reload} /> : <Outlet />}
+        {catalog.status === "loading" ? <CatalogLoading /> : catalog.status === "error" && !standalone ? <CatalogError error={catalog.error} retry={catalog.reload} /> : <Outlet />}
       </main>
       <Footer />
       <CartDrawer />

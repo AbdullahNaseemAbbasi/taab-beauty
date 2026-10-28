@@ -1,5 +1,9 @@
 /* Pure cart maths. No data access here: callers pass the product index and shipping settings in. */
 
+/* Same limits as place_order in the database. */
+export const MAX_LINE_QUANTITY = 10;
+export const MAX_LINES = 20;
+
 export function lineKey(productId, variantId) {
   return variantId ? `${productId}:${variantId}` : productId;
 }
@@ -11,21 +15,28 @@ export function enrichLines(lines, productById) {
       const product = productById[line.productId];
       if (!product) return null;
       const variant = product.variants?.options.find((option) => option.id === line.variantId) || null;
+      /* Bags saved before the per-line limit existed are capped here so checkout never sends more than the server accepts. */
+      const quantity = Math.min(line.quantity, MAX_LINE_QUANTITY);
       return {
         ...line,
+        quantity,
         key: lineKey(line.productId, line.variantId),
         product,
         variant,
         unitPrice: product.price,
-        lineTotal: product.price * line.quantity,
+        lineTotal: product.price * quantity,
       };
     })
     .filter(Boolean);
 }
 
+/* A saved coupon only counts once the bag reaches its minimum order. */
+export function couponApplies(coupon, subtotal) {
+  return Boolean(coupon) && !(coupon.minOrder && subtotal < coupon.minOrder);
+}
+
 export function couponDiscount(coupon, subtotal) {
-  if (!coupon) return 0;
-  if (coupon.minOrder && subtotal < coupon.minOrder) return 0;
+  if (!couponApplies(coupon, subtotal)) return 0;
   if (coupon.type === "percent") return Math.round((subtotal * coupon.value) / 100);
   if (coupon.type === "fixed") return Math.min(coupon.value, subtotal);
   return 0;
@@ -37,7 +48,7 @@ export function computeTotals(enrichedLines, coupon = null, shipping = defaultSh
   const subtotal = enrichedLines.reduce((sum, line) => sum + line.lineTotal, 0);
   const discount = couponDiscount(coupon, subtotal);
   const afterDiscount = Math.max(subtotal - discount, 0);
-  const freeShipping = afterDiscount >= shipping.freeShippingThreshold || coupon?.type === "shipping";
+  const freeShipping = afterDiscount >= shipping.freeShippingThreshold || (coupon?.type === "shipping" && couponApplies(coupon, subtotal));
   const fee = enrichedLines.length === 0 || freeShipping ? 0 : shipping.shippingFee;
   return {
     subtotal,

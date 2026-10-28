@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import useSeo from "../hooks/useSeo.js";
 import Overlay from "../components/ui/Modal.jsx";
@@ -28,7 +28,6 @@ function filtersFromParams(params, category) {
     minPrice: params.get("min") ? Number(params.get("min")) : null,
     maxPrice: params.get("max") ? Number(params.get("max")) : null,
     inStock: params.get("stock") === "1",
-    onSale: params.get("sale") === "1",
     minRating: params.get("rating") ? Number(params.get("rating")) : 0,
   };
 }
@@ -42,7 +41,6 @@ function paramsFromFilters(filters, sort, lockedCategory) {
   if (filters.minPrice != null) next.min = String(filters.minPrice);
   if (filters.maxPrice != null) next.max = String(filters.maxPrice);
   if (filters.inStock) next.stock = "1";
-  if (filters.onSale) next.sale = "1";
   if (filters.minRating) next.rating = String(filters.minRating);
   if (sort && sort !== "featured") next.sort = sort;
   return next;
@@ -87,16 +85,23 @@ export default function ShopPage({ mode = "all", collection }) {
       ? [{ label: "Shop", to: "/shop" }, { label: title, to: path }]
       : [{ label: title, to: path }];
 
-  useSeo({ title: `${title} in Pakistan`, description, path, jsonLd: [breadcrumbSchema(crumbs)] });
+  const notFound = (mode === "category" && !category) || (mode === "collection" && !collectionDef) || (mode === "department" && !departmentDef);
+  /* This page's tags are applied after NotFoundPage's, so an unknown slug must be noindex here as well. */
+  useSeo(notFound ? { title: "Page Not Found", noindex: true } : { title: `${title} in Pakistan`, description, path, jsonLd: [breadcrumbSchema(crumbs)] });
 
   useEffect(() => {
     if (category) track(EVENTS.SELECT_CATEGORY, { category: category.slug, placement: "category_page" });
   }, [category?.slug]);
 
-  if ((mode === "category" && !category) || (mode === "collection" && !collectionDef) || (mode === "department" && !departmentDef)) return <NotFoundPage />;
+  /* Typing a price fires on every key, so the analytics event waits until the filters settle. */
+  const filterTimer = useRef(null);
+  useEffect(() => () => clearTimeout(filterTimer.current), []);
+
+  if (notFound) return <NotFoundPage />;
 
   const updateFilters = (next) => {
-    track(EVENTS.APPLY_FILTER, { ...next, placement: path });
+    clearTimeout(filterTimer.current);
+    filterTimer.current = setTimeout(() => track(EVENTS.APPLY_FILTER, { ...next, placement: path }), 800);
     setParams(paramsFromFilters(next, sort, Boolean(category)));
   };
   const updateSort = (value) => setParams({ ...paramsFromFilters(filters, value, Boolean(category)) });
@@ -110,11 +115,11 @@ export default function ShopPage({ mode = "all", collection }) {
   return (
     <>
       {category ? (
-        <PageHero eyebrow={`Shop ${category.name}`} title={category.tagline} description={category.description} image={category.image} compact>
+        <PageHero eyebrow={`Shop ${category.name}`} title={category.tagline || category.name} description={category.description} image={category.image} compact>
           <Breadcrumbs items={crumbs} className="mt-6" />
         </PageHero>
       ) : departmentDef ? (
-        <PageHero eyebrow={`Shop ${departmentDef.name}`} title={departmentDef.tagline} description={departmentDef.description} image={departmentDef.image} compact>
+        <PageHero eyebrow={`Shop ${departmentDef.name}`} title={departmentDef.tagline || departmentDef.name} description={departmentDef.description} image={departmentDef.image} compact>
           <Breadcrumbs items={crumbs} className="mt-6" />
         </PageHero>
       ) : (

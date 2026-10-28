@@ -8,10 +8,19 @@ import { TagIcon, CloseIcon } from "../ui/Icons.jsx";
 
 const DISMISS_KEY = "naz:creatorBanner:dismissed";
 
+/* sessionStorage can throw (blocked site data); the banner must never take the page down with it. */
+function readDismissed() {
+  try {
+    return sessionStorage.getItem(DISMISS_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
 /* Visitors who arrive through a creator link (?ref=name) see that creator's code. */
 export default function CreatorBanner() {
   const [offer, setOffer] = useState(null);
-  const [hidden, setHidden] = useState(() => sessionStorage.getItem(DISMISS_KEY) === "1");
+  const [hidden, setHidden] = useState(readDismissed);
 
   useEffect(() => {
     const ref = getCreatorRef();
@@ -45,7 +54,11 @@ export default function CreatorBanner() {
             aria-label="Dismiss"
             title="Dismiss"
             onClick={() => {
-              sessionStorage.setItem(DISMISS_KEY, "1");
+              try {
+                sessionStorage.setItem(DISMISS_KEY, "1");
+              } catch {
+                /* still hidden for this page view */
+              }
               setHidden(true);
             }}
             className="grid size-7 place-items-center rounded-full hover:bg-white/20"

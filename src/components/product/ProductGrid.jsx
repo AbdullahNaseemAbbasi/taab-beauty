@@ -1,23 +1,13 @@
 import { useEffect, useRef } from "react";
 import ProductCard from "./ProductCard.jsx";
-import { ProductCardSkeleton } from "../ui/Feedback.jsx";
 import { ChevronLeftIcon, ChevronRightIcon } from "../ui/Icons.jsx";
 import { ecommerce } from "../../analytics/ecommerce.js";
 
-export function ProductGrid({ products, listName = "product_grid", loading = false, columns = "lg:grid-cols-4", eagerCount = 0 }) {
+export function ProductGrid({ products, listName = "product_grid", columns = "lg:grid-cols-4", eagerCount = 0 }) {
   useEffect(() => {
     if (products.length) ecommerce.viewItemList(products, listName);
   }, [listName, products.map((product) => product.id).join(",")]);
 
-  if (loading) {
-    return (
-      <div className={`grid grid-cols-2 gap-4 sm:gap-6 ${columns}`}>
-        {Array.from({ length: 8 }, (_, index) => (
-          <ProductCardSkeleton key={index} />
-        ))}
-      </div>
-    );
-  }
   return (
     <div className={`grid grid-cols-2 gap-4 sm:gap-6 ${columns}`}>
       {products.map((product, index) => (

@@ -7,17 +7,6 @@ export function Skeleton({ className = "" }) {
   return <div aria-hidden="true" className={`skeleton rounded-xl ${className}`} />;
 }
 
-export function ProductCardSkeleton() {
-  return (
-    <div className="rounded-2xl border border-line bg-white p-3">
-      <Skeleton className="aspect-[4/5] w-full" />
-      <Skeleton className="mt-4 h-3 w-1/3" />
-      <Skeleton className="mt-2 h-4 w-3/4" />
-      <Skeleton className="mt-3 h-5 w-1/2" />
-    </div>
-  );
-}
-
 export function EmptyState({ icon: Icon, title, text, action, secondary, className = "" }) {
   return (
     <div className={`rounded-2xl border border-dashed border-line bg-tint/60 px-6 py-14 text-center ${className}`}>

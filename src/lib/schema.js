@@ -1,4 +1,4 @@
-/* JSON-LD builders for structured data (Organization, Product, Breadcrumb, Article, FAQ). */
+/* JSON-LD builders for structured data (Organization, Product, Breadcrumb, FAQ). */
 import { site } from "../config/site.js";
 import { img } from "./images.js";
 
@@ -11,7 +11,7 @@ export function organizationSchema() {
     url: site.url,
     logo: `${site.url}/favicon.svg`,
     ...(site.contact.email ? { email: site.contact.email } : {}),
-    telephone: site.contact.phone,
+    ...(site.contact.phone ? { telephone: site.contact.phone } : {}),
     address: { "@type": "PostalAddress", addressLocality: "Karachi", addressCountry: "PK" },
     sameAs: [site.social.instagram, site.social.facebook, site.social.tiktok, site.social.youtube].filter(Boolean),
   };
@@ -31,7 +31,9 @@ export function websiteSchema() {
   };
 }
 
+/* The rating comes from the reviews shown on the page; search engines ignore (and can penalise) ratings with no visible reviews. */
 export function productSchema(product, reviews = []) {
+  const average = reviews.length ? Math.round((reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length) * 10) / 10 : 0;
   return {
     "@context": "https://schema.org",
     "@type": "Product",
@@ -41,9 +43,7 @@ export function productSchema(product, reviews = []) {
     sku: product.sku,
     brand: { "@type": "Brand", name: product.brand },
     category: product.category,
-    aggregateRating: product.reviewCount
-      ? { "@type": "AggregateRating", ratingValue: product.rating, reviewCount: product.reviewCount }
-      : undefined,
+    aggregateRating: reviews.length ? { "@type": "AggregateRating", ratingValue: average, reviewCount: reviews.length } : undefined,
     review: reviews.slice(0, 5).map((review) => ({
       "@type": "Review",
       author: { "@type": "Person", name: review.author },

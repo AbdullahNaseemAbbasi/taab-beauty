@@ -1,34 +1,63 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase, isLive, toError } from "../api/client.js";
 
 /*
  * Customer and admin authentication (Supabase Auth, email + password).
- * Exposes the session, the customer's profile and whether the user is an admin.
+ * Exposes the session, the customer's profile, whether the user is an admin
+ * and whether they are the store owner.
  */
 const AuthContext = createContext(null);
-const signedOut = { loading: false, session: null, profile: null, isAdmin: false, recovery: false };
+const signedOut = { loading: false, session: null, profile: null, isAdmin: false, isOwner: false, recovery: false };
+const MAX_RETRIES = 3;
+
+/* Resolves to { data, error } even when the request itself throws. */
+const settle = (request) => Promise.resolve(request).then((result) => result, (error) => ({ data: null, error }));
 
 export function AuthProvider({ children }) {
   const [state, setState] = useState({ ...signedOut, loading: isLive });
   const navigate = useNavigate();
   const { pathname } = useLocation();
+  const retry = useRef({ timer: null, attempt: 0 });
+  /* The user whose admin status has been loaded successfully at least once. */
+  const verified = useRef(null);
 
   const load = useCallback(async (session, recovery = false) => {
+    clearTimeout(retry.current.timer);
     if (!session) {
+      retry.current.attempt = 0;
+      verified.current = null;
       setState(signedOut);
       return;
     }
-    try {
-      const [profile, admin] = await Promise.all([
-        supabase.from("profiles").select("*").eq("id", session.user.id).maybeSingle(),
-        supabase.rpc("is_admin"),
-      ]);
-      setState((current) => ({ loading: false, session, profile: profile.data || null, isAdmin: Boolean(admin.data), recovery: recovery || current.recovery }));
-    } catch {
-      setState({ loading: false, session, profile: null, isAdmin: false, recovery });
-    }
+    const userId = session.user.id;
+    const [profile, admin, owner] = await Promise.all([
+      settle(supabase.from("profiles").select("*").eq("id", userId).maybeSingle()),
+      settle(supabase.rpc("is_admin")),
+      settle(supabase.rpc("is_owner")),
+    ]);
+    const failed = Boolean(profile.error || admin.error || owner.error);
+    const attempt = failed ? retry.current.attempt + 1 : 0;
+    retry.current.attempt = attempt;
+    const known = verified.current === userId;
+    if (!admin.error) verified.current = userId;
+
+    /* A failed check (a network blip, a token refresh) keeps what we already knew and tries again, instead of locking an admin out. */
+    setState((current) => {
+      const sameUser = current.session?.user?.id === userId;
+      return {
+        loading: Boolean(admin.error) && !known && attempt <= MAX_RETRIES,
+        session,
+        profile: profile.error ? (sameUser ? current.profile : null) : profile.data || null,
+        isAdmin: admin.error ? known && current.isAdmin : Boolean(admin.data),
+        isOwner: owner.error ? known && current.isOwner : Boolean(owner.data),
+        recovery: recovery || current.recovery,
+      };
+    });
+    if (failed && attempt <= MAX_RETRIES) retry.current.timer = setTimeout(() => load(session), 1000 * 2 ** (attempt - 1));
   }, []);
+
+  useEffect(() => () => clearTimeout(retry.current.timer), []);
 
   useEffect(() => {
     if (!isLive) return undefined;
@@ -66,6 +95,12 @@ export function AuthProvider({ children }) {
       },
       async signOut() {
         await supabase.auth.signOut();
+        /* The saved checkout details (name, phone, address) belong to whoever was signed in. */
+        try {
+          localStorage.removeItem("naz:customer");
+        } catch {
+          /* storage unavailable */
+        }
       },
       async resetPassword(email) {
         const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo: `${window.location.origin}/account` });

@@ -41,7 +41,7 @@ export function orderWhatsAppMessage(order) {
     .join("\n");
 }
 
-/* What the customer still has to pay, and how. */
+/* What the customer still has to pay, and how. Without a WhatsApp number the receipt goes through the Contact page. */
 export function PaymentCard({ order, whatsapp, onShare }) {
   const plan = paymentPlan(order.totals.total, order.advance);
   if (closed.includes(order.status) || plan.advance <= 0) return null;
@@ -52,7 +52,7 @@ export function PaymentCard({ order, whatsapp, onShare }) {
         <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-coral">One step left</p>
         <p className="mt-1 font-display text-[22px] font-extrabold text-navy sm:text-[26px]">Send {formatPrice(plan.advance)} to confirm this order</p>
         <p className="mt-1 text-[14px] text-ink">
-          {plan.balance > 0 ? `That is the ${plan.percent}% advance. The remaining ${formatPrice(plan.balance)} is paid when your order arrives.` : "We pack your order as soon as the payment is received."}
+          {plan.balance > 0 ? `That is the ${plan.percent}% advance. The remaining ${formatPrice(plan.balance)} is paid when your order arrives.` : "We pack your order as soon as the payment is received."} Unpaid orders are cancelled after {site.payments.holdHours} hours.
         </p>
         <div className="mt-4 rounded-xl bg-tint p-4">
           <AccountDetails methodId={order.payment} />
@@ -60,9 +60,15 @@ export function PaymentCard({ order, whatsapp, onShare }) {
             Write <strong className="text-navy">{order.id}</strong> in the transfer note if your app allows it, then send us the receipt.
           </p>
         </div>
-        <Button href={whatsapp} target="_blank" rel="noreferrer" variant="whatsapp" className="mt-4 w-full sm:w-auto print:hidden" onClick={onShare}>
-          <WhatsAppIcon className="size-5" /> Send the receipt on WhatsApp
-        </Button>
+        {whatsapp ? (
+          <Button href={whatsapp} target="_blank" rel="noreferrer" variant="whatsapp" className="mt-4 w-full sm:w-auto print:hidden" onClick={onShare}>
+            <WhatsAppIcon className="size-5" /> Send the receipt on WhatsApp
+          </Button>
+        ) : (
+          <Button to="/contact" variant="navy" className="mt-4 w-full sm:w-auto print:hidden">
+            Send the receipt through the Contact page
+          </Button>
+        )}
       </div>
     );
   }
@@ -83,7 +89,7 @@ function NextSteps({ order }) {
   const awaiting = order.paymentStatus === "pending";
   const steps = [
     awaiting
-      ? { Icon: CashIcon, title: `Send the ${formatPrice(plan.advance)} advance`, text: "Transfer it to the account shown above and share the receipt on WhatsApp with your order number." }
+      ? { Icon: CashIcon, title: `Send the ${formatPrice(plan.advance)} advance`, text: `Transfer it to the account shown above and send us the receipt ${site.contact.whatsapp ? "on WhatsApp" : "through the Contact page"} with your order number.` }
       : { Icon: CheckIcon, title: "Advance received", text: "Your order is confirmed and we are getting it ready." },
     { Icon: PackageIcon, title: "Packed and handed to the courier", text: "Confirmed orders are dispatched the same or next working day. The tracking number appears on the Tracking page." },
     {

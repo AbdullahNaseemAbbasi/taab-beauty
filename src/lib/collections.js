@@ -11,7 +11,7 @@ export const collections = {
     slug: "best-sellers",
     name: "Best Sellers",
     tagline: "The products our customers reorder.",
-    description: "Ranked by real repeat purchases over the last 90 days.",
+    description: "Our most popular products from every department.",
     filter: (product) => product.bestSeller,
   },
 };

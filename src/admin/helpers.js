@@ -1,4 +1,5 @@
 /* Small helpers shared by the admin pages. */
+import { site } from "../config/site.js";
 
 export const ORDER_STATUSES = [
   { id: "created", label: "Awaiting advance" },
@@ -22,7 +23,11 @@ export const statusTone = (id) =>
 /* The status an order usually moves to next. */
 export const nextStatus = (id) => ({ created: "confirmed", confirmed: "processing", processing: "packed", packed: "shipped", shipped: "out_for_delivery", out_for_delivery: "delivered" }[id] || id);
 
-export const COURIERS = ["TCS", "Leopards", "M&P", "Self delivery", "Other"];
+/* Statuses that end an order; moving out of them takes the items out of stock again. */
+export const CLOSED_STATUSES = ["cancelled", "failed", "returned", "refunded"];
+
+/* The store's couriers (site config) plus the two fallbacks. */
+export const COURIERS = [...new Set([...(site.shipping.couriers || []), "Self delivery", "Other"])];
 
 /* Database row (with order_items) → the shape the storefront components use. */
 export function mapOrder(row) {
@@ -57,12 +62,20 @@ export function mapOrder(row) {
   };
 }
 
-/* WhatsApp link to a Pakistani mobile number (03xx → 923xx). */
-export function waLink(phone, text = "") {
+/* A Pakistani mobile number in international form without "+" (03xx → 923xx). */
+export function toInternational(phone) {
   const digits = String(phone || "").replace(/\D/g, "");
-  const international = digits.startsWith("92") ? digits : digits.startsWith("0") ? `92${digits.slice(1)}` : `92${digits}`;
-  return `https://wa.me/${international}${text ? `?text=${encodeURIComponent(text)}` : ""}`;
+  if (!digits) return "";
+  return digits.startsWith("92") ? digits : digits.startsWith("0") ? `92${digits.slice(1)}` : `92${digits}`;
 }
+
+/* WhatsApp link to a Pakistani mobile number. */
+export function waLink(phone, text = "") {
+  return `https://wa.me/${toInternational(phone)}${text ? `?text=${encodeURIComponent(text)}` : ""}`;
+}
+
+/* First name for a friendly greeting; copes with a missing name. */
+export const firstName = (name, fallback = "there") => String(name || "").trim().split(/\s+/)[0] || fallback;
 
 export function downloadCsv(filename, rows) {
   if (!rows.length) return;
@@ -81,3 +94,6 @@ export function downloadCsv(filename, rows) {
 export const toSlug = (value) => String(value || "").toLowerCase().replace(/&/g, " ").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
 
 export const percent = (part, whole) => (whole ? `${((part / whole) * 100).toFixed(1)}%` : "0%");
+
+/* Low on stock: the total is at or under the alert level, or one of its options has sold out. */
+export const isLowStock = (row) => row.stock <= row.low_stock_threshold || (row.variants?.options || []).some((option) => Number(option.stock) <= 0);

@@ -6,15 +6,20 @@ import { TagIcon, CloseIcon } from "../ui/Icons.jsx";
 import { useStore } from "../../store/StoreProvider.jsx";
 import { useCatalog } from "../../catalog/CatalogProvider.jsx";
 import { PaymentSplitRows, paymentPlan } from "./PaymentPlan.jsx";
+import { couponApplies } from "../../lib/cart.js";
 
+/*
+ * Not a <form>: the summary sits inside the checkout form, and a nested form would let
+ * "Apply" (or Enter in the code box) submit the whole checkout and place the order.
+ */
 export function CouponInput() {
   const { cart, applyCoupon, removeCoupon } = useStore();
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
-  async function submit(event) {
-    event.preventDefault();
+  async function apply() {
+    if (!code.trim() || busy) return;
     setBusy(true);
     const result = await applyCoupon(code);
     setBusy(false);
@@ -23,22 +28,43 @@ export function CouponInput() {
   }
 
   if (cart.coupon) {
+    const waiting = !couponApplies(cart.coupon, cart.totals.subtotal);
     return (
-      <div className="flex w-full items-center justify-between rounded-xl bg-mint/40 px-4 py-3 text-[14px] text-navy">
-        <span className="flex items-center gap-2 font-semibold">
-          <TagIcon className="size-4 text-teal" /> {cart.coupon.code} applied
-        </span>
-        <button type="button" onClick={removeCoupon} aria-label="Remove coupon" className="grid size-7 place-items-center rounded-full hover:bg-white">
-          <CloseIcon className="size-4" />
-        </button>
+      <div className={`w-full rounded-xl px-4 py-3 text-[14px] text-navy ${waiting ? "bg-coral-50" : "bg-mint/40"}`}>
+        <div className="flex items-center justify-between">
+          <span className="flex items-center gap-2 font-semibold">
+            <TagIcon className="size-4 text-teal" /> {cart.coupon.code} {waiting ? "saved" : "applied"}
+          </span>
+          <button type="button" onClick={removeCoupon} aria-label="Remove coupon" title="Remove coupon" className="grid size-7 place-items-center rounded-full hover:bg-white">
+            <CloseIcon className="size-4" />
+          </button>
+        </div>
+        {waiting && (
+          <p role="status" className="mt-1 text-[13px] text-ink">
+            Add {formatPrice(cart.coupon.minOrder - cart.totals.subtotal)} more to use this code (minimum order {formatPrice(cart.coupon.minOrder)}).
+          </p>
+        )}
       </div>
     );
   }
 
   return (
-    <form onSubmit={submit} className="flex w-full flex-wrap gap-2">
-      <Input value={code} onChange={(event) => setCode(event.target.value.toUpperCase())} placeholder="Discount or creator code" aria-label="Coupon code" aria-invalid={Boolean(error)} className="min-w-0 flex-1" />
-      <button type="submit" className="h-[50px] shrink-0 rounded-xl bg-navy px-5 text-[14px] font-semibold text-white disabled:opacity-50" disabled={!code.trim() || busy}>
+    <div role="group" aria-label="Apply a discount code" className="flex w-full flex-wrap gap-2">
+      <Input
+        value={code}
+        onChange={(event) => setCode(event.target.value.toUpperCase())}
+        onKeyDown={(event) => {
+          if (event.key !== "Enter") return;
+          event.preventDefault(); // stops the surrounding checkout form from submitting
+          apply();
+        }}
+        placeholder="Discount or creator code"
+        aria-label="Coupon code"
+        aria-invalid={Boolean(error)}
+        enterKeyHint="go"
+        className="min-w-0 flex-1"
+      />
+      <button type="button" onClick={apply} className="h-[50px] shrink-0 rounded-xl bg-navy px-5 text-[14px] font-semibold text-white disabled:opacity-50" disabled={!code.trim() || busy}>
         {busy ? "…" : "Apply"}
       </button>
       {error && (
@@ -46,7 +72,7 @@ export function CouponInput() {
           {error}
         </p>
       )}
-    </form>
+    </div>
   );
 }
 

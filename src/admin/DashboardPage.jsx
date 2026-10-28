@@ -65,16 +65,22 @@ export default function DashboardPage() {
   const stats = useAsync(() => fetchStats(days), [days]);
   const recent = useAsync(() => fetchOrders({ limit: 8 }), []);
 
-  /* Live numbers: refresh when an order changes. */
-  useEffect(
-    () =>
-      subscribeToAdminChanges(({ table }) => {
-        if (table !== "orders") return;
+  /* Live numbers: refresh shortly after orders change (a burst of changes triggers one refresh). */
+  useEffect(() => {
+    let timer = null;
+    const stop = subscribeToAdminChanges(({ table }) => {
+      if (table !== "orders") return;
+      clearTimeout(timer);
+      timer = setTimeout(() => {
         stats.reload();
         recent.reload();
-      }),
-    [stats.reload, recent.reload]
-  );
+      }, 1500);
+    });
+    return () => {
+      clearTimeout(timer);
+      stop();
+    };
+  }, [stats.reload, recent.reload]);
 
   return (
     <div className="space-y-6">
@@ -85,11 +91,13 @@ export default function DashboardPage() {
       <Async state={stats} rows={4}>
         {(s) => {
           const purchases = s.funnel?.purchase || s.orders;
+          /* Revenue leaves out returned and refunded orders, so the average divides by the orders it counts (revenue_orders when the database provides it). */
+          const revenueOrders = s.revenue_orders ?? s.orders;
           return (
             <>
               <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
                 <Stat label="Revenue" value={formatPrice(s.revenue)} hint={`${s.orders} order${s.orders === 1 ? "" : "s"}`} tone="teal" />
-                <Stat label="Average order" value={formatPrice(s.orders ? s.revenue / s.orders : 0)} hint="Revenue ÷ orders" />
+                <Stat label="Average order" value={formatPrice(revenueOrders ? Math.round(s.revenue / revenueOrders) : 0)} hint="Revenue ÷ orders" />
                 <Stat label="Open orders" value={s.pending} hint={s.awaiting_payment ? `${s.awaiting_payment} awaiting the advance` : "To pack or ship"} tone={s.pending ? "coral" : "navy"} />
                 <Stat label="Conversion" value={percent(purchases, s.sessions)} hint={`${(s.sessions || 0).toLocaleString()} visitors`} />
               </div>
@@ -97,11 +105,11 @@ export default function DashboardPage() {
               {(s.pending > 0 || s.pending_reviews > 0 || s.new_messages > 0 || s.low_stock.length > 0) && (
                 <Card title="Needs attention">
                   <div className="flex flex-wrap gap-2">
-                    {s.pending > 0 && <Link to="/admin/orders" className="rounded-full bg-coral px-4 py-2 text-[13px] font-semibold text-white hover:bg-coral-600">{s.pending} open order{s.pending === 1 ? "" : "s"}</Link>}
-                    {s.awaiting_payment > 0 && <Link to="/admin/orders" className="rounded-full bg-gold px-4 py-2 text-[13px] font-semibold text-navy">{s.awaiting_payment} order{s.awaiting_payment === 1 ? "" : "s"} awaiting the advance</Link>}
+                    {s.pending > 0 && <Link to="/admin/orders?filter=open" className="rounded-full bg-coral px-4 py-2 text-[13px] font-semibold text-white hover:bg-coral-600">{s.pending} open order{s.pending === 1 ? "" : "s"}</Link>}
+                    {s.awaiting_payment > 0 && <Link to="/admin/orders?filter=awaiting" className="rounded-full bg-gold px-4 py-2 text-[13px] font-semibold text-navy">{s.awaiting_payment} order{s.awaiting_payment === 1 ? "" : "s"} awaiting the advance</Link>}
                     {s.pending_reviews > 0 && <Link to="/admin/reviews" className="rounded-full bg-navy px-4 py-2 text-[13px] font-semibold text-white">{s.pending_reviews} review{s.pending_reviews === 1 ? "" : "s"} to approve</Link>}
                     {s.new_messages > 0 && <Link to="/admin/inbox" className="rounded-full bg-teal px-4 py-2 text-[13px] font-semibold text-white">{s.new_messages} new message{s.new_messages === 1 ? "" : "s"}</Link>}
-                    {s.low_stock.length > 0 && <Link to="/admin/products" className="rounded-full border border-coral px-4 py-2 text-[13px] font-semibold text-coral">{s.low_stock.length} product{s.low_stock.length === 1 ? "" : "s"} low on stock</Link>}
+                    {s.low_stock.length > 0 && <Link to="/admin/products?filter=low" className="rounded-full border border-coral px-4 py-2 text-[13px] font-semibold text-coral">{s.low_stock.length} product{s.low_stock.length === 1 ? "" : "s"} low on stock</Link>}
                   </div>
                 </Card>
               )}
@@ -140,7 +148,7 @@ export default function DashboardPage() {
                     <p className="py-6 text-center text-[14px] text-ink">Nothing sold in this period yet.</p>
                   )}
                 </Card>
-                <Card title="Low stock" action={<Link to="/admin/products" className="text-[13px] font-semibold text-teal hover:underline">Manage</Link>}>
+                <Card title="Low stock" action={<Link to="/admin/products?filter=low" className="text-[13px] font-semibold text-teal hover:underline">Manage</Link>}>
                   {s.low_stock.length ? (
                     <ul className="divide-y divide-line">
                       {s.low_stock.map((product) => (

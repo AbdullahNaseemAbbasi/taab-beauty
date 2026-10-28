@@ -12,7 +12,7 @@ import { useStore } from "../store/StoreProvider.jsx";
 
 export default function ComparePage() {
   const { compare, toggleCompare, clearCompare, addToCart } = useStore();
-  const { productById } = useCatalog();
+  const { productById, categoryBySlug } = useCatalog();
   useSeo({ title: "Compare Products", path: "/compare", noindex: true });
   const items = compare.map((id) => productById[id]).filter(Boolean);
 
@@ -20,8 +20,8 @@ export default function ComparePage() {
     { label: "Price", render: (product) => <Price price={product.price} compareAtPrice={product.compareAtPrice} size="sm" /> },
     { label: "Rating", render: (product) => <RatingStars rating={product.rating} count={product.reviewCount} size="size-3.5" /> },
     { label: "Brand", render: (product) => product.brand },
-    { label: "Category", render: (product) => `${product.category} / ${product.subcategory}` },
-    { label: "Size / contents", render: (product) => product.size },
+    { label: "Category", render: (product) => [categoryBySlug[product.category]?.name || product.category, product.subcategory].filter(Boolean).join(" / ") },
+    { label: "Size / contents", render: (product) => product.size || "–" },
     { label: "Availability", render: (product) => (product.stock > 0 ? `In stock (${product.stock})` : "Out of stock") },
     { label: "Key benefits", render: (product) => <ul className="list-disc space-y-1 pl-4">{product.benefits.slice(0, 3).map((benefit) => <li key={benefit}>{benefit}</li>)}</ul> },
     { label: "Warranty", render: (product) => product.warranty || "Not applicable" },

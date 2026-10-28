@@ -21,7 +21,7 @@ import { ecommerce } from "../analytics/ecommerce.js";
 export default function TrackOrderPage() {
   useSeo({ title: "Tracking", description: `Enter your ${site.name} order number and phone number to see payment and delivery progress.`, path: "/track-order" });
   const { productById, productBySlug } = useCatalog();
-  const [params] = useSearchParams();
+  const [params, setParams] = useSearchParams();
   const [form, setForm] = useState(() => ({ id: (params.get("id") || "").toUpperCase(), phone: params.get("phone") || phoneForOrder(params.get("id") || "") || "" }));
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
@@ -35,7 +35,7 @@ export default function TrackOrderPage() {
       track(EVENTS.TRACK_ORDER, { found: Boolean(order) });
       if (!order) {
         setResult(null);
-        setError("No order matches that number and phone. Check the order number on your confirmation page, or message us on WhatsApp.");
+        setError(`No order matches that number and phone. Check the order number on your confirmation page, or ${site.contact.whatsapp ? "message us on WhatsApp" : "contact us"}.`);
       } else {
         rememberPlacedOrder(order.id, phone);
         setResult(hydrateOrder(order, { productById, productBySlug }));
@@ -47,9 +47,14 @@ export default function TrackOrderPage() {
     }
   }
 
-  /* Links shared on WhatsApp (?id=...&phone=...) open the order straight away. */
+  /* Links shared on WhatsApp (?id=...&phone=...) open the order straight away; the phone number is then dropped from the address bar. */
   useEffect(() => {
     if (form.id && form.phone && !result) lookup(form.id, form.phone);
+    if (params.has("phone")) {
+      const next = new URLSearchParams(params);
+      next.delete("phone");
+      setParams(next, { replace: true });
+    }
   }, []);
 
   /* No delivery date while the advance is unpaid: the order is not dispatched until it arrives. */
@@ -109,15 +114,21 @@ export default function TrackOrderPage() {
               </div>
               <PaymentCard order={result} whatsapp={whatsappLink(orderWhatsAppMessage(result))} onShare={() => ecommerce.whatsapp("track_order_receipt")} />
               <TrackingCard order={result} />
-              <a
-                href={whatsappLink(`Hi ${site.name}, I have a question about order ${result.id}.`)}
-                target="_blank"
-                rel="noreferrer"
-                onClick={() => ecommerce.whatsapp("track_order")}
-                className="flex items-center justify-center gap-2 rounded-full border border-line py-3 text-[14px] font-semibold text-navy hover:border-navy"
-              >
-                <WhatsAppIcon className="size-4 text-[#25D366]" /> Ask about this order on WhatsApp
-              </a>
+              {site.contact.whatsapp ? (
+                <a
+                  href={whatsappLink(`Hi ${site.name}, I have a question about order ${result.id}.`)}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={() => ecommerce.whatsapp("track_order")}
+                  className="flex items-center justify-center gap-2 rounded-full border border-line py-3 text-[14px] font-semibold text-navy hover:border-navy"
+                >
+                  <WhatsAppIcon className="size-4 text-[#25D366]" /> Ask about this order on WhatsApp
+                </a>
+              ) : (
+                <Link to="/contact" className="flex items-center justify-center gap-2 rounded-full border border-line py-3 text-[14px] font-semibold text-navy hover:border-navy">
+                  Ask about this order
+                </Link>
+              )}
             </div>
             <OrderSummary lines={result.lines} totals={result.totals} coupon={result.coupon} advance={result.advance || { percent: 0, amount: 0, balance: result.totals.total }} editable={false} title="Items" />
           </div>

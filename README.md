@@ -37,8 +37,8 @@ The brand name and defaults live in `src/config/site.js`. Contact details, socia
 npx supabase login                       # once, opens the browser
 npx supabase link --project-ref <ref>    # once per machine
 npm run db:push                          # applies supabase/migrations/*
-npm run seed                             # loads the sample catalogue (idempotent)
-npm run seed -- --reset-settings         # also puts the sample payment account and contact details back
+npm run seed                             # loads the sample catalogue into an EMPTY database (refuses once products exist; --force only on a test database)
+npm run seed -- --reset-settings         # also puts the sample payment account back and empties the contact details
 ```
 
 Schema: `supabase/migrations/` (applied in order). Main tables: settings, departments, categories, brands, concerns, products, product_costs, reviews, faqs, coupons, customers, profiles, admins, orders, order_items, events, newsletter_subscribers, contact_messages, stock_alerts, checkout_sessions.
@@ -61,11 +61,11 @@ Schema: `supabase/migrations/` (applied in order). Main tables: settings, depart
 - The storefront subscribes to changes on products, categories, departments, brands, settings and reviews and reloads its data; the admin panel subscribes to orders, messages and reviews (new orders pop up without refreshing).
 - New orders and contact messages are also pushed to the owner's phone via [ntfy](https://ntfy.sh) (database trigger). The topic is stored in the private `notifications` setting.
 - Reports are database views (admin-only): `report_daily_sales`, `report_product_performance`, `report_sources`, `report_funnel_daily`, `report_customers`, `report_abandoned_checkouts`.
-- `npm run smoke-test` exercises the whole backend (catalogue, coupons, order placement, advance and balance, refused payment methods, stock, lookups, notifications, RLS, customer sign-up, admin actions) and cleans up after itself.
+- `npm run smoke-test -- --confirm` exercises the whole backend on the live database (catalogue, coupons, order placement and limits, advance and balance, refused and placeholder payment accounts, stock held and released once, reopening, the unpaid-order auto-cancel, lookups and their throttle, private notifications, RLS and column grants, customer sign-up, owner and staff rules) and cleans up after itself. It places test orders, so the owner's phone gets test notifications.
 
 ## Deploy (Netlify)
 
-`netlify.toml` sets the build command and publish folder; `public/_redirects` handles client-side routes. In Netlify add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (Site configuration → Environment variables) before the first build; without them the live site runs on mock data and the admin panel cannot open. Then follow `docs/10-launch-checklist.md`.
+`netlify.toml` sets the build command and publish folder; `public/_redirects` handles client-side routes. In Netlify add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (Site configuration → Environment variables) before the first build; without them the production build stops with an error (set `VITE_ALLOW_DEMO=true` only for a deliberate demo on sample data). `netlify/edge-functions/social-preview.js` gives product, category and department links their own preview (name, price, photo) on WhatsApp, Facebook, Instagram and X; it reads the same two variables. Then follow `docs/10-launch-checklist.md`.
 
 ## Try the demo
 

@@ -10,7 +10,7 @@ export function announcementText(settings) {
   if (settings.contact.announcement) return settings.contact.announcement;
   const threshold = formatPrice(settings.shipping.freeShippingThreshold);
   const percent = settings.payments.advancePercent;
-  const payment = percent >= 100 ? "Pay in advance to confirm your order." : `Pay ${percent}% in advance, the rest on delivery.`;
+  const payment = percent >= 100 ? "Pay in advance to confirm your order." : percent <= 0 ? "Pay when your order arrives." : `Pay ${percent}% in advance, the rest on delivery.`;
   return `Free delivery on orders over ${threshold}. ${payment}`;
 }
 
@@ -18,8 +18,8 @@ export default function AnnouncementBar() {
   const { settings } = useCatalog();
   return (
     <div className="bg-navy text-white print:hidden">
-      <div className="wrap flex h-10 items-center justify-center gap-3 text-[13px]">
-        <span className="truncate">{announcementText(settings)}</span>
+      <div className="wrap flex min-h-10 items-center justify-center gap-3 py-2 text-center text-[13px] leading-snug">
+        <span>{announcementText(settings)}</span>
         <Link
           to={site.announcement.link.to}
           onClick={() => track(EVENTS.PROMO_CLICK, { promotion_name: "announcement_bar" })}

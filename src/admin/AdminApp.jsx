@@ -148,21 +148,26 @@ function Sidebar({ counts, onNavigate }) {
 function Shell({ children }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const { pathname } = useLocation();
-  const counts = useAsync(() => fetchStats(7), [pathname]);
+  /* The badge counts load once; after that only live changes refresh them (see below). */
+  const counts = useAsync(() => fetchStats(7), []);
   const { toast } = useStore();
   const reloadCounts = useRef(counts.reload);
   reloadCounts.current = counts.reload;
 
-  /* Live: a new order or message shows a notice and refreshes the badges without reloading the page. */
-  useEffect(
-    () =>
-      subscribeToAdminChanges(({ table, event, row }) => {
-        if (table === "orders" && event === "INSERT") toast(`New order ${row.id} · ${formatPrice(row.total || 0)}`, { duration: 9000, action: { label: "Open", to: `/admin/orders?order=${row.id}` } });
-        if (table === "contact_messages" && event === "INSERT") toast("New contact message", { duration: 7000, action: { label: "Open", to: "/admin/inbox" } });
-        reloadCounts.current();
-      }),
-    []
-  );
+  /* Live: a new order or message shows a notice, and the badges refresh once a burst of changes settles. */
+  useEffect(() => {
+    let timer = null;
+    const stop = subscribeToAdminChanges(({ table, event, row }) => {
+      if (table === "orders" && event === "INSERT") toast(`New order ${row.id} · ${formatPrice(row.total || 0)}`, { duration: 9000, action: { label: "Open", to: `/admin/orders?order=${row.id}` } });
+      if (table === "contact_messages" && event === "INSERT") toast("New contact message", { duration: 7000, action: { label: "Open", to: "/admin/inbox" } });
+      clearTimeout(timer);
+      timer = setTimeout(() => reloadCounts.current(), 2000);
+    });
+    return () => {
+      clearTimeout(timer);
+      stop();
+    };
+  }, []);
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "instant" });

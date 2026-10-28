@@ -22,6 +22,7 @@ import { site } from "../config/site.js";
 import { formatPrice } from "../lib/format.js";
 import { img } from "../lib/images.js";
 import { variantStock, relatedProducts, frequentlyBoughtTogether, reviewsForProduct } from "../lib/catalog.js";
+import { MAX_LINE_QUANTITY } from "../lib/cart.js";
 import { productSchema, breadcrumbSchema } from "../lib/schema.js";
 import { useStore } from "../store/StoreProvider.jsx";
 import { ecommerce } from "../analytics/ecommerce.js";
@@ -90,14 +91,19 @@ export default function ProductPage() {
   const crumbs = product ? [{ label: "Shop", to: "/shop" }, { label: category?.name || product.category, to: `/shop/${product.category}` }, { label: product.name, to: `/product/${product.slug}` }] : [];
   const threshold = formatPrice(settings.shipping.freeShippingThreshold);
 
-  useSeo({
-    title: product ? `${product.name} by ${product.brand}` : "Product",
-    description: product?.description,
-    path: `/product/${slug}`,
-    type: "product",
-    image: product ? img(product.images[0], 1200) : undefined,
-    jsonLd: product ? [productSchema(product, productReviews), breadcrumbSchema(crumbs)] : [],
-  });
+  /* An unknown slug renders NotFoundPage; this page's tags run after the child's, so they must say noindex too. */
+  useSeo(
+    product
+      ? {
+          title: `${product.name} by ${product.brand}`,
+          description: product.description,
+          path: `/product/${slug}`,
+          type: "product",
+          image: img(product.images[0], 1200),
+          jsonLd: [productSchema(product, productReviews), breadcrumbSchema(crumbs)],
+        }
+      : { title: "Page Not Found", noindex: true }
+  );
 
   useEffect(() => {
     if (!product) return;
@@ -112,10 +118,13 @@ export default function ProductPage() {
     }
   }, [product?.id]);
 
+  /* The mobile add-to-bag bar exists only on a real product page, not on its 404. */
+  const found = Boolean(product);
   useEffect(() => {
+    if (!found) return undefined;
     setUI({ stickyBar: true });
     return () => setUI({ stickyBar: false });
-  }, [setUI]);
+  }, [found, setUI]);
 
   const stock = product ? variantStock(product, variantId) : 0;
   const bundle = useMemo(() => (product ? frequentlyBoughtTogether(productBySlug, product) : []), [product?.id, productBySlug]);
@@ -135,6 +144,7 @@ export default function ProductPage() {
   const buyNow = () => {
     if (add(false)) navigate("/checkout");
   };
+  const askLink = whatsappLink(`Hi ${site.name}, I have a question about ${product.name} (${product.sku}).`);
   const share = async () => {
     const url = `${site.url}/product/${product.slug}`;
     track(EVENTS.PRODUCT_SHARE, { item_id: product.sku });
@@ -191,7 +201,7 @@ export default function ProductPage() {
       title: "Shipping & returns",
       content: (
         <p>
-          Dispatched the same day on orders before 2pm. {settings.shipping.estimatedDays} across Pakistan, next business day in Karachi. Free delivery over {threshold}.{" "}
+          Dispatched the same day when the advance arrives before 2pm. {settings.shipping.estimatedDays} across Pakistan, next business day in {site.shipping.expressCities.join(", ")}. Free delivery over {threshold}.{" "}
           {isBeauty ? "Unopened products can be returned within 7 days." : "Unused items in their original packaging can be returned within 7 days, and anything that arrives faulty is replaced."}
         </p>
       ),
@@ -205,7 +215,7 @@ export default function ProductPage() {
       </div>
 
       <section className="wrap grid gap-8 py-6 sm:py-8 lg:grid-cols-2 lg:gap-14">
-        <ProductGallery product={product} />
+        <ProductGallery key={product.id} product={product} />
 
         <div>
           <Link to={`/shop?brand=${encodeURIComponent(product.brand)}`} className="text-[12px] font-bold uppercase tracking-[0.2em] text-teal hover:underline">
@@ -226,7 +236,7 @@ export default function ProductPage() {
             {stock <= 0 && <StockAlertForm product={product} variant={product.variants?.options.find((option) => option.id === variantId) || null} />}
             {stock > 0 && <DispatchCountdown />}
             <div className="flex flex-wrap items-center gap-3">
-              <QuantityStepper value={quantity} min={1} max={Math.max(stock, 1)} onChange={setQuantity} />
+              <QuantityStepper value={quantity} min={1} max={Math.max(Math.min(stock, MAX_LINE_QUANTITY), 1)} onChange={setQuantity} />
               <Button variant="navy" onClick={() => add(true)} disabled={stock <= 0} className="flex-1 sm:min-w-[200px] sm:flex-none">
                 {stock <= 0 ? "Sold out" : "Add to bag"}
               </Button>
@@ -244,15 +254,17 @@ export default function ProductPage() {
               <button type="button" onClick={share} className="inline-flex h-10 items-center gap-2 rounded-full border border-line px-4 text-[14px] font-semibold text-navy hover:border-navy">
                 <ShareIcon className="size-4" /> Share
               </button>
-              <a
-                href={whatsappLink(`Hi ${site.name}, I have a question about ${product.name} (${product.sku}).`)}
-                target="_blank"
-                rel="noreferrer"
-                onClick={() => ecommerce.whatsapp("product_page", product)}
-                className="inline-flex h-10 items-center gap-2 rounded-full bg-[#25D366]/10 px-4 text-[14px] font-semibold text-[#128C4A] hover:bg-[#25D366]/20"
-              >
-                <WhatsAppIcon className="size-4" /> Ask about this product
-              </a>
+              {askLink && (
+                <a
+                  href={askLink}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={() => ecommerce.whatsapp("product_page", product)}
+                  className="inline-flex h-10 items-center gap-2 rounded-full bg-[#25D366]/10 px-4 text-[14px] font-semibold text-[#128C4A] hover:bg-[#25D366]/20"
+                >
+                  <WhatsAppIcon className="size-4" /> Ask about this product
+                </a>
+              )}
             </div>
           </div>
 

@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { Badge } from "../components/ui/Typography.jsx";
 import { WhatsAppIcon, MailIcon } from "../components/ui/Icons.jsx";
-import { fetchMessages, setMessageStatus, fetchSubscribers, fetchStockAlerts, markAlertNotified, fetchAbandoned } from "../api/admin.js";
+import { fetchMessages, setMessageStatus, fetchSubscribers, deleteSubscriber, fetchStockAlerts, markAlertNotified, fetchAbandoned } from "../api/admin.js";
 import { formatDate, formatPrice } from "../lib/format.js";
 import { site } from "../config/site.js";
 import { useStore } from "../store/StoreProvider.jsx";
 import { Async, Chips, DataTable, PageTitle, useAsync } from "./ui.jsx";
-import { downloadCsv, waLink } from "./helpers.js";
+import { downloadCsv, firstName, waLink } from "./helpers.js";
 
 const tabs = [
   { id: "messages", label: "Messages" },
@@ -23,6 +23,7 @@ function Messages() {
   async function mark(id, status) {
     try {
       await setMessageStatus(id, status);
+      toast(status === "replied" ? "Marked as replied." : "Message closed.");
       messages.reload();
     } catch (error) {
       toast(error.message, { type: "error" });
@@ -39,17 +40,19 @@ function Messages() {
               <li key={message.id} className="rounded-2xl border border-line bg-white p-5">
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                   <Badge tone={message.status === "new" ? "coral" : message.status === "replied" ? "success" : "muted"}>{message.status}</Badge>
-                  <span className="text-[15px] font-semibold text-navy">{message.name}</span>
+                  <span className="text-[15px] font-semibold text-navy">{message.name || "No name"}</span>
                   <span className="text-[13px] text-ink-light">{message.topic}</span>
                   <span className="ml-auto text-[13px] text-ink-light">{when(message.created_at)}</span>
                 </div>
                 <p className="mt-3 whitespace-pre-line text-[15px] leading-[1.6] text-ink">{message.message}</p>
                 <div className="mt-4 flex flex-wrap items-center gap-2">
-                  <a href={`mailto:${message.email}?subject=${encodeURIComponent(`Re: ${message.topic || "Your message to Naz & CO"}`)}`} className="inline-flex h-10 items-center gap-2 rounded-full border border-line px-4 text-[14px] font-semibold text-navy hover:border-navy">
-                    <MailIcon className="size-4" /> {message.email}
-                  </a>
+                  {message.email && (
+                    <a href={`mailto:${message.email}?subject=${encodeURIComponent(`Re: ${message.topic || `Your message to ${site.name}`}`)}`} className="inline-flex h-10 items-center gap-2 rounded-full border border-line px-4 text-[14px] font-semibold text-navy hover:border-navy">
+                      <MailIcon className="size-4" /> {message.email}
+                    </a>
+                  )}
                   {message.phone && (
-                    <a href={waLink(message.phone, `Hi ${message.name.split(" ")[0]}, this is Naz & CO replying to your message.`)} target="_blank" rel="noreferrer" className="inline-flex h-10 items-center gap-2 rounded-full bg-[#25D366] px-4 text-[14px] font-semibold text-white">
+                    <a href={waLink(message.phone, `Hi ${firstName(message.name)}, this is ${site.name} replying to your message.`)} target="_blank" rel="noreferrer" className="inline-flex h-10 items-center gap-2 rounded-full bg-[#25D366] px-4 text-[14px] font-semibold text-white">
                       <WhatsAppIcon className="size-4" /> WhatsApp
                     </a>
                   )}
@@ -93,7 +96,7 @@ function Abandoned() {
               label: "",
               align: "right",
               render: (row) => (
-                <a href={waLink(row.phone, `Hi ${(row.name || "").split(" ")[0] || "there"}, this is Naz & CO. You left a few items in your bag. Can we help you finish the order or answer any question? ${site.url}/cart`)} target="_blank" rel="noreferrer" className="inline-flex h-9 items-center gap-2 rounded-full bg-[#25D366] px-3 text-[13px] font-semibold text-white">
+                <a href={waLink(row.phone, `Hi ${firstName(row.name)}, this is ${site.name}. You left a few items in your bag. Can we help you finish the order or answer any question? ${site.url}/cart`)} target="_blank" rel="noreferrer" className="inline-flex h-9 items-center gap-2 rounded-full bg-[#25D366] px-3 text-[13px] font-semibold text-white">
                   <WhatsAppIcon className="size-4" /> Follow up
                 </a>
               ),
@@ -111,6 +114,7 @@ function StockAlerts() {
   async function done(id) {
     try {
       await markAlertNotified(id);
+      toast("Marked as notified.");
       alerts.reload();
     } catch (error) {
       toast(error.message, { type: "error" });
@@ -129,7 +133,7 @@ function StockAlerts() {
               label: "Contact",
               render: (row) =>
                 row.channel === "phone" ? (
-                  <a href={waLink(row.contact, `Good news from Naz & CO: ${row.products?.name} is back in stock. ${site.url}/product/${row.products?.slug}`)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 font-semibold text-teal hover:underline">
+                  <a href={waLink(row.contact, `Good news from ${site.name}: ${row.products?.name} is back in stock. ${site.url}/product/${row.products?.slug}`)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 font-semibold text-teal hover:underline">
                     <WhatsAppIcon className="size-4 text-[#25D366]" /> {row.contact}
                   </a>
                 ) : (
@@ -148,6 +152,17 @@ function StockAlerts() {
 
 function Subscribers() {
   const subscribers = useAsync(fetchSubscribers, []);
+  const { toast } = useStore();
+  async function remove(row) {
+    if (!window.confirm(`Remove ${row.email} from the newsletter list?`)) return;
+    try {
+      await deleteSubscriber(row.id);
+      toast("Subscriber removed.");
+      subscribers.reload();
+    } catch (error) {
+      toast(error.message, { type: "error" });
+    }
+  }
   return (
     <Async state={subscribers} rows={3}>
       {(rows) => (
@@ -166,6 +181,7 @@ function Subscribers() {
               { key: "email", label: "Email", render: (row) => <span className="font-semibold">{row.email}</span> },
               { key: "source", label: "Signed up from" },
               { key: "created_at", label: "Date", render: (row) => when(row.created_at) },
+              { key: "action", label: "", align: "right", render: (row) => (<button type="button" onClick={() => remove(row)} className="h-9 rounded-full px-3 text-[13px] font-semibold text-danger hover:bg-coral-50">Remove</button>) },
             ]}
           />
         </>

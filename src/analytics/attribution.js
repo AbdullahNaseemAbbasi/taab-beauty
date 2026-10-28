@@ -108,10 +108,18 @@ export function getAttribution() {
   };
 }
 
-/* The creator/affiliate code for the current session, if any. */
+/* A creator link earns credit for this visit, or for later visits within this many days of the first one. */
+const CREATOR_WINDOW_DAYS = 7;
+
+function isRecent(touch) {
+  const at = Date.parse(touch?.timestamp || "");
+  return Number.isFinite(at) && Date.now() - at < CREATOR_WINDOW_DAYS * 24 * 60 * 60 * 1000;
+}
+
+/* The creator/affiliate code for the current session, if any. An old first touch (or one without a date) no longer counts. */
 export function getCreatorRef() {
   const { last, first } = getAttribution();
-  return last?.ref || first?.ref || null;
+  return last?.ref || (isRecent(first) ? first?.ref : null) || null;
 }
 
 /* Compact snapshot stored on the order record. */

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import Overlay from "../components/ui/Modal.jsx";
 import Button from "../components/ui/Button.jsx";
@@ -8,29 +8,30 @@ import { SearchIcon, WhatsAppIcon, PhoneIcon, CheckIcon } from "../components/ui
 import OrderSummary from "../components/commerce/OrderSummary.jsx";
 import OrderTimeline from "../components/commerce/OrderTimeline.jsx";
 import { paymentStatusLabel } from "../components/commerce/PaymentPlan.jsx";
-import { fetchOrders, updateOrderStatus, setPaymentStatus, subscribeToAdminChanges } from "../api/admin.js";
+import { fetchOrders, fetchOrder, updateOrderStatus, setPaymentStatus, subscribeToAdminChanges } from "../api/admin.js";
 import { hydrateOrder } from "../lib/cart.js";
 import { formatDate, formatPrice } from "../lib/format.js";
 import { site, paymentLabel } from "../config/site.js";
 import { useCatalog } from "../catalog/CatalogProvider.jsx";
 import { useStore } from "../store/StoreProvider.jsx";
 import { Async, Chips, DataTable, PageTitle, StatusBadge, useAsync } from "./ui.jsx";
-import { COURIERS, ORDER_STATUSES, mapOrder, nextStatus, statusLabel, waLink } from "./helpers.js";
+import { CLOSED_STATUSES, COURIERS, ORDER_STATUSES, firstName, mapOrder, nextStatus, statusLabel, waLink } from "./helpers.js";
 
 const filters = [
   { id: "open", label: "Open" },
-  { id: "created", label: "Awaiting advance" },
+  { id: "awaiting", label: "Awaiting advance" },
   { id: "all", label: "All" },
   { id: "shipped", label: "Shipped" },
   { id: "delivered", label: "Delivered" },
   { id: "closed", label: "Cancelled / returned" },
 ];
+const PAGE_SIZE = 100;
 
 const paymentTone = (status) => ({ pending: "gold", advance_paid: "teal", paid: "success" }[status] || "danger");
 
 /* Message suggested for the customer for the order's current step. */
 function customerMessage(order, status, tracking, courier) {
-  const name = (order.customer?.name || "").split(" ")[0] || "there";
+  const name = firstName(order.customer?.name);
   const track = `${site.url}/track-order?id=${order.id}&phone=${order.phone}`;
   const { amount: advance, balance } = order.advance;
   const owes = balance > 0 && order.paymentStatus !== "paid";
@@ -65,22 +66,32 @@ function OrderDrawer({ row, onClose, onChanged }) {
   const needsCourier = ["shipped", "out_for_delivery"].includes(form.status);
   const source = order.attribution?.lastTouch;
   const { amount: advance, balance, percent } = order.advance;
-  const closed = ["cancelled", "failed", "returned", "refunded"].includes(order.status);
+  const closed = CLOSED_STATUSES.includes(order.status);
+  const closing = !closed && CLOSED_STATUSES.includes(form.status);
+  const reopening = closed && !CLOSED_STATUSES.includes(form.status);
+  const paidInFull = order.paymentStatus === "paid";
 
   async function saveStatus(event) {
     event.preventDefault();
     setBusy(true);
     setError("");
     try {
-      await updateOrderStatus(order.id, { status: form.status, note: form.note, courier: needsCourier ? form.courier : null, tracking: needsCourier ? form.tracking : null });
+      await updateOrderStatus(order.id, { status: form.status, note: form.note, courier: needsCourier ? form.courier : null, tracking: needsCourier ? form.tracking.trim() : null });
       toast(`Order ${order.id} marked as ${statusLabel(form.status).toLowerCase()}.`);
       onChanged(true);
-      if (["cancelled", "returned"].includes(form.status)) catalog.reload();
+      /* Closing an order puts its items back on sale; reopening takes them out again. */
+      if (closing || reopening) catalog.reload();
     } catch (saveError) {
       setError(saveError.message);
     } finally {
       setBusy(false);
     }
+  }
+
+  function setPaymentManually(value) {
+    if (value === order.paymentStatus) return;
+    if (!window.confirm(`Change the payment of ${order.id} to “${paymentStatusLabel(value)}”? This is added to the timeline the customer sees.`)) return;
+    recordPayment(value, {}, "Payment status updated.");
   }
 
   async function recordPayment(status, options, message) {
@@ -128,7 +139,7 @@ function OrderDrawer({ row, onClose, onChanged }) {
           <dl className="mt-3 grid grid-cols-[1fr_auto] gap-y-1.5 text-[14px] text-navy">
             <dt className="text-ink">Method for the advance</dt><dd className="font-semibold">{paymentLabel(order.payment)}</dd>
             <dt className="text-ink">Advance{percent ? ` (${percent}%)` : ""}</dt><dd className="font-semibold">{formatPrice(advance)}</dd>
-            <dt className="text-ink">Balance on delivery</dt><dd className="font-semibold">{formatPrice(balance)}</dd>
+            <dt className="text-ink">Balance on delivery</dt><dd className="font-semibold">{paidInFull ? "Paid in full" : formatPrice(balance)}</dd>
             <dt className="text-ink">Order total</dt><dd className="font-bold">{formatPrice(order.totals.total)}</dd>
           </dl>
           <div className="mt-4 flex flex-wrap items-center gap-3">
@@ -142,14 +153,14 @@ function OrderDrawer({ row, onClose, onChanged }) {
                 <CheckIcon className="size-4" /> Advance received, confirm order
               </Button>
             )}
-            {order.paymentStatus === "advance_paid" && (
+            {order.paymentStatus === "advance_paid" && !closed && balance > 0 && (
               <Button variant="navy" size="sm" disabled={busy} onClick={() => recordPayment("paid", { note: `Balance of ${formatPrice(balance)} received.` }, "Order marked as paid in full.")}>
                 <CheckIcon className="size-4" /> Balance received
               </Button>
             )}
             <label className="flex items-center gap-2 text-[13px] text-ink">
               Set manually
-              <Select value={order.paymentStatus} disabled={busy} onChange={(event) => recordPayment(event.target.value, {}, "Payment status updated.")} className="h-11 w-48 py-0 text-[14px]" aria-label="Payment status">
+              <Select value={order.paymentStatus} disabled={busy} onChange={(event) => setPaymentManually(event.target.value)} className="h-11 w-48 py-0 text-[14px]" aria-label="Payment status">
                 {["pending", "advance_paid", "paid", "failed", "refunded"].map((value) => (
                   <option key={value} value={value}>{paymentStatusLabel(value)}</option>
                 ))}
@@ -188,8 +199,11 @@ function OrderDrawer({ row, onClose, onChanged }) {
             </Field>
           </div>
           {form.status === "confirmed" && order.paymentStatus === "pending" && <p className="mt-3 text-[13px] text-coral">The advance has not been recorded yet. Use “Advance received, confirm order” above so the payment is saved too.</p>}
-          {needsCourier && balance > 0 && order.paymentStatus !== "paid" && <p className="mt-3 text-[13px] text-ink">Book the parcel with the courier to collect {formatPrice(balance)} on delivery.</p>}
-          {["cancelled", "returned"].includes(form.status) && <p className="mt-3 text-[13px] text-ink">The items go back into stock automatically. Refund any advance separately, then set the payment to Refunded.</p>}
+          {needsCourier && order.paymentStatus === "pending" && <p className="mt-3 text-[13px] text-coral">No advance has been recorded for this order. Ship it only if you have checked the payment.</p>}
+          {needsCourier && !form.tracking.trim() && <p className="mt-3 text-[13px] text-ink">Add the tracking number so the customer can follow the parcel.</p>}
+          {needsCourier && balance > 0 && !paidInFull && <p className="mt-3 text-[13px] text-ink">Book the parcel with the courier to collect {formatPrice(balance)} on delivery.</p>}
+          {closing && <p className="mt-3 text-[13px] text-ink">The items go back into stock automatically. Refund any advance separately, then set the payment to Refunded.</p>}
+          {reopening && <p className="mt-3 rounded-xl bg-coral-50 px-4 py-3 text-[13px] text-navy">This order is {statusLabel(order.status).toLowerCase()}. Saving puts it back in progress and takes its items out of stock again. It fails if there isn’t enough stock left.</p>}
           {error && <p role="alert" className="mt-3 rounded-xl bg-coral-50 px-4 py-3 text-[14px] text-navy">{error}</p>}
           <div className="mt-4 flex flex-wrap items-center gap-3">
             <Button type="submit" variant="navy" size="sm" disabled={busy}>
@@ -225,17 +239,28 @@ function OrderDrawer({ row, onClose, onChanged }) {
 }
 
 export default function OrdersPage() {
-  const [status, setStatus] = useState("open");
+  const [params, setParams] = useSearchParams();
+  /* ?filter=awaiting (from the dashboard) opens a given list. */
+  const linkedFilter = params.get("filter");
+  const [status, setStatus] = useState(() => (filters.some((filter) => filter.id === linkedFilter) ? linkedFilter : "open"));
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
+  const [pages, setPages] = useState(1);
   const [selected, setSelected] = useState(null);
-  const [params, setParams] = useSearchParams();
-  const orders = useAsync(() => fetchOrders({ status, search }), [status, search]);
+  const { toast } = useStore();
+  const orders = useAsync(() => fetchOrders({ status, search, limit: PAGE_SIZE * pages }), [status, search, pages]);
+  const selectedId = useRef(null);
+  selectedId.current = selected?.id || null;
+
+  const changeFilter = (value) => {
+    setStatus(value);
+    setPages(1);
+  };
 
   const loadOrder = (id) =>
-    fetchOrders({ status: "all", search: id, limit: 1 })
-      .then((rows) => rows[0] && setSelected(rows[0]))
-      .catch(() => {});
+    fetchOrder(id)
+      .then(setSelected)
+      .catch((error) => toast(error.message, { type: "error" }));
 
   /* /admin/orders?order=NZ-... opens that order directly (used by phone notifications). */
   const linkedOrder = params.get("order");
@@ -243,12 +268,20 @@ export default function OrdersPage() {
     if (linkedOrder) loadOrder(linkedOrder);
   }, [linkedOrder]);
 
-  /* New and changed orders show up without refreshing the page. */
-  useEffect(() => subscribeToAdminChanges(({ table }) => table === "orders" && orders.reload()), [orders.reload]);
+  /* New and changed orders show up without refreshing the page, including the one that is open. */
+  useEffect(
+    () =>
+      subscribeToAdminChanges(({ table, row }) => {
+        if (table !== "orders") return;
+        orders.reload();
+        if (selectedId.current && row?.id === selectedId.current) fetchOrder(row.id).then((fresh) => selectedId.current === fresh.id && setSelected(fresh)).catch(() => {});
+      }),
+    [orders.reload]
+  );
 
   const closeDrawer = () => {
     setSelected(null);
-    if (linkedOrder) setParams({}, { replace: true });
+    if (linkedOrder || linkedFilter) setParams({}, { replace: true });
   };
 
   return (
@@ -256,11 +289,12 @@ export default function OrdersPage() {
       <PageTitle title="Orders" subtitle="Confirm the advance, then pack, ship and track every order." />
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <Chips options={filters} value={status} onChange={setStatus} />
+        <Chips options={filters} value={status} onChange={changeFilter} />
         <form
           onSubmit={(event) => {
             event.preventDefault();
             setSearch(searchInput);
+            setPages(1);
             if (searchInput) setStatus("all");
           }}
           className="relative w-full sm:w-72"
@@ -272,6 +306,7 @@ export default function OrdersPage() {
 
       <Async state={orders} rows={5}>
         {(rows) => (
+          <>
           <DataTable
             rows={rows}
             onRowClick={setSelected}
@@ -313,6 +348,14 @@ export default function OrdersPage() {
               { key: "total", label: "Total", align: "right", render: (row) => <strong>{formatPrice(row.total)}</strong> },
             ]}
           />
+          {rows.length >= PAGE_SIZE * pages && (
+            <div className="flex justify-center">
+              <Button variant="ghost" size="sm" disabled={orders.loading} onClick={() => setPages((count) => count + 1)}>
+                {orders.loading ? "Loading…" : "Load more orders"}
+              </Button>
+            </div>
+          )}
+          </>
         )}
       </Async>
 

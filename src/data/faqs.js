@@ -8,7 +8,7 @@ export const faqs = [
     items: [
       { question: "Do you offer cash on delivery?", answer: "Not for the full amount. You pay {advancePercent} in advance to confirm the order and the remaining {balancePercent} to the courier when it arrives." },
       { question: "How do I pay the advance?", answer: "Place your order, then send the advance by one of the methods shown at checkout ({methods}) to the account on your order page, and share the receipt on WhatsApp with your order number. Your order is confirmed as soon as we see the payment." },
-      { question: "What if I do not pay the advance?", answer: "We hold your items for 48 hours. If the advance has not arrived by then, we cancel the order and nothing is owed." },
+      { question: "What if I do not pay the advance?", answer: "We hold your items for {holdHours}. If the advance has not arrived by then, the order is cancelled automatically and nothing is owed." },
       { question: "Will I get my advance back if I cancel?", answer: "Yes. If you cancel before the order is dispatched, the advance is refunded in full within 3 working days. The Payment policy explains what happens after dispatch." },
       { question: "Is it safe to pay in advance?", answer: "Pay only into the account shown on this website, and keep your receipt. We never ask for a card PIN, a one-time password or your wallet password." },
     ],
@@ -53,5 +53,3 @@ export const faqs = [
     ],
   },
 ];
-
-export const allFaqs = faqs.flatMap((group) => group.items);

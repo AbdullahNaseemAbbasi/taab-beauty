@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import useSeo from "../hooks/useSeo.js";
 import Button from "../components/ui/Button.jsx";
@@ -12,7 +12,7 @@ import { site, availablePaymentMethods } from "../config/site.js";
 import { cities } from "../data/misc.js";
 import { placeOrder, saveCheckout, cachedCreatorOffer } from "../api/orders.js";
 import { isLive } from "../api/client.js";
-import { hydrateOrder } from "../lib/cart.js";
+import { hydrateOrder, couponApplies } from "../lib/cart.js";
 import { estimateDelivery, formatDeliveryRange } from "../lib/shipping.js";
 import { getAttribution, attributionForOrder } from "../analytics/attribution.js";
 import DispatchCountdown from "../components/commerce/DispatchCountdown.jsx";
@@ -48,7 +48,7 @@ function checkoutSnapshot(form, cart) {
 }
 
 export default function CheckoutPage() {
-  const { cart, clearCart, applyCoupon } = useStore();
+  const { cart, clearCart, applyCoupon, revalidateCoupon } = useStore();
   const { settings, productById, productBySlug, reload } = useCatalog();
   const navigate = useNavigate();
   useSeo({ title: "Checkout", path: "/checkout", noindex: true });
@@ -83,7 +83,18 @@ export default function CheckoutPage() {
     if (cart.lines.length) ecommerce.beginCheckout(cart.lines, cart.coupon);
     const offer = cachedCreatorOffer();
     if (offer && !cart.coupon && cart.lines.length) applyCoupon(offer.code);
+    else revalidateCoupon();
   }, []);
+
+  /* add_payment_info is sent once per visit: on the first choice of method, or at submit if the default was kept. */
+  const paymentInfoSent = useRef(false);
+  const sendPaymentInfo = (method) => {
+    if (paymentInfoSent.current) return;
+    paymentInfoSent.current = true;
+    ecommerce.addPaymentInfo(cart.lines, method);
+  };
+  const whatsappHelp = whatsappLink(`Hi ${site.name}, I need help with my checkout.`);
+  const contactHint = site.contact.whatsapp ? "message us on WhatsApp" : "contact us";
 
   /* Save the checkout (phone + bag) once the number is valid, so abandoned carts can be followed up. */
   useEffect(() => {
@@ -114,11 +125,11 @@ export default function CheckoutPage() {
       return;
     }
     if (!payment) {
-      setSubmitError("Online payment is being set up. Please message us on WhatsApp to place this order.");
+      setSubmitError(`Online payment is being set up. Please ${contactHint} to place this order.`);
       return;
     }
     setSubmitting(true);
-    ecommerce.addPaymentInfo(cart.lines, payment);
+    sendPaymentInfo(payment);
     const customer = {
       name: form.name.trim(),
       phone: form.phone.replace(/[\s-]/g, ""),
@@ -135,7 +146,9 @@ export default function CheckoutPage() {
       /* ignore */
     }
     try {
-      const placed = await placeOrder({ customer, lines: cart.lines, coupon: cart.coupon, payment, notes: form.notes, totals: cart.totals });
+      /* A saved code that has not reached its minimum yet is left off the order instead of failing it. */
+      const coupon = couponApplies(cart.coupon, cart.totals.subtotal) ? cart.coupon : null;
+      const placed = await placeOrder({ customer, lines: cart.lines, coupon, payment, notes: form.notes, totals: cart.totals });
       const order = hydrateOrder(placed, { productById, productBySlug });
       ecommerce.purchase(order);
       saveCheckout({ ...checkoutSnapshot(form, cart), converted: true, orderId: order.id });
@@ -224,7 +237,7 @@ export default function CheckoutPage() {
             </div>
             <div className="mt-4 space-y-2 rounded-xl bg-tint px-4 py-3 text-[13px] text-navy">
               <p>
-                {form.city === "Karachi" ? `Karachi: ${site.shipping.expressDays.toLowerCase()} delivery.` : `${form.city}: ${settings.shipping.estimatedDays}.`} Expected <strong>{formatDeliveryRange(delivery)}</strong>.
+                {delivery.express ? `${form.city}: ${site.shipping.expressDays.toLowerCase()} delivery.` : `${form.city}: ${settings.shipping.estimatedDays}.`} Expected <strong>{formatDeliveryRange(delivery)}</strong>.
               </p>
               <DispatchCountdown />
             </div>
@@ -234,29 +247,39 @@ export default function CheckoutPage() {
             <legend className="px-1 font-display text-[20px] font-extrabold text-navy">3. Payment</legend>
             <div className="mt-4 rounded-xl bg-coral-50 p-4 text-[14px] text-navy">
               <p className="font-semibold">
-                {plan.balance > 0 ? `Pay ${formatPrice(plan.advance)} (${plan.percent}%) now, and ${formatPrice(plan.balance)} when your order arrives.` : `Pay ${formatPrice(plan.advance)} now to confirm your order.`}
+                {plan.advance <= 0
+                  ? "Nothing to pay now: you pay the full amount when your order arrives."
+                  : plan.balance > 0
+                    ? `Pay ${formatPrice(plan.advance)} (${plan.percent}%) now, and ${formatPrice(plan.balance)} when your order arrives.`
+                    : `Pay ${formatPrice(plan.advance)} now to confirm your order.`}
               </p>
-              <p className="mt-1 text-ink">
-                We do not offer cash on delivery for the full amount. Your order is confirmed and packed as soon as the advance is received.{" "}
-                <Link to="/payment-policy" className="font-semibold text-teal hover:underline">How payment works</Link>
-              </p>
+              {plan.advance > 0 && (
+                <p className="mt-1 text-ink">
+                  We do not offer cash on delivery for the full amount. Your order is confirmed and packed as soon as the advance is received; unpaid orders are cancelled after {site.payments.holdHours} hours.{" "}
+                  <Link to="/payment-policy" className="font-semibold text-teal hover:underline">How payment works</Link>
+                </p>
+              )}
             </div>
             {enabledMethods.length > 0 ? (
               <>
                 <p className="mt-5 text-[14px] font-semibold text-navy">Send the advance by</p>
                 <div className="mt-2 grid gap-3">
                   {enabledMethods.map((method) => (
-                    <Radio key={method.id} name="payment" value={method.id} label={method.label} description={method.description} checked={payment === method.id} onChange={() => { setForm({ ...form, payment: method.id }); ecommerce.addPaymentInfo(cart.lines, method.id); }} />
+                    <Radio key={method.id} name="payment" value={method.id} label={method.label} description={method.description} checked={payment === method.id} onChange={() => { setForm({ ...form, payment: method.id }); sendPaymentInfo(method.id); }} />
                   ))}
                 </div>
                 <div className="mt-4 rounded-xl bg-tint p-4">
                   <AccountDetails methodId={payment} />
-                  <p className="mt-3 text-[13px] text-ink">Place the order first, then send {formatPrice(plan.advance)} and share the receipt on WhatsApp with your order number. The details are repeated on the next page.</p>
+                  <p className="mt-3 text-[13px] text-ink">
+                    {plan.advance > 0
+                      ? `Place the order first, then send ${formatPrice(plan.advance)} and share the receipt ${site.contact.whatsapp ? "on WhatsApp" : "through the Contact page"} with your order number. The details are repeated on the next page.`
+                      : "The account details are repeated on the next page in case you prefer to pay before delivery."}
+                  </p>
                 </div>
               </>
             ) : (
               <p role="alert" className="mt-4 rounded-xl border border-coral/40 bg-white p-4 text-[14px] text-navy">
-                Online payment is being set up. Please message us on WhatsApp to place this order.
+                Online payment is being set up. Please {contactHint} to place this order.
               </p>
             )}
             <Field label="Order notes (optional)" className="mt-4">
@@ -268,7 +291,7 @@ export default function CheckoutPage() {
         <div className="lg:sticky lg:top-24">
           <OrderSummary lines={cart.lines} totals={cart.totals} coupon={cart.coupon} />
           <Button type="submit" variant="navy" arrow className="mt-4 w-full" disabled={submitting || !payment}>
-            {submitting ? "Placing order…" : `Place order · pay ${formatPrice(plan.advance)} advance`}
+            {submitting ? "Placing order…" : plan.advance > 0 ? `Place order · pay ${formatPrice(plan.advance)} advance` : "Place order"}
           </Button>
           <p className="mt-3 flex items-start gap-2 text-[12px] text-ink-light">
             <ShieldIcon className="mt-0.5 size-4 shrink-0 text-teal" />
@@ -276,9 +299,15 @@ export default function CheckoutPage() {
               Your details are used only to deliver this order. By placing it you agree to our <Link to="/terms" className="underline">terms</Link>.
             </span>
           </p>
-          <a href={whatsappLink(`Hi ${site.name}, I need help with my checkout.`)} target="_blank" rel="noreferrer" onClick={() => ecommerce.whatsapp("checkout_help")} className="mt-4 flex items-center justify-center gap-2 rounded-full border border-line py-3 text-[14px] font-semibold text-navy hover:border-navy">
-            <WhatsAppIcon className="size-4 text-[#25D366]" /> Need help? Chat with us
-          </a>
+          {whatsappHelp ? (
+            <a href={whatsappHelp} target="_blank" rel="noreferrer" onClick={() => ecommerce.whatsapp("checkout_help")} className="mt-4 flex items-center justify-center gap-2 rounded-full border border-line py-3 text-[14px] font-semibold text-navy hover:border-navy">
+              <WhatsAppIcon className="size-4 text-[#25D366]" /> Need help? Chat with us
+            </a>
+          ) : (
+            <Link to="/contact" className="mt-4 flex items-center justify-center gap-2 rounded-full border border-line py-3 text-[14px] font-semibold text-navy hover:border-navy">
+              Need help? Contact us
+            </Link>
+          )}
         </div>
       </form>
     </>

@@ -55,7 +55,7 @@ export default function ProductCard({ product, listName = "product_grid", eager 
           title={compared ? "Remove from compare" : "Compare this product"}
           aria-pressed={compared}
           onClick={() => toggleCompare(product)}
-          className={`grid size-9 place-items-center rounded-full bg-white/90 shadow-card backdrop-blur-sm transition-opacity lg:opacity-0 lg:group-hover:opacity-100 ${compared ? "text-teal opacity-100" : "text-navy hover:text-teal"}`}
+          className={`grid size-9 place-items-center rounded-full bg-white/90 shadow-card backdrop-blur-sm transition-opacity ${compared ? "text-teal" : "text-navy hover:text-teal lg:opacity-0 lg:group-hover:opacity-100 lg:group-focus-within:opacity-100 lg:focus-visible:opacity-100"}`}
         >
           <CompareIcon className="size-[18px]" />
         </button>
@@ -81,7 +81,7 @@ export default function ProductCard({ product, listName = "product_grid", eager 
             </Link>
           ) : (
             <button type="button" onClick={() => addToCart(product)} className="h-10 w-full rounded-full bg-navy text-[14px] font-semibold text-white hover:bg-navy-800">
-              {ctaVariant === "B" ? "Add to cart" : "Add to bag"}
+              {ctaVariant === "B" ? "Add to my bag" : "Add to bag"}
             </button>
           )}
         </div>

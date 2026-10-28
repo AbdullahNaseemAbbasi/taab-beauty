@@ -3,16 +3,20 @@ import { site } from "../../config/site.js";
 import { ecommerce } from "../../analytics/ecommerce.js";
 import { useStore } from "../../store/StoreProvider.jsx";
 
+/* Empty when no WhatsApp number is set in Admin → Settings; callers hide their WhatsApp buttons then. */
 export function whatsappLink(message) {
+  if (!site.contact.whatsapp) return "";
   return `https://wa.me/${site.contact.whatsapp}?text=${encodeURIComponent(message)}`;
 }
 
 /* Floating "Chat with us" button, tracked as an analytics event. Lifts above the mobile sticky add-to-bag bar. */
 export default function WhatsAppButton() {
   const { ui } = useStore();
+  const href = whatsappLink(`Hi ${site.name}, I have a question about an order.`);
+  if (!href) return null;
   return (
     <a
-      href={whatsappLink("Hi Naz & CO, I have a question about an order.")}
+      href={href}
       target="_blank"
       rel="noreferrer"
       onClick={() => ecommerce.whatsapp("floating_button")}

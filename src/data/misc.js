@@ -1,5 +1,3 @@
-import { images } from "./images.js";
-
 /* Coupons. Creator codes carry a creatorId so revenue can be attributed. */
 export const coupons = [
   { code: "WELCOME10", type: "percent", value: 10, minOrder: 1500, description: "10% off your first order", creatorId: null },
@@ -12,14 +10,6 @@ export const coupons = [
 export function findCoupon(code) {
   return coupons.find((coupon) => coupon.code.toLowerCase() === String(code || "").trim().toLowerCase()) || null;
 }
-
-/* Instagram feed placeholders (replace with the Instagram Basic Display API feed). */
-export const instagramPosts = images.instagram.map((slug, index) => ({
-  id: `ig-${index + 1}`,
-  image: slug,
-  caption: ["Sunday flatlay, Rooh edition.", "Everything in the Pocket Stunt Drone box.", "Bags, scarves and the small things that finish an outfit.", "Palette season.", "Game night, sorted.", "New on the rail this week."][index],
-  likes: [1240, 980, 2210, 760, 1530, 1890][index],
-}));
 
 /* Sample orders so Tracking and My Account have something to show. */
 export const sampleOrders = [

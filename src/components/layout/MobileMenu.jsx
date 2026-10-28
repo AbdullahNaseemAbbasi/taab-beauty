@@ -64,15 +64,19 @@ export default function MobileMenu() {
           ))}
         </div>
 
-        <a
-          href={site.social.whatsapp}
-          target="_blank"
-          rel="noreferrer"
-          onClick={() => ecommerce.whatsapp("mobile_menu")}
-          className="mx-5 mt-4 mb-6 flex items-center justify-center gap-2 rounded-full bg-[#25D366] py-3 text-[15px] font-semibold text-white"
-        >
-          <WhatsAppIcon className="size-5" /> Chat with us on WhatsApp
-        </a>
+        {site.social.whatsapp ? (
+          <a
+            href={site.social.whatsapp}
+            target="_blank"
+            rel="noreferrer"
+            onClick={() => ecommerce.whatsapp("mobile_menu")}
+            className="mx-5 mt-4 mb-6 flex items-center justify-center gap-2 rounded-full bg-[#25D366] py-3 text-[15px] font-semibold text-white"
+          >
+            <WhatsAppIcon className="size-5" /> Chat with us on WhatsApp
+          </a>
+        ) : (
+          <div className="h-6" />
+        )}
       </div>
       <div className="border-t border-line px-5 py-4">
         <Logo compact />

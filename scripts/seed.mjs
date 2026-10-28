@@ -1,8 +1,10 @@
 /*
- * Seeds the Supabase database with the mock catalogue from src/data.
- * Idempotent: every table is upserted on its primary key.
+ * Seeds an empty Supabase database with the sample catalogue from src/data.
+ * Every table is upserted on its primary key, which overwrites prices, stock,
+ * costs, coupons, reviews and FAQs, so it refuses to run once the database has
+ * products unless --force is given (only ever do that on a test database).
  *
- *   SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... node scripts/seed.mjs
+ *   SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... node scripts/seed.mjs [--force] [--reset-settings]
  * or put both in .env (never commit the service role key).
  */
 import { readFileSync, existsSync } from "node:fs";
@@ -35,6 +37,14 @@ if (!url || !key) {
 }
 const db = createClient(url, key, { auth: { persistSession: false } });
 
+const { count: existingProducts, error: countError } = await db.from("products").select("id", { count: "exact", head: true });
+if (countError) throw new Error(`products: ${countError.message}`);
+if (existingProducts > 0 && !process.argv.includes("--force")) {
+  console.error(`The database already has ${existingProducts} products. Seeding again would overwrite prices, stock, hidden items,
+costs, coupons, reviews and FAQs with the samples. Nothing was changed. Use --force only on a test database.`);
+  process.exit(1);
+}
+
 async function upsert(table, rows, onConflict = "id") {
   const { error } = await db.from(table).upsert(rows, { onConflict });
   if (error) throw new Error(`${table}: ${error.message}`);
@@ -46,18 +56,19 @@ const brandIdByName = Object.fromEntries(brands.map((brand) => [brand.name, bran
 /*
  * Delivery, payment accounts and store details belong to the owner (Admin → Settings),
  * so a reseed leaves them alone. `--reset-settings` puts the sample values back.
- * The sample bank account is deliberately not a real one, and email and social
- * links start empty so the site never points at somebody else's address.
+ * The sample bank account is deliberately not a real one (orders refuse it until
+ * a real account is entered), and phone, WhatsApp, address, email and social
+ * links start empty so the site hides them instead of showing made-up details.
  */
 const ownerSettings = [
   { key: "shipping", value: { free_shipping_threshold: 7000, shipping_fee: 250, estimated_days: "2 to 4 business days" } },
   { key: "store", value: { name: "Naz & CO", currency: "PKR", card_enabled: false } },
-  { key: "payments", value: { advance_percent: 50, methods: [
+  { key: "payments", value: { advance_percent: 50, hold_hours: 48, methods: [
     { id: "bank", label: "Bank Transfer", enabled: true, bank: "Meezan Bank", account_title: "Naz & CO", account_number: "PK00 MEZN 0000 0000 0000 0000" },
     { id: "easypaisa", label: "Easypaisa", enabled: false, bank: "", account_title: "", account_number: "" },
     { id: "jazzcash", label: "JazzCash", enabled: false, bank: "", account_title: "", account_number: "" },
   ] } },
-  { key: "contact", value: { phone: "+92 300 1234567", whatsapp: "923001234567", email: "", hours: "Mon to Sat, 10am to 8pm PKT", address: "Suite 4, Bukhari Commercial, DHA Phase 6, Karachi, Pakistan", instagram: "", facebook: "", tiktok: "", youtube: "", announcement: "" } },
+  { key: "contact", value: { phone: "", whatsapp: "", email: "", hours: "Mon to Sat, 10am to 8pm PKT", address: "", instagram: "", facebook: "", tiktok: "", youtube: "", announcement: "" } },
 ];
 if (process.argv.includes("--reset-settings")) {
   await upsert("settings", ownerSettings, "key");

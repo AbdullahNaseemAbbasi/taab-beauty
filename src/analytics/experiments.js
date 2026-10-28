@@ -10,8 +10,6 @@ import { track } from "./tracking.js";
 import { EVENTS } from "./events.js";
 
 export const experiments = {
-  heroHeadline: { variants: ["A", "B"], description: "Hero headline wording" },
-  freeShippingBanner: { variants: ["A", "B"], description: "Announcement bar copy" },
   productCardCta: { variants: ["A", "B"], description: "Product card button label" },
 };
 

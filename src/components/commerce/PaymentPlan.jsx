@@ -1,4 +1,4 @@
-import { site, splitPayment, paymentLabel } from "../../config/site.js";
+import { site, splitPayment } from "../../config/site.js";
 import { formatPrice } from "../../lib/format.js";
 
 /*
@@ -59,13 +59,4 @@ export function PaymentSplitRows({ plan }) {
       )}
     </>
   );
-}
-
-/* One sentence describing how an order is paid, for cards and messages. */
-export function paymentSummary(order) {
-  const plan = paymentPlan(order.totals.total, order.advance);
-  const method = paymentLabel(order.payment);
-  if (plan.advance <= 0) return method;
-  if (plan.balance <= 0) return `${formatPrice(plan.advance)} in advance by ${method}`;
-  return `${formatPrice(plan.advance)} advance by ${method}, ${formatPrice(plan.balance)} on delivery`;
 }

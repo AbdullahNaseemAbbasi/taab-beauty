@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Overlay from "../components/ui/Modal.jsx";
 import Button from "../components/ui/Button.jsx";
 import { Field, Input, Select, Textarea, Checkbox } from "../components/ui/Form.jsx";
@@ -8,7 +8,7 @@ import {
   fetchDepartmentsAdmin, saveDepartment, deleteDepartment,
   fetchCategoriesAdmin, saveCategory, deleteCategory,
   fetchBrandsAdmin, saveBrand, deleteBrand,
-  fetchProductsAdmin, uploadProductImage,
+  fetchProductsAdmin, uploadProductImage, removeUnusedImages,
 } from "../api/admin.js";
 import { img } from "../lib/images.js";
 import { useCatalog } from "../catalog/CatalogProvider.jsx";
@@ -24,8 +24,8 @@ const tabs = [
 
 const lines = (text) => String(text || "").split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
 
-/* Photo field: upload a file or paste a link. */
-function ImageField({ value, onChange }) {
+/* Photo field: upload a file or paste a link. Not wrapped in <Field> (a label) because it holds its own upload label. */
+function ImageField({ value, onChange, onUploaded }) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   async function upload(event) {
@@ -34,7 +34,9 @@ function ImageField({ value, onChange }) {
     setUploading(true);
     setError("");
     try {
-      onChange(await uploadProductImage(file));
+      const url = await uploadProductImage(file);
+      onUploaded(url);
+      onChange(url);
     } catch (uploadError) {
       setError(uploadError.message);
     } finally {
@@ -43,7 +45,8 @@ function ImageField({ value, onChange }) {
     }
   }
   return (
-    <Field label="Photo" hint="Shown on the home page and at the top of its page." error={error}>
+    <div>
+      <span className="mb-1.5 block text-[13px] font-semibold text-ink-mid">Photo</span>
       <div className="flex items-center gap-3">
         {value ? <img src={img(value, 240)} alt="" className="size-16 shrink-0 rounded-xl border border-line object-cover" /> : <span className="grid size-16 shrink-0 place-items-center rounded-xl border border-dashed border-line text-[11px] text-ink-light">No photo</span>}
         <Input value={value || ""} onChange={(event) => onChange(event.target.value.trim())} placeholder="Paste an image link" aria-label="Image link" className="min-w-0 flex-1" />
@@ -52,7 +55,8 @@ function ImageField({ value, onChange }) {
           <input type="file" accept="image/*" className="hidden" onChange={upload} disabled={uploading} />
         </label>
       </div>
-    </Field>
+      {error ? <span role="alert" className="mt-1 block text-[12px] font-medium text-danger">{error}</span> : <span className="mt-1 block text-[12px] text-ink-light">Shown on the home page and at the top of its page.</span>}
+    </div>
   );
 }
 
@@ -74,34 +78,43 @@ function Editor({ kind, row, departments, onClose, onSaved }) {
   }));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  /* Photos uploaded in this editor; the ones not kept are deleted on save or cancel. */
+  const uploaded = useRef([]);
   const set = (field) => (event) => setForm({ ...form, [field]: event.target.type === "checkbox" ? event.target.checked : event.target.value });
   const label = { departments: "department", categories: "category", brands: "brand" }[kind];
+
+  const close = () => {
+    removeUnusedImages(uploaded.current);
+    onClose();
+  };
 
   async function save(event) {
     event.preventDefault();
     setError("");
     const id = isNew ? toSlug(form.id || form.name) : form.id;
-    if (!form.name.trim() || !id) return setError("Enter a name.");
+    if (!form.name.trim()) return setError("Enter a name.");
+    if (!id) return setError("Add a link name using English letters or numbers, e.g. bedding. It is used in the page address.");
     setBusy(true);
     try {
       const base = { id, name: form.name.trim(), tagline: form.tagline.trim(), description: form.description.trim(), active: form.active };
-      if (kind === "departments") await saveDepartment({ ...base, image: form.image, sort_order: Math.round(Number(form.sort_order) || 0) });
+      if (kind === "departments") await saveDepartment({ ...base, image: form.image, sort_order: Math.round(Number(form.sort_order) || 0) }, { isNew });
       if (kind === "categories") {
         if (!form.department) throw new Error("Choose a department. Add one first if the list is empty.");
-        await saveCategory({ ...base, image: form.image, department: form.department, subcategories: lines(form.subcategories), sort_order: Math.round(Number(form.sort_order) || 0) });
+        await saveCategory({ ...base, image: form.image, department: form.department, subcategories: lines(form.subcategories), sort_order: Math.round(Number(form.sort_order) || 0) }, { isNew });
       }
-      if (kind === "brands") await saveBrand({ ...base, featured: form.featured });
+      if (kind === "brands") await saveBrand({ ...base, featured: form.featured }, { isNew });
       toast(`${form.name.trim()} saved.`);
+      removeUnusedImages([row?.image, ...uploaded.current].filter((url) => url && url !== form.image));
       onSaved();
     } catch (saveError) {
-      setError(/duplicate key|unique/i.test(saveError.message) ? `Another ${label} already uses that name or link.` : saveError.message);
+      setError(saveError.message);
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <Overlay open onClose={onClose} side="right" title={`${isNew ? "Add" : "Edit"} ${label}`} panelClass="!max-w-xl">
+    <Overlay open onClose={close} side="right" title={`${isNew ? "Add" : "Edit"} ${label}`} panelClass="!max-w-xl">
       <form onSubmit={save} className="flex min-h-0 flex-1 flex-col">
         <div className="flex-1 space-y-4 overflow-y-auto p-5">
           <Field label="Name" required><Input value={form.name} onChange={set("name")} required placeholder={kind === "departments" ? "e.g. Home & Living" : kind === "categories" ? "e.g. Bedding" : "e.g. Your brand"} /></Field>
@@ -121,7 +134,7 @@ function Editor({ kind, row, departments, onClose, onSaved }) {
           )}
           <Field label="Short line" hint={kind === "brands" ? "Shown under the brand name." : "The headline on its page and its slide on the home page."}><Input value={form.tagline} onChange={set("tagline")} /></Field>
           <Field label="Description"><Textarea rows={3} value={form.description} onChange={set("description")} /></Field>
-          {kind !== "brands" && <ImageField value={form.image} onChange={(image) => setForm({ ...form, image })} />}
+          {kind !== "brands" && <ImageField value={form.image} onChange={(image) => setForm((current) => ({ ...current, image }))} onUploaded={(url) => uploaded.current.push(url)} />}
           {kind === "categories" && (
             <Field label="Product types" hint="One per line, e.g. Dresses. They become the Type filter and the options in the product form.">
               <Textarea rows={4} value={form.subcategories} onChange={set("subcategories")} />
@@ -137,7 +150,7 @@ function Editor({ kind, row, departments, onClose, onSaved }) {
           {error && <p role="alert" className="mb-3 rounded-xl bg-coral-50 px-4 py-3 text-[14px] text-navy">{error}</p>}
           <div className="flex gap-3">
             <Button type="submit" variant="navy" className="flex-1" disabled={busy}>{busy ? "Saving…" : `Save ${label}`}</Button>
-            <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
+            <Button type="button" variant="ghost" onClick={close}>Cancel</Button>
           </div>
         </div>
       </form>
@@ -219,12 +232,13 @@ export default function CataloguePage() {
 
               {tab === "categories" && (
                 <div className="space-y-6">
-                  {departments.map((department) => {
-                    const own = categories.filter((category) => category.department === department.id);
+                  {/* Categories whose department no longer exists are grouped under "Other" so they can still be fixed. */}
+                  {[...departments, { id: "__other", name: "Other (no department)" }].map((department) => {
+                    const own = department.id === "__other" ? categories.filter((category) => !departments.some((entry) => entry.id === category.department)) : categories.filter((category) => category.department === department.id);
                     if (!own.length) return null;
                     return (
                       <section key={department.id}>
-                        <h2 className="mb-3 text-[12px] font-bold uppercase tracking-[0.2em] text-teal">{department.name}</h2>
+                        <h2 className="mb-3 text-[12px] font-bold uppercase tracking-[0.2em] text-teal">{department.name}{department.active === false ? " (hidden)" : ""}</h2>
                         <ul className="space-y-3">
                           {own.map((row) => (
                             <Row key={row.id} showImage image={row.image} title={row.name} badges={hidden(row)} subtitle={`${count(productsIn(row.id), "product")}${row.subcategories?.length ? ` · ${row.subcategories.join(", ")}` : ""}`} onEdit={() => setEditing(row)} onDelete={() => remove("categories", row)} />

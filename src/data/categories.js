@@ -115,4 +115,3 @@ export const categories = [
   },
 ];
 
-export const categoryBySlug = Object.fromEntries(categories.map((category) => [category.slug, category]));

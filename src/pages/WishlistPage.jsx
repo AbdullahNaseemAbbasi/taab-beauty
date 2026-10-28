@@ -21,7 +21,7 @@ export default function WishlistPage() {
 
   return (
     <>
-      <PageHeader title={`Wishlist (${items.length})`} description="Saved on this device. Create an account to keep your wishlist across devices.">
+      <PageHeader title={`Wishlist (${items.length})`} description="Saved on this device, so it stays here when you come back on the same phone or browser.">
         {addable.length > 0 && (
           <Button variant="navy" size="sm" onClick={addAll} className="mt-4">
             Add {addable.length} available item{addable.length === 1 ? "" : "s"} to bag

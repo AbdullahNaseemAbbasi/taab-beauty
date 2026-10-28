@@ -1,19 +1,54 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { CloseIcon } from "./Icons.jsx";
 
-/* Accessible overlay used for the cart drawer, search, mobile menu and dialogs. */
+const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])';
+
+/*
+ * Accessible overlay used for the cart drawer, search, mobile menu and dialogs. Focus moves into the
+ * panel when it opens, Tab stays inside it, and focus returns to whatever opened it on close.
+ */
 export default function Overlay({ open, onClose, side = "right", title, children, panelClass = "" }) {
+  const panel = useRef(null);
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+
   useEffect(() => {
     if (!open) return undefined;
-    const onKey = (event) => event.key === "Escape" && onClose();
+    const opener = document.activeElement;
+    const node = panel.current;
+    /* Keep a field that focused itself (e.g. the search box); otherwise focus the first control. */
+    if (node && !node.contains(document.activeElement)) (node.querySelector(FOCUSABLE) || node).focus({ preventScroll: true });
+
+    const onKey = (event) => {
+      if (event.key === "Escape") {
+        closeRef.current();
+        return;
+      }
+      if (event.key !== "Tab" || !node) return;
+      const items = [...node.querySelectorAll(FOCUSABLE)].filter((item) => item.offsetParent !== null || item === document.activeElement);
+      if (!items.length) {
+        event.preventDefault();
+        return;
+      }
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (event.shiftKey && (document.activeElement === first || !node.contains(document.activeElement))) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && (document.activeElement === last || !node.contains(document.activeElement))) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
     document.addEventListener("keydown", onKey);
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = previous;
+      if (opener && opener.isConnected && typeof opener.focus === "function") opener.focus({ preventScroll: true });
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open) return null;
 
@@ -26,8 +61,8 @@ export default function Overlay({ open, onClose, side = "right", title, children
 
   return (
     <div className="fixed inset-0 z-[60]" role="dialog" aria-modal="true" aria-label={title}>
-      <button type="button" aria-label="Close" onClick={onClose} className="absolute inset-0 bg-navy/50 backdrop-blur-[2px]" />
-      <div className={`absolute flex flex-col bg-white shadow-float ${position} ${panelClass}`}>
+      <button type="button" aria-label="Close" tabIndex={-1} onClick={onClose} className="absolute inset-0 bg-navy/50 backdrop-blur-[2px]" />
+      <div ref={panel} tabIndex={-1} className={`absolute flex flex-col bg-white shadow-float outline-none ${position} ${panelClass}`}>
         {title && (
           <div className="flex items-center justify-between border-b border-line px-5 py-4">
             <h2 className="font-display text-[20px] font-extrabold text-navy">{title}</h2>

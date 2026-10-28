@@ -13,23 +13,23 @@ import { reviews as mockReviews } from "../data/reviews.js";
 import { faqs as mockFaqs } from "../data/faqs.js";
 import { site, applyStoreSettings } from "../config/site.js";
 
-/* Mock mode has no settings table, so give the demo checkout a bank account to show. */
+/* Mock mode has no settings table, so give the demo checkout a bank account to show (marked demo so it is allowed). */
 if (!isLive) {
   applyStoreSettings({
     payments: { advance_percent: 50, methods: [{ id: "bank", label: "Bank Transfer", enabled: true, bank: "Demo Bank", account_title: site.name, account_number: "PK00 DEMO 0000 0000 0000 0000" }] },
   });
+  site.payments.demo = true;
 }
 
-function buildSettings(shipping = {}, store = {}) {
+function buildSettings(shipping = {}) {
   return {
     shipping: {
       freeShippingThreshold: shipping.free_shipping_threshold ?? site.shipping.freeShippingThreshold,
       shippingFee: shipping.shipping_fee ?? site.shipping.standardFee,
       estimatedDays: shipping.estimated_days ?? site.shipping.estimatedDays,
     },
-    store: { cardEnabled: store.card_enabled ?? false },
     /* Snapshots of the values merged into `site`, so components re-render when they change. */
-    payments: { advancePercent: site.payments.advancePercent, methods: site.payments.methods },
+    payments: { advancePercent: site.payments.advancePercent, holdHours: site.payments.holdHours, methods: site.payments.methods },
     contact: { ...site.contact, ...site.social, announcement: site.announcement.message },
   };
 }
@@ -62,6 +62,7 @@ export function mapProduct(row) {
     featured: row.featured,
     bestSeller: row.best_seller,
     newArrival: row.new_arrival,
+    createdAt: row.created_at || null,
   };
 }
 
@@ -96,6 +97,11 @@ function groupFaqs(rows) {
     groups.get(row.category).items.push({ question: row.question, answer: row.answer });
   });
   return [...groups.values()];
+}
+
+/* What live pages see before the first load finishes (or after it fails): nothing, rather than sample data. */
+export function emptyCatalog() {
+  return { products: [], categories: [], departments: [], brands: [], concerns: [], reviews: [], faqs: [], settings: buildSettings(), source: "empty" };
 }
 
 export function mockCatalog() {
@@ -134,16 +140,18 @@ export async function fetchCatalog() {
   applyStoreSettings({ contact: byKey.contact, payments: byKey.payments });
 
   const departmentIds = new Set(departments.data.map((row) => row.id));
+  /* A category whose department is hidden is hidden with it, and so are the products in hidden categories. */
+  const visibleCategories = categories.data.map(mapCategory).filter((category) => departmentIds.has(category.department));
+  const categoryIds = new Set(visibleCategories.map((category) => category.id));
   return {
-    products: products.data.map(mapProduct),
-    /* A category whose department is hidden is hidden with it. */
-    categories: categories.data.map(mapCategory).filter((category) => departmentIds.has(category.department)),
+    products: products.data.filter((row) => categoryIds.has(row.category_id)).map(mapProduct),
+    categories: visibleCategories,
     departments: departments.data.map(mapDepartment),
     brands: brands.data.map((row) => ({ id: row.id, name: row.name, tagline: row.tagline, description: row.description, featured: row.featured })),
     concerns: concerns.data.map((row) => ({ id: row.id, name: row.name, description: row.description, image: row.image })),
     reviews: reviews.data.map(mapReview),
     faqs: groupFaqs(faqs.data),
-    settings: buildSettings(byKey.shipping, byKey.store),
+    settings: buildSettings(byKey.shipping),
     source: "supabase",
   };
 }
@@ -156,12 +164,24 @@ export async function fetchProductBySlug(slug) {
   return data ? mapProduct(data) : null;
 }
 
+/* Fields that, if unchanged, mean a product update only moved stock (an order or a restock). */
+const PRODUCT_DISPLAY_FIELDS = ["name", "slug", "sku", "category", "subcategory", "price", "compareAtPrice", "images", "description", "size", "tags", "concerns", "specs", "warranty", "featured", "bestSeller", "newArrival", "rating", "reviewCount"];
+
+/* Returns the patched product when `row` (a realtime products UPDATE) differs from `current` only in stock; otherwise null. */
+export function stockOnlyUpdate(current, row) {
+  if (!current || !row || row.active === false || row.brand_id === undefined) return null;
+  const next = mapProduct(row);
+  const same = PRODUCT_DISPLAY_FIELDS.every((field) => JSON.stringify(current[field] ?? null) === JSON.stringify(next[field] ?? null));
+  const sameOptions = JSON.stringify((current.variants?.options || []).map(({ stock, ...rest }) => rest)) === JSON.stringify((next.variants?.options || []).map(({ stock, ...rest }) => rest));
+  return same && sameOptions ? { ...current, stock: next.stock, variants: next.variants } : null;
+}
+
 /* Calls back (debounced by the caller) whenever the admin changes something the storefront shows. */
 export function subscribeToCatalogChanges(onChange) {
   if (!isLive) return () => {};
   const channel = supabase.channel("storefront-catalog");
   ["products", "categories", "departments", "brands", "settings", "reviews"].forEach((table) => {
-    channel.on("postgres_changes", { event: "*", schema: "public", table }, () => onChange(table));
+    channel.on("postgres_changes", { event: "*", schema: "public", table }, (payload) => onChange(table, payload));
   });
   channel.subscribe();
   return () => {

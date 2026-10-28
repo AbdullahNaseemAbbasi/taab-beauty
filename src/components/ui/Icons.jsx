@@ -74,5 +74,8 @@ export const LogoutIcon = (p) => <S {...p}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 
 export const UploadIcon = (p) => <S {...p}><path d="M12 16V4M7 9l5-5 5 5M4 20h16" /></S>;
 export const StoreIcon = (p) => <S {...p}><path d="M4 9l1.5-5h13L20 9M4 9v11h16V9M4 9h16M9 20v-6h6v6" /></S>;
 
+export const PauseIcon = (p) => <S {...p}><path d="M9 5v14M15 5v14" /></S>;
+export const PlayIcon = (p) => <F {...p}><path d="M8 5.5v13l10.5-6.5z" /></F>;
+
 export const trustIcons = { shield: ShieldIcon, truck: TruckIcon, cash: CashIcon, refresh: RefreshIcon };
 export const socialIcons = { instagram: InstagramIcon, facebook: FacebookIcon, tiktok: TikTokIcon, youtube: YouTubeIcon, reddit: RedditIcon, whatsapp: WhatsAppIcon };

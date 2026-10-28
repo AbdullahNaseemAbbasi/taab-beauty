@@ -40,6 +40,7 @@ export default function ReviewSection({ product }) {
   const { reviews: allReviews } = useCatalog();
   const reviews = reviewsForProduct(allReviews, product.id);
   const breakdown = ratingBreakdown(allReviews, product.id);
+  const average = reviews.length ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length : 0;
   const [showForm, setShowForm] = useState(false);
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState({ rating: 5, name: "", city: "", title: "", body: "" });
@@ -64,9 +65,10 @@ export default function ReviewSection({ product }) {
     <section id="reviews" className="mt-16">
       <div className="grid gap-8 rounded-2xl border border-line bg-white p-5 sm:p-8 lg:grid-cols-[280px_1fr]">
         <div>
-          <p className="font-display text-[48px] font-extrabold leading-none text-navy">{product.rating.toFixed(1)}</p>
-          <RatingStars rating={product.rating} size="size-5" className="mt-2" />
-          <p className="mt-1 text-[14px] text-ink">Based on {product.reviewCount} reviews</p>
+          {/* The score and count come from the reviews listed here, so the page never claims more reviews than it shows. */}
+          <p className="font-display text-[48px] font-extrabold leading-none text-navy">{reviews.length ? average.toFixed(1) : "–"}</p>
+          <RatingStars rating={reviews.length ? average : 0} size="size-5" className="mt-2" />
+          <p className="mt-1 text-[14px] text-ink">{reviews.length ? `Based on ${reviews.length} review${reviews.length === 1 ? "" : "s"}` : "No reviews yet"}</p>
           <ul className="mt-5 space-y-2">
             {breakdown.counts.map(({ stars, count }) => {
               const width = breakdown.total ? Math.round((count / breakdown.total) * 100) : 0;

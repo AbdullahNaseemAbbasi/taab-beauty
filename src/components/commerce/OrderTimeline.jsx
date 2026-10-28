@@ -3,7 +3,7 @@ import { formatDate } from "../../lib/format.js";
 import { CheckIcon, CashIcon } from "../ui/Icons.jsx";
 
 /* Timeline entries written when only the payment changed (see update_order_status); they are listed separately from the delivery steps. */
-const paymentLabels = ["Advance payment received", "Full payment received", "Payment refunded", "Payment marked as pending"];
+const paymentLabels = ["Advance payment received", "Full payment received", "Payment refunded", "Payment marked as pending", "Payment failed"];
 const isPaymentEntry = (entry) => paymentLabels.includes(entry.label);
 
 const when = (value) => formatDate(value, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });

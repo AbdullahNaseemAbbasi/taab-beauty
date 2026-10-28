@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef } from "react";
 import { useCatalog } from "../catalog/CatalogProvider.jsx";
-import { enrichLines, computeTotals, lineKey } from "../lib/cart.js";
+import { enrichLines, computeTotals, lineKey, MAX_LINE_QUANTITY, MAX_LINES } from "../lib/cart.js";
 import { variantStock } from "../lib/catalog.js";
 import { validateCoupon } from "../api/orders.js";
 import { ecommerce } from "../analytics/ecommerce.js";
@@ -115,15 +115,21 @@ export function StoreProvider({ children }) {
 
   const addToCart = useCallback(
     (product, { quantity = 1, variantId = null, openDrawer = true, silent = false } = {}) => {
-      const max = variantStock(product, variantId);
-      if (max <= 0) {
+      const stock = variantStock(product, variantId);
+      if (stock <= 0) {
         toast("This item is currently out of stock.", { type: "error" });
         return false;
       }
+      const max = Math.min(stock, MAX_LINE_QUANTITY);
       const key = lineKey(product.id, variantId);
-      const current = state.cart.lines.find((line) => lineKey(line.productId, line.variantId) === key)?.quantity || 0;
+      const existing = state.cart.lines.find((line) => lineKey(line.productId, line.variantId) === key);
+      const current = existing?.quantity || 0;
+      if (!existing && state.cart.lines.length >= MAX_LINES) {
+        toast(`Your bag can hold up to ${MAX_LINES} different items per order.`, { type: "error" });
+        return false;
+      }
       if (current >= max) {
-        toast(`Only ${max} in stock for this item.`, { type: "error" });
+        toast(max < stock ? `You can order up to ${MAX_LINE_QUANTITY} of one item at a time.` : `Only ${max} in stock for this item.`, { type: "error" });
         return false;
       }
       dispatch({ type: "cart/add", productId: product.id, variantId, quantity, max });
@@ -139,9 +145,10 @@ export function StoreProvider({ children }) {
     (key, quantity) => {
       const line = lines.find((entry) => entry.key === key);
       if (!line) return;
-      const max = variantStock(line.product, line.variantId);
+      const stock = variantStock(line.product, line.variantId);
+      const max = Math.min(stock, MAX_LINE_QUANTITY);
       if (quantity > max) {
-        toast(`Only ${max} in stock for this item.`, { type: "error" });
+        toast(max < stock ? `You can order up to ${MAX_LINE_QUANTITY} of one item at a time.` : `Only ${max} in stock for this item.`, { type: "error" });
         return;
       }
       if (quantity < line.quantity) ecommerce.removeFromCart(line.product, line.quantity - quantity);
@@ -177,6 +184,26 @@ export function StoreProvider({ children }) {
     [totals.subtotal, toast]
   );
 
+  /*
+   * A coupon saved in the bag may have been switched off or changed since. Checked again when the bag or
+   * checkout opens: still valid → refreshed, gone → removed with a note. Below its minimum it simply waits.
+   */
+  const savedCoupon = state.cart.coupon;
+  const revalidateCoupon = useCallback(async () => {
+    if (!savedCoupon) return;
+    try {
+      const result = await validateCoupon(savedCoupon.code, Math.max(totals.subtotal, savedCoupon.minOrder || 0));
+      if (result.valid) {
+        dispatch({ type: "cart/coupon", coupon: { code: result.code, type: result.type, value: result.value, minOrder: result.minOrder || 0, creatorId: result.creatorId || null } });
+      } else {
+        dispatch({ type: "cart/coupon", coupon: null });
+        toast(`Code ${savedCoupon.code} is no longer available and was removed.`, { type: "error", duration: 5000 });
+      }
+    } catch {
+      /* offline: keep the code; the order is checked again when it is placed */
+    }
+  }, [savedCoupon, totals.subtotal, toast]);
+
   const value = useMemo(
     () => ({
       state,
@@ -187,6 +214,7 @@ export function StoreProvider({ children }) {
       removeLine,
       clearCart: () => dispatch({ type: "cart/clear" }),
       applyCoupon,
+      revalidateCoupon,
       removeCoupon: () => dispatch({ type: "cart/coupon", coupon: null }),
       wishlist: state.wishlist,
       isWishlisted: (productId) => state.wishlist.includes(productId),
@@ -205,7 +233,10 @@ export function StoreProvider({ children }) {
           return;
         }
         dispatch({ type: "compare/toggle", productId: product.id });
-        if (adding) toast(`${product.name} added to compare.`, { action: { label: "Compare", to: "/compare" } });
+        if (adding) {
+          ecommerce.compare(product);
+          toast(`${product.name} added to compare.`, { action: { label: "Compare", to: "/compare" } });
+        }
       },
       clearCompare: () => dispatch({ type: "compare/clear" }),
       recent: state.recent.map((id) => productById[id]).filter(Boolean),
@@ -215,7 +246,7 @@ export function StoreProvider({ children }) {
       toast,
       dismissToast,
     }),
-    [state, lines, totals, productById, addToCart, updateQuantity, removeLine, applyCoupon, toast, dismissToast, setUI, addRecent]
+    [state, lines, totals, productById, addToCart, updateQuantity, removeLine, applyCoupon, revalidateCoupon, toast, dismissToast, setUI, addRecent]
   );
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;

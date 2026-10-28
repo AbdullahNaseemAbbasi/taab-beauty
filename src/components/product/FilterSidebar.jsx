@@ -33,7 +33,7 @@ export default function FilterSidebar({ baseProducts, filters, onChange, showCat
   };
 
   const activeCount =
-    (filters.subcategories?.length || 0) + (filters.brands?.length || 0) + (filters.concerns?.length || 0) + (filters.minPrice != null ? 1 : 0) + (filters.maxPrice != null ? 1 : 0) + (filters.inStock ? 1 : 0) + (filters.onSale ? 1 : 0) + (filters.minRating ? 1 : 0);
+    (filters.subcategories?.length || 0) + (filters.brands?.length || 0) + (filters.concerns?.length || 0) + (filters.minPrice != null ? 1 : 0) + (filters.maxPrice != null ? 1 : 0) + (filters.inStock ? 1 : 0) + (filters.minRating ? 1 : 0);
 
   return (
     <div>
@@ -108,7 +108,6 @@ export default function FilterSidebar({ baseProducts, filters, onChange, showCat
 
       <Group title="More">
         <Checkbox label="In stock only" checked={filters.inStock || false} onChange={() => onChange({ ...filters, inStock: !filters.inStock })} />
-        <Checkbox label="On sale" checked={filters.onSale || false} onChange={() => onChange({ ...filters, onSale: !filters.onSale })} />
         <Checkbox label="Rated 4.5 and up" checked={filters.minRating === 4.5} onChange={() => onChange({ ...filters, minRating: filters.minRating === 4.5 ? 0 : 4.5 })} />
       </Group>
     </div>

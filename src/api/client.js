@@ -5,13 +5,13 @@
  */
 import { createClient } from "@supabase/supabase-js";
 
-const url = import.meta.env.VITE_SUPABASE_URL;
-const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+export const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+export const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-export const isLive = Boolean(url && anonKey);
+export const isLive = Boolean(supabaseUrl && supabaseAnonKey);
 
 export const supabase = isLive
-  ? createClient(url, anonKey, {
+  ? createClient(supabaseUrl, supabaseAnonKey, {
       auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
       global: { headers: { "x-client-info": "naz-web" } },
     })

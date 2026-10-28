@@ -4,8 +4,8 @@
  * keeps orders in localStorage so the whole flow works without a backend.
  */
 import { supabase, isLive, toError } from "./client.js";
-import { findCoupon, sampleOrders } from "../data/misc.js";
-import { attributionForOrder } from "../analytics/attribution.js";
+import { coupons, findCoupon, sampleOrders } from "../data/misc.js";
+import { attributionForOrder, getCreatorRef } from "../analytics/attribution.js";
 import { splitPayment } from "../config/site.js";
 
 const ORDERS_KEY = "naz:orders";
@@ -37,7 +37,8 @@ export function placedOrders() {
 }
 
 export function phoneForOrder(id) {
-  return placedOrders().find((entry) => entry.id === id)?.phone || null;
+  const wanted = String(id || "").trim().toUpperCase();
+  return placedOrders().find((entry) => String(entry.id).toUpperCase() === wanted)?.phone || null;
 }
 
 /* ------------------------------------------------------------- coupons */
@@ -149,7 +150,6 @@ export async function fetchCreatorOffer(ref) {
   }
   let offer = null;
   if (!isLive) {
-    const { coupons } = await import("../data/misc.js");
     const match = coupons.find((coupon) => coupon.creatorId && coupon.creatorId.toLowerCase() === ref.toLowerCase());
     offer = match ? { code: match.code, description: match.description, type: match.type, value: match.value, minOrder: match.minOrder, creatorId: match.creatorId } : null;
   } else {
@@ -164,9 +164,12 @@ export async function fetchCreatorOffer(ref) {
   return offer;
 }
 
+/* The offer is auto-applied only while its creator still gets the credit (see getCreatorRef). */
 export function cachedCreatorOffer() {
   try {
-    return JSON.parse(sessionStorage.getItem(OFFER_KEY) || "null")?.offer || null;
+    const cached = JSON.parse(sessionStorage.getItem(OFFER_KEY) || "null");
+    const ref = getCreatorRef();
+    return cached && ref && cached.ref === ref ? cached.offer || null : null;
   } catch {
     return null;
   }
@@ -193,15 +196,20 @@ export async function saveCheckout(payload) {
   }
 }
 
-/* Orders linked to the signed-in account plus orders placed from this device. */
-export async function getMyOrders() {
+/*
+ * Orders linked to the signed-in account, plus guest orders placed from this device with the
+ * account's phone number. Orders someone else placed on a shared device stay out of the list.
+ */
+export async function getMyOrders(accountPhone = "") {
   if (!isLive) {
     return [...readJson(ORDERS_KEY, []), ...sampleOrders];
   }
   const { data: sessionData } = await supabase.auth.getSession();
+  const own = digits(accountPhone);
+  const devicePlaced = own ? placedOrders().filter((entry) => digits(entry.phone) === own) : [];
   const [accountOrders, deviceOrders] = await Promise.all([
     sessionData.session ? supabase.rpc("my_orders").then(({ data }) => data || []) : Promise.resolve([]),
-    Promise.all(placedOrders().map((entry) => getOrder(entry.id, entry.phone).catch(() => null))),
+    Promise.all(devicePlaced.map((entry) => getOrder(entry.id, entry.phone).catch(() => null))),
   ]);
   const seen = new Set();
   return [...accountOrders, ...deviceOrders.filter(Boolean)]

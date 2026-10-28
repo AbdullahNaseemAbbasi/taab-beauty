@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import Logo from "../Logo.jsx";
 import Newsletter from "./Newsletter.jsx";
 import { socialIcons, PinIcon, MailIcon, PhoneIcon } from "../ui/Icons.jsx";
-import { site, helpLinks, companyLinks, availablePaymentMethods } from "../../config/site.js";
+import { site, helpLinks, companyLinks, availablePaymentMethods, telHref } from "../../config/site.js";
 import { useCatalog } from "../../catalog/CatalogProvider.jsx";
 import { track } from "../../analytics/tracking.js";
 import { EVENTS } from "../../analytics/events.js";
@@ -49,8 +49,8 @@ export default function Footer() {
         <div className="grid gap-8 rounded-2xl bg-navy-800 p-6 sm:p-8 lg:grid-cols-[1.2fr_1fr] lg:items-center">
           <div>
             <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-cyan">Newsletter</p>
-            <h2 className="mt-2 font-display text-[24px] font-extrabold sm:text-[28px]">Get 10% off your first order.</h2>
-            <p className="mt-2 text-[15px] text-white/80">Launches, restocks and honest buying advice. One email a week, no spam.</p>
+            <h2 className="mt-2 font-display text-[24px] font-extrabold sm:text-[28px]">Hear about new arrivals first.</h2>
+            <p className="mt-2 text-[15px] text-white/80">Launches, restocks and offers now and then. No spam, unsubscribe any time.</p>
           </div>
           <Newsletter source="footer" />
         </div>
@@ -61,7 +61,7 @@ export default function Footer() {
             <p className="mt-4 max-w-sm text-[14px] leading-[1.7] text-white/80">{site.description}</p>
             <ul className="mt-5 space-y-2 text-[14px] text-white/80">
               {site.contact.address && <li className="flex items-start gap-2"><PinIcon className="mt-0.5 size-4 shrink-0 text-cyan" /> {site.contact.address}</li>}
-              {site.contact.phone && <li className="flex items-center gap-2"><PhoneIcon className="size-4 text-cyan" /> <a href={`tel:${site.contact.phone}`} className="hover:text-coral">{site.contact.phone}</a></li>}
+              {site.contact.phone && <li className="flex items-center gap-2"><PhoneIcon className="size-4 text-cyan" /> <a href={telHref(site.contact.phone)} className="hover:text-coral">{site.contact.phone}</a></li>}
               {site.contact.email && <li className="flex items-center gap-2"><MailIcon className="size-4 text-cyan" /> <a href={`mailto:${site.contact.email}`} className="hover:text-coral">{site.contact.email}</a></li>}
             </ul>
             {socials.length > 0 && (
@@ -96,11 +96,11 @@ export default function Footer() {
         <div className="mt-12 flex flex-col gap-4 border-t border-white/10 pt-6 text-[12px] text-white/70 sm:flex-row sm:items-center sm:justify-between">
           <p>© {new Date().getFullYear()} {site.legalName}. All rights reserved.</p>
           <p className="flex flex-wrap gap-x-4 gap-y-1">
-            <span>{percent >= 100 ? "Advance payment" : `${percent}% advance, ${100 - percent}% on delivery`}</span>
+            <span>{percent >= 100 ? "Advance payment" : percent <= 0 ? "Pay on delivery" : `${percent}% advance, ${100 - percent}% on delivery`}</span>
             {methods.map((method) => (
               <span key={method.id}>{method.label}</span>
             ))}
-            <span>TCS · Leopards · M&P</span>
+            <span>{site.shipping.couriers.join(" · ")}</span>
           </p>
         </div>
       </div>

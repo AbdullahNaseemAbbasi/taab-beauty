@@ -1,32 +1,56 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import Overlay from "../components/ui/Modal.jsx";
 import Button from "../components/ui/Button.jsx";
 import { Field, Input, Select, Textarea, Checkbox } from "../components/ui/Form.jsx";
 import { Badge } from "../components/ui/Typography.jsx";
 import { PlusIcon, SearchIcon, TrashIcon, UploadIcon } from "../components/ui/Icons.jsx";
-import { fetchProductsAdmin, saveProduct, uploadProductImage } from "../api/admin.js";
+import { fetchProductsAdmin, fetchCategoriesAdmin, fetchBrandsAdmin, saveProduct, uploadProductImage, removeUnusedImages } from "../api/admin.js";
 import { img } from "../lib/images.js";
 import { formatPrice, slugify } from "../lib/format.js";
 import { useCatalog } from "../catalog/CatalogProvider.jsx";
 import { useStore } from "../store/StoreProvider.jsx";
 import { Async, Chips, DataTable, PageTitle, useAsync } from "./ui.jsx";
+import { isLowStock } from "./helpers.js";
 
 const lines = (text) => String(text || "").split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
 const commas = (text) => String(text || "").split(",").map((part) => part.trim()).filter(Boolean);
 /* "Label: value" per line <-> [{ label, value }] */
 const specsToText = (specs) => (specs || []).map((spec) => `${spec.label}: ${spec.value}`).join("\n");
-const textToSpecs = (text) =>
-  lines(text)
-    .map((line) => {
-      const at = line.indexOf(":");
-      return at > 0 ? { label: line.slice(0, at).trim(), value: line.slice(at + 1).trim() } : null;
-    })
-    .filter((spec) => spec && spec.label && spec.value);
+const parseSpec = (line) => {
+  const at = line.indexOf(":");
+  const spec = at > 0 ? { label: line.slice(0, at).trim(), value: line.slice(at + 1).trim() } : null;
+  return spec?.label && spec.value ? spec : null;
+};
+const textToSpecs = (text) => lines(text).map(parseSpec).filter(Boolean);
+const badSpecLine = (text) => lines(text).find((line) => !parseSpec(line));
+
+let optionKeys = 0;
+const optionKey = () => `option-${++optionKeys}`;
+
+/*
+ * Final option ids: existing ids are kept, new ones come from the name, and
+ * clashes get -2, -3. Names in other scripts (no Latin letters) get opt-1, opt-2.
+ * `keep` lists the options whose stock the admin did not edit.
+ */
+function buildOptions(form) {
+  const used = new Set();
+  const built = form.options
+    .filter((option) => option.name.trim())
+    .map((option, index) => {
+      const base = option.id || slugify(option.name) || `opt-${index + 1}`;
+      let id = base;
+      for (let n = 2; used.has(id); n += 1) id = `${base}-${n}`;
+      used.add(id);
+      const saved = { id, name: option.name.trim(), ...(form.variantDisplay === "text" ? {} : { hex: option.hex || "#cccccc" }), stock: Math.max(0, Math.round(Number(option.stock) || 0)) };
+      return { saved, keep: Boolean(option.id) && option.id === id && !option.stockTouched };
+    });
+  return { options: built.map((entry) => entry.saved), keep: built.filter((entry) => entry.keep).map((entry) => entry.saved.id) };
+}
 
 function toForm(row, defaults) {
   if (!row) {
-    return { id: "", sku: "", name: "", slug: "", brandId: defaults.brandId, category: defaults.category, subcategory: "", price: "", compareAtPrice: "", cost: "", stock: 0, lowStockThreshold: 5, size: "", description: "", benefits: "", ingredients: "", howToUse: "", specs: "", warranty: "", tags: "", concerns: [], images: [], hasVariants: false, variantLabel: "Shade", variantDisplay: "swatch", options: [], featured: false, bestSeller: false, newArrival: true, active: true };
+    return { id: "", sku: "", name: "", slug: "", brandId: defaults.brandId, category: defaults.category, subcategory: "", price: "", compareAtPrice: "", cost: "", stock: 0, stockTouched: true, lowStockThreshold: 5, size: "", description: "", benefits: "", ingredients: "", howToUse: "", specs: "", warranty: "", tags: "", concerns: [], images: [], hasVariants: false, variantLabel: "Shade", variantDisplay: "swatch", options: [], featured: false, bestSeller: false, newArrival: true, active: true };
   }
   const cost = Array.isArray(row.product_costs) ? row.product_costs[0]?.cost : row.product_costs?.cost;
   return {
@@ -34,13 +58,14 @@ function toForm(row, defaults) {
     sku: row.sku,
     name: row.name,
     slug: row.slug,
-    brandId: row.brand_id,
+    brandId: row.brand_id || "",
     category: row.category_id,
     subcategory: row.subcategory || "",
     price: row.price,
     compareAtPrice: row.compare_at_price ?? "",
     cost: cost ?? "",
     stock: row.stock,
+    stockTouched: false,
     lowStockThreshold: row.low_stock_threshold,
     size: row.size || "",
     description: row.description || "",
@@ -55,7 +80,7 @@ function toForm(row, defaults) {
     hasVariants: Boolean(row.variants?.options?.length),
     variantLabel: row.variants?.label || "Shade",
     variantDisplay: row.variants?.display || ((row.variants?.options || []).some((option) => option.hex) || !row.variants ? "swatch" : "text"),
-    options: (row.variants?.options || []).map((option) => ({ ...option })),
+    options: (row.variants?.options || []).map((option) => ({ ...option, key: optionKey(), stockTouched: false })),
     featured: row.featured,
     bestSeller: row.best_seller,
     newArrival: row.new_arrival,
@@ -63,20 +88,15 @@ function toForm(row, defaults) {
   };
 }
 
-function toRow(form) {
+function toRow(form, isBeauty, options) {
   const price = Math.round(Number(form.price) || 0);
   const compare = Math.round(Number(form.compareAtPrice) || 0);
-  const options = form.hasVariants
-    ? form.options
-        .filter((option) => option.name.trim())
-        .map((option) => ({ id: option.id || slugify(option.name), name: option.name.trim(), ...(form.variantDisplay === "text" ? {} : { hex: option.hex || "#cccccc" }), stock: Math.max(0, Math.round(Number(option.stock) || 0)) }))
-    : [];
   return {
     id: form.id || `p-${Date.now().toString(36)}`,
     sku: form.sku.trim(),
     name: form.name.trim(),
-    slug: (form.slug || slugify(form.name)).trim(),
-    brand_id: form.brandId,
+    slug: slugify(String(form.slug || "").trim() || form.name),
+    brand_id: form.brandId || null,
     category_id: form.category,
     subcategory: form.subcategory || null,
     price,
@@ -84,7 +104,8 @@ function toRow(form) {
     images: form.images,
     description: form.description.trim(),
     benefits: lines(form.benefits),
-    ingredients: commas(form.ingredients),
+    /* Ingredients and concerns only apply to beauty products; the fields are hidden for the rest. */
+    ingredients: isBeauty ? commas(form.ingredients) : [],
     how_to_use: form.howToUse.trim(),
     specs: textToSpecs(form.specs),
     warranty: form.warranty.trim() || null,
@@ -92,7 +113,7 @@ function toRow(form) {
     stock: options.length ? options.reduce((sum, option) => sum + option.stock, 0) : Math.max(0, Math.round(Number(form.stock) || 0)),
     low_stock_threshold: Math.max(0, Math.round(Number(form.lowStockThreshold) || 0)),
     tags: commas(form.tags),
-    concerns: form.concerns,
+    concerns: isBeauty ? form.concerns : [],
     variants: options.length ? { label: form.variantLabel || "Option", display: form.variantDisplay, options } : null,
     featured: form.featured,
     best_seller: form.bestSeller,
@@ -101,16 +122,21 @@ function toRow(form) {
   };
 }
 
-function ProductEditor({ row, onClose, onSaved }) {
-  const { brands, categories, concerns, reload } = useCatalog();
+const optionLabel = (entry) => `${entry.name}${entry.active ? "" : " (hidden)"}`;
+
+function ProductEditor({ row, brands, categories, onClose, onSaved }) {
+  const { concerns, reload } = useCatalog();
   const { toast } = useStore();
-  const [form, setForm] = useState(() => toForm(row, { brandId: brands[0]?.id, category: categories[0]?.slug }));
+  const firstLive = (list) => (list.find((entry) => entry.active) || list[0])?.id || "";
+  const [form, setForm] = useState(() => toForm(row, { brandId: firstLive(brands), category: firstLive(categories) }));
   const [imageInput, setImageInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
+  /* Photos uploaded while this editor is open, so the ones that end up unused can be deleted. */
+  const uploaded = useRef([]);
   const set = (field) => (event) => setForm({ ...form, [field]: event.target.type === "checkbox" ? event.target.checked : event.target.value });
-  const category = categories.find((entry) => entry.slug === form.category);
+  const category = categories.find((entry) => entry.id === form.category);
   const isBeauty = (category?.department || "beauty") === "beauty";
 
   async function upload(event) {
@@ -119,9 +145,11 @@ function ProductEditor({ row, onClose, onSaved }) {
     setUploading(true);
     setError("");
     try {
-      const urls = [];
-      for (const file of files) urls.push(await uploadProductImage(file));
-      setForm((current) => ({ ...current, images: [...current.images, ...urls] }));
+      for (const file of files) {
+        const url = await uploadProductImage(file);
+        uploaded.current.push(url);
+        setForm((current) => ({ ...current, images: [...current.images, url] }));
+      }
     } catch (uploadError) {
       setError(uploadError.message);
     } finally {
@@ -130,22 +158,41 @@ function ProductEditor({ row, onClose, onSaved }) {
     }
   }
 
+  const close = () => {
+    removeUnusedImages(uploaded.current);
+    onClose();
+  };
+
   const setOption = (index, patch) => setForm({ ...form, options: form.options.map((option, position) => (position === index ? { ...option, ...patch } : option)) });
+  const moveToFront = (index) => setForm({ ...form, images: [form.images[index], ...form.images.filter((_, position) => position !== index)] });
 
   async function save(event) {
     event.preventDefault();
     setError("");
     if (!form.name.trim() || !form.sku.trim()) return setError("Name and SKU are required.");
+    if (!slugify(String(form.slug || "").trim() || form.name)) return setError("Add a URL slug using English letters or numbers, e.g. lawn-suit-blue.");
     if (!(Number(form.price) > 0)) return setError("Enter a price greater than zero.");
     if (!form.images.length) return setError("Add at least one image.");
+    if (!form.category) return setError("Choose a category. Add one in Catalogue first if the list is empty.");
     if (form.hasVariants && !form.options.some((option) => option.name.trim())) return setError("Add at least one option, or turn options off.");
+    const badSpec = badSpecLine(form.specs);
+    if (badSpec) return setError(`Each specification line needs a label and a value separated by a colon, e.g. Battery: 10,000 mAh. Check: “${badSpec}”.`);
+    const { options, keep } = form.hasVariants ? buildOptions(form) : { options: [], keep: [] };
+    const productRow = toRow(form, isBeauty, options);
     setBusy(true);
     try {
-      await saveProduct(toRow(form), form.cost);
+      await saveProduct(productRow, form.cost, { isNew: !row, keep: { product: !form.stockTouched, options: keep } });
       toast(`${form.name} saved.`);
+      removeUnusedImages([...(row?.images || []), ...uploaded.current].filter((url) => !productRow.images.includes(url)));
       reload();
       onSaved();
     } catch (saveError) {
+      if (saveError.productSaved) {
+        toast(saveError.message, { type: "error", duration: 7000 });
+        reload();
+        onSaved();
+        return;
+      }
       setError(/duplicate key|unique/i.test(saveError.message) ? "Another product already uses that SKU or URL slug." : saveError.message);
     } finally {
       setBusy(false);
@@ -153,7 +200,7 @@ function ProductEditor({ row, onClose, onSaved }) {
   }
 
   return (
-    <Overlay open onClose={onClose} side="right" title={row ? "Edit product" : "Add product"} panelClass="!max-w-2xl">
+    <Overlay open onClose={close} side="right" title={row ? "Edit product" : "Add product"} panelClass="!max-w-2xl">
       <form onSubmit={save} className="flex min-h-0 flex-1 flex-col">
         <div className="flex-1 space-y-6 overflow-y-auto p-5">
           <section className="grid gap-4 sm:grid-cols-2">
@@ -161,10 +208,16 @@ function ProductEditor({ row, onClose, onSaved }) {
             <Field label="SKU" required hint="Your stock code, e.g. NZ-LP-001"><Input value={form.sku} onChange={set("sku")} required /></Field>
             <Field label="URL slug" hint="Leave empty to create it from the name"><Input value={form.slug} onChange={set("slug")} placeholder={slugify(form.name)} /></Field>
             <Field label="Brand">
-              <Select value={form.brandId || ""} onChange={set("brandId")}>{brands.map((brand) => <option key={brand.id} value={brand.id}>{brand.name}</option>)}</Select>
+              <Select value={form.brandId || ""} onChange={set("brandId")}>
+                <option value="">No brand</option>
+                {brands.map((brand) => <option key={brand.id} value={brand.id}>{optionLabel(brand)}</option>)}
+              </Select>
             </Field>
-            <Field label="Category">
-              <Select value={form.category || ""} onChange={(event) => setForm({ ...form, category: event.target.value, subcategory: "" })}>{categories.map((entry) => <option key={entry.slug} value={entry.slug}>{entry.name}</option>)}</Select>
+            <Field label="Category" hint={category && !category.active ? "This category is hidden, so the product doesn’t show in the store." : undefined}>
+              <Select value={form.category || ""} onChange={(event) => setForm({ ...form, category: event.target.value, subcategory: "" })}>
+                {!form.category && <option value="">Choose a category</option>}
+                {categories.map((entry) => <option key={entry.id} value={entry.id}>{optionLabel(entry)}</option>)}
+              </Select>
             </Field>
             <Field label="Type">
               <Select value={form.subcategory} onChange={set("subcategory")}>
@@ -179,7 +232,7 @@ function ProductEditor({ row, onClose, onSaved }) {
             <Field label="Price (Rs.)" required><Input type="number" min="0" value={form.price} onChange={set("price")} required /></Field>
             <Field label="Original price" hint="Shows a sale badge when higher"><Input type="number" min="0" value={form.compareAtPrice} onChange={set("compareAtPrice")} /></Field>
             <Field label="Your cost" hint="Private, used for profit"><Input type="number" min="0" value={form.cost} onChange={set("cost")} /></Field>
-            {!form.hasVariants && <Field label="Stock"><Input type="number" min="0" value={form.stock} onChange={set("stock")} /></Field>}
+            {!form.hasVariants && <Field label="Stock"><Input type="number" min="0" value={form.stock} onChange={(event) => setForm({ ...form, stock: event.target.value, stockTouched: true })} /></Field>}
             <Field label="Low stock alert at"><Input type="number" min="0" value={form.lowStockThreshold} onChange={set("lowStockThreshold")} /></Field>
           </section>
 
@@ -192,7 +245,13 @@ function ProductEditor({ row, onClose, onSaved }) {
                   <button type="button" aria-label="Remove image" title="Remove image" onClick={() => setForm({ ...form, images: form.images.filter((_, position) => position !== index) })} className="absolute -top-2 -right-2 grid size-7 place-items-center rounded-full bg-white text-danger shadow-card">
                     <TrashIcon className="size-4" />
                   </button>
-                  {index === 0 && <span className="absolute bottom-1 left-1 rounded bg-navy px-1.5 text-[10px] font-bold text-white">Main</span>}
+                  {index === 0 ? (
+                    <span className="absolute bottom-1 left-1 rounded bg-navy px-1.5 text-[10px] font-bold text-white">Main</span>
+                  ) : (
+                    <button type="button" title="Make this the main photo" onClick={() => moveToFront(index)} className="absolute bottom-1 left-1 rounded bg-white/90 px-1.5 text-[10px] font-bold text-navy hover:bg-white">
+                      Set main
+                    </button>
+                  )}
                 </div>
               ))}
               <label className="grid size-20 cursor-pointer place-items-center rounded-xl border-2 border-dashed border-line text-center text-[11px] font-semibold text-teal hover:border-teal">
@@ -225,16 +284,16 @@ function ProductEditor({ row, onClose, onSaved }) {
                   </Field>
                 </div>
                 {form.options.map((option, index) => (
-                  <div key={index} className={`grid items-end gap-2 ${form.variantDisplay === "text" ? "grid-cols-[1fr_90px_36px]" : "grid-cols-[44px_1fr_90px_36px]"}`}>
+                  <div key={option.key} className={`grid items-end gap-2 ${form.variantDisplay === "text" ? "grid-cols-[1fr_90px_36px]" : "grid-cols-[44px_1fr_90px_36px]"}`}>
                     {form.variantDisplay !== "text" && <input type="color" aria-label="Colour" value={option.hex || "#cccccc"} onChange={(event) => setOption(index, { hex: event.target.value })} className="h-[50px] w-11 cursor-pointer rounded-xl border border-line bg-white p-1" />}
                     <Input aria-label="Option name" value={option.name} onChange={(event) => setOption(index, { name: event.target.value })} placeholder={form.variantDisplay === "text" ? "e.g. M" : "e.g. Rooh (true red)"} />
-                    <Input aria-label="Stock" type="number" min="0" value={option.stock} onChange={(event) => setOption(index, { stock: event.target.value })} />
+                    <Input aria-label="Stock" type="number" min="0" value={option.stock} onChange={(event) => setOption(index, { stock: event.target.value, stockTouched: true })} />
                     <button type="button" aria-label="Remove option" title="Remove option" onClick={() => setForm({ ...form, options: form.options.filter((_, position) => position !== index) })} className="grid h-[50px] place-items-center rounded-xl text-ink-light hover:text-danger">
                       <TrashIcon className="size-4" />
                     </button>
                   </div>
                 ))}
-                <button type="button" onClick={() => setForm({ ...form, options: [...form.options, { id: "", name: "", hex: "#d9627e", stock: 0 }] })} className="inline-flex items-center gap-2 text-[14px] font-semibold text-teal hover:underline">
+                <button type="button" onClick={() => setForm({ ...form, options: [...form.options, { id: "", key: optionKey(), name: "", hex: "#d9627e", stock: 0, stockTouched: true }] })} className="inline-flex items-center gap-2 text-[14px] font-semibold text-teal hover:underline">
                   <PlusIcon className="size-4" /> Add option
                 </button>
               </div>
@@ -274,7 +333,7 @@ function ProductEditor({ row, onClose, onSaved }) {
             <Button type="submit" variant="navy" className="flex-1" disabled={busy || uploading}>
               {busy ? "Saving…" : "Save product"}
             </Button>
-            <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
+            <Button type="button" variant="ghost" onClick={close}>Cancel</Button>
           </div>
         </div>
       </form>
@@ -282,13 +341,22 @@ function ProductEditor({ row, onClose, onSaved }) {
   );
 }
 
+const FIXED_CHIPS = ["all", "low", "hidden"];
+
 export default function ProductsPage() {
-  const { categories } = useCatalog();
   const products = useAsync(fetchProductsAdmin, []);
-  const [category, setCategory] = useState("all");
+  /* Every category and brand, hidden ones included, so products in them can still be edited. */
+  const lists = useAsync(async () => {
+    const [categories, brands] = await Promise.all([fetchCategoriesAdmin(), fetchBrandsAdmin()]);
+    return { categories, brands };
+  }, []);
+  const categories = lists.data?.categories || [];
+  const brands = lists.data?.brands || [];
+  const [params, setParams] = useSearchParams();
+  /* ?filter=low (from the dashboard) opens the low-stock list. */
+  const [category, setCategory] = useState(() => (FIXED_CHIPS.includes(params.get("filter")) ? params.get("filter") : "all"));
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState(undefined); // undefined = closed, null = new
-  const [params, setParams] = useSearchParams();
 
   /* /admin/products?edit=<id> or ?new=1 opens the editor directly. */
   const editId = params.get("edit");
@@ -309,19 +377,21 @@ export default function ProductsPage() {
   const visible = useMemo(() => {
     const term = search.trim().toLowerCase();
     return (products.data || []).filter((row) => {
-      if (category === "low" && row.stock > row.low_stock_threshold) return false;
+      if (category === "low" && !isLowStock(row)) return false;
       if (category === "hidden" && row.active) return false;
-      if (!["all", "low", "hidden"].includes(category) && row.category_id !== category) return false;
+      if (!FIXED_CHIPS.includes(category) && row.category_id !== category) return false;
       return !term || `${row.name} ${row.sku}`.toLowerCase().includes(term);
     });
   }, [products.data, category, search]);
 
-  const chips = [{ id: "all", label: "All" }, ...categories.map((entry) => ({ id: entry.slug, label: entry.name })), { id: "low", label: "Low stock" }, { id: "hidden", label: "Hidden" }];
+  const categoryName = (id) => categories.find((entry) => entry.id === id)?.name || id;
+  const chips = [{ id: "all", label: "All" }, ...categories.map((entry) => ({ id: entry.id, label: optionLabel(entry) })), { id: "low", label: "Low stock" }, { id: "hidden", label: "Hidden" }];
+  const stockTone = (row) => (row.stock === 0 ? "text-danger" : isLowStock(row) ? "text-coral" : "text-navy");
 
   return (
     <div className="space-y-5">
       <PageTitle title="Products" subtitle="Prices, stock, photos and what shows in the store.">
-        <Button variant="coral" size="sm" onClick={() => setEditing(null)}>
+        <Button variant="coral" size="sm" disabled={!lists.data} onClick={() => setEditing(null)}>
           <PlusIcon className="size-4" /> Add product
         </Button>
       </PageTitle>
@@ -349,7 +419,7 @@ export default function ProductsPage() {
                   <span className="block truncate text-[12px] text-ink-light">{row.sku} · {row.brands?.name}</span>
                   <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
                     <strong>{formatPrice(row.price)}</strong>
-                    <span className={`text-[13px] font-bold ${row.stock === 0 ? "text-danger" : row.stock <= row.low_stock_threshold ? "text-coral" : "text-ink"}`}>{row.stock} in stock</span>
+                    <span className={`text-[13px] font-bold ${stockTone(row)}`}>{row.stock} in stock</span>
                     {!row.active && <Badge tone="muted">Hidden</Badge>}
                   </span>
                 </span>
@@ -369,9 +439,9 @@ export default function ProductsPage() {
                   </span>
                 ),
               },
-              { key: "category_id", label: "Category", render: (row) => <span className="capitalize">{row.category_id}</span> },
+              { key: "category_id", label: "Category", render: (row) => categoryName(row.category_id) },
               { key: "price", label: "Price", render: (row) => (<span>{formatPrice(row.price)}{row.compare_at_price && <span className="ml-2 text-[12px] text-ink-light line-through">{formatPrice(row.compare_at_price)}</span>}</span>) },
-              { key: "stock", label: "Stock", render: (row) => <span className={`font-bold ${row.stock === 0 ? "text-danger" : row.stock <= row.low_stock_threshold ? "text-coral" : "text-navy"}`}>{row.stock}{row.variants?.options?.length ? <span className="ml-1 text-[12px] font-normal text-ink-light">({row.variants.options.length} options)</span> : null}</span> },
+              { key: "stock", label: "Stock", render: (row) => <span className={`font-bold ${stockTone(row)}`}>{row.stock}{row.variants?.options?.length ? <span className="ml-1 text-[12px] font-normal text-ink-light">({row.variants.options.length} options{row.variants.options.some((option) => Number(option.stock) <= 0) ? ", some sold out" : ""})</span> : null}</span> },
               {
                 key: "flags",
                 label: "Status",
@@ -388,7 +458,8 @@ export default function ProductsPage() {
         )}
       </Async>
 
-      {editing !== undefined && <ProductEditor key={editing?.id || "new"} row={editing} onClose={closeEditor} onSaved={() => { closeEditor(); products.reload(); }} />}
+      {editing !== undefined && lists.data && <ProductEditor key={editing?.id || "new"} row={editing} brands={brands} categories={categories} onClose={closeEditor} onSaved={() => { closeEditor(); products.reload(); }} />}
+      {lists.error && <p role="alert" className="text-[14px] text-danger">{lists.error.message}</p>}
     </div>
   );
 }

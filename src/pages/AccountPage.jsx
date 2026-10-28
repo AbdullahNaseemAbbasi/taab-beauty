@@ -68,12 +68,12 @@ function AuthForms() {
   return (
     <div className="mx-auto max-w-md">
       {mode !== "reset" && (
-        <div className="mb-4 grid grid-cols-2 rounded-full bg-tint p-1" role="tablist">
+        <div className="mb-4 grid grid-cols-2 rounded-full bg-tint p-1" role="group" aria-label="Sign in or create an account">
           {[
             ["signin", "Sign in"],
             ["signup", "Create account"],
           ].map(([id, label]) => (
-            <button key={id} type="button" role="tab" aria-selected={mode === id} onClick={() => { setMode(id); setError(""); setNotice(""); }} className={`h-11 rounded-full text-[14px] font-semibold transition-colors ${mode === id ? "bg-white text-navy shadow-card" : "text-ink hover:text-navy"}`}>
+            <button key={id} type="button" aria-pressed={mode === id} onClick={() => { setMode(id); setError(""); setNotice(""); }} className={`h-11 rounded-full text-[14px] font-semibold transition-colors ${mode === id ? "bg-white text-navy shadow-card" : "text-ink hover:text-navy"}`}>
               {label}
             </button>
           ))}
@@ -191,11 +191,12 @@ function ProfileForm() {
     event.preventDefault();
     setError("");
     if (form.phone && !phonePattern.test(form.phone.replace(/[\s-]/g, ""))) return setError("Enter a valid Pakistani mobile number.");
+    /* Checked before anything is saved, so a short password does not leave the details half-updated. */
+    if (password && password.length < 8) return setError("Your new password needs at least 8 characters.");
     setBusy(true);
     try {
       await auth.updateProfile({ ...form, phone: form.phone.replace(/[\s-]/g, "") });
       if (password) {
-        if (password.length < 8) throw new Error("Your new password needs at least 8 characters.");
         await auth.updatePassword(password);
         setPassword("");
       }
@@ -241,13 +242,13 @@ function OrdersList() {
 
   useEffect(() => {
     let cancelled = false;
-    getMyOrders()
+    getMyOrders(auth.profile?.phone || auth.user?.user_metadata?.phone)
       .then((list) => !cancelled && setOrders(list.map((order) => hydrateOrder(order, { productById, productBySlug }))))
       .catch(() => !cancelled && setOrders([]));
     return () => {
       cancelled = true;
     };
-  }, [auth.user?.id, productById, productBySlug]);
+  }, [auth.user?.id, auth.profile?.phone, productById, productBySlug]);
 
   if (orders === null) {
     return (

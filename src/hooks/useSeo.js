@@ -1,9 +1,8 @@
 import { useEffect } from "react";
 import { site } from "../config/site.js";
-import { img } from "../lib/images.js";
-import { images } from "../data/images.js";
 
-const defaultImage = img(images.hero.home, 1200);
+/* The branded share card (logo and tagline, 1200×630) in public/; product pages pass their own photo instead. */
+const defaultImage = () => `${site.url || window.location.origin}/og-image.jpg`;
 
 /*
  * Sets per-page SEO without a dependency: title, description, canonical URL,
@@ -27,7 +26,7 @@ export default function useSeo({ title, description, path = "/", image, type = "
     const fullTitle = title ? `${title} | ${site.name}` : `${site.name} | Clothing, Beauty, Appliances & More, Delivered Across Pakistan`;
     const url = `${site.url}${path}`;
     const desc = description || site.description;
-    const shareImage = image || defaultImage;
+    const shareImage = image || defaultImage();
 
     document.title = fullTitle;
     upsertMeta("name", "description", desc);

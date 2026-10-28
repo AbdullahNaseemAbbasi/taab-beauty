@@ -6,13 +6,9 @@ export const images = {
   hero: {
     home: "woman-with-white-crisp-shopping-carrier-bags",
     homeAlt: "A smiling shopper carrying white shopping bags",
-    skincare: "under-eye-patches-for-skincare",
-    makeup: "profile-of-a-person-adding-blush-to-her-cheeks-with-a-brush",
     about: "young-man-preparing-a-package-for-fulfillment",
     aboutAlt: "Packing an order into a box",
     contact: "beauty-product-flatlay",
-    sale: "beauty-products-and-makeup-on-black-background",
-    shop: "makeup-on-marble",
   },
   categories: {
     makeup: "makeup-shadows-and-blushes",
@@ -41,18 +37,8 @@ export const images = {
     pigmentation: "making-funny-faces-during-skincare-routine",
   },
   promo: {
-    dark: "makeup-and-brushes-on-black-background",
-    red: "makeup-brushes-against-deep-red-background",
     pink: "blush-makeup-and-candles",
   },
-  instagram: [
-    "pink-flatlay",
-    "drone-knoll-flatlay",
-    "clothing-accessories-flatlay",
-    "makeup-beauty-flatlay",
-    "videogame-knoll",
-    "womens-fashion-on-hangers",
-  ],
   about: ["young-man-preparing-a-package-for-fulfillment", "small-business-interior", "beauty-products-and-flower"],
   avatars: [
     "smiling-brunette-woman",

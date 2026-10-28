@@ -29,4 +29,3 @@ export const departments = [
   },
 ];
 
-export const departmentById = Object.fromEntries(departments.map((department) => [department.id, department]));
