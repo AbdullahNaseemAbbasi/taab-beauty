@@ -1,5 +1,3 @@
-import { images } from "./images.js";
-
 /*
  * Verified-purchase reviews. In production these come from the orders
  * database after a moderation step; the shape below is what the review
@@ -38,12 +36,4 @@ export const reviews = [
   { id: "r-30", productId: "p-046", author: "Farah Z.", city: "Multan", rating: 4, date: "2026-08-22", verified: true, title: "Eggs slide right off", body: "Using it daily for a month on medium flame, coating is still perfect. Wish it came with a lid.", helpful: 16 },
   { id: "r-31", productId: "p-049", author: "Rukhsana B.", city: "Hyderabad", rating: 5, date: "2026-09-03", verified: true, title: "Does not drip", body: "Finally a teapot that pours without leaving a puddle on the tray. Keeps the chai hot for a good half hour.", helpful: 27 },
   { id: "r-32", productId: "p-053", author: "Hassan R.", city: "Rawalpindi", rating: 5, date: "2026-08-17", verified: true, title: "No more leaking in my bag", body: "Salan in one section, roti in the other, nothing leaked on the bus. The cutlery in the lid is a nice touch.", helpful: 30 },
-];
-
-/* Homepage testimonials: curated marketing content, kept static. */
-export const testimonials = [
-  { name: "Zainab K.", city: "Karachi", avatar: images.avatars[0], rating: 5, quote: "The eyeshadow palette shows up on brown skin exactly like the pan. I have never had that before.", product: "Karachi Sunset Palette" },
-  { name: "Bilal H.", city: "Karachi", avatar: images.avatars[4], rating: 5, quote: "I take calls on Shahrah-e-Faisal with these earbuds in and people can actually hear me. They last my whole day.", product: "AirPulse Wireless Earbuds" },
-  { name: "Nazia A.", city: "Karachi", avatar: images.avatars[2], rating: 5, quote: "The skillet holds heat so well that parathas come out crisp every time. Seasoned once, and nothing sticks.", product: "Cast-Iron Skillet" },
-  { name: "Ayesha T.", city: "Lahore", avatar: images.avatars[1], rating: 5, quote: "Three weeks of the vitamin C serum and my acne marks are visibly lighter. Delivery to Lahore took two days.", product: "Glow Boost Serum" },
 ];

@@ -68,7 +68,7 @@ export default function ProductCard({ product, listName = "product_grid", eager 
             {product.name}
           </Link>
         </h3>
-        <RatingStars rating={product.rating} count={product.reviewCount} size="size-3.5" className="mt-2" />
+        {product.reviewCount > 0 && <RatingStars rating={product.rating} count={product.reviewCount} size="size-3.5" className="mt-2" />}
         <Price price={product.price} compareAtPrice={product.compareAtPrice} size="sm" className="mt-2" />
         <div className="mt-auto pt-4">
           {soldOut ? (

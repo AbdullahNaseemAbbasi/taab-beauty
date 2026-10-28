@@ -121,9 +121,7 @@ export default function HomePage() {
         <BrandStrip />
       </Section>
 
-      <Section eyebrow="Customer reviews" title="What customers say." bg="white">
-        <Testimonials />
-      </Section>
+      <Testimonials bg="white" />
 
       {site.social.instagram && (
         <Section eyebrow="Instagram" title="Follow along on Instagram." bg="tint">

@@ -98,9 +98,7 @@ export default function AboutPage() {
         </ol>
       </Section>
 
-      <Section eyebrow="Customer reviews" title="What customers say." bg="tint">
-        <Testimonials />
-      </Section>
+      <Testimonials bg="tint" />
 
       <section className="bg-white py-14">
         <div className="wrap flex flex-col items-center gap-5 text-center">

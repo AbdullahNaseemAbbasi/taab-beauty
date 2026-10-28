@@ -43,7 +43,7 @@ export function ToastViewport() {
   const { ui, dismissToast } = useStore();
   if (!ui.toasts.length) return null;
   return (
-    <div className="pointer-events-none fixed inset-x-4 bottom-4 z-[70] flex flex-col items-center gap-2 sm:inset-x-auto sm:right-6 sm:bottom-6 sm:items-end">
+    <div className="pointer-events-none fixed inset-x-4 bottom-[calc(1rem_+_var(--host-badge))] z-[70] flex flex-col items-center gap-2 sm:inset-x-auto sm:right-6 sm:bottom-[calc(1.5rem_+_var(--host-badge))] sm:items-end">
       {ui.toasts.map((toast) => (
         <div
           key={toast.id}

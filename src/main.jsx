@@ -6,6 +6,9 @@ import App from "./App.jsx";
 import { AuthProvider } from "./auth/AuthProvider.jsx";
 import { CatalogProvider } from "./catalog/CatalogProvider.jsx";
 import { StoreProvider } from "./store/StoreProvider.jsx";
+import { watchHostBadge } from "./lib/hostBadge.js";
+
+watchHostBadge();
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>

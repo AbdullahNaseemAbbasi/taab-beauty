@@ -45,7 +45,7 @@ export default function Footer() {
         <path d="M0 0 H1440 V3 C1200 18 760 16 0 8 Z" fill="currentColor" />
       </svg>
 
-      <div className="wrap pt-16 pb-10">
+      <div className="wrap pt-16 pb-[calc(2.5rem_+_var(--host-badge))]">
         <div className="grid gap-8 rounded-2xl bg-navy-800 p-6 sm:p-8 lg:grid-cols-[1.2fr_1fr] lg:items-center">
           <div>
             <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-cyan">Newsletter</p>

@@ -53,8 +53,8 @@ export default function Overlay({ open, onClose, side = "right", title, children
   if (!open) return null;
 
   const position = {
-    right: "inset-y-0 right-0 h-full w-full max-w-md",
-    left: "inset-y-0 left-0 h-full w-full max-w-sm",
+    right: "inset-y-0 right-0 h-full w-full max-w-md pb-[var(--host-badge)]",
+    left: "inset-y-0 left-0 h-full w-full max-w-sm pb-[var(--host-badge)]",
     top: "inset-x-0 top-0 w-full",
     center: "left-1/2 top-1/2 w-[calc(100%-32px)] max-w-2xl -translate-x-1/2 -translate-y-1/2 rounded-2xl",
   }[side];

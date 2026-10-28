@@ -150,9 +150,9 @@ export default function ShopPage({ mode = "all", collection }) {
           </div>
         </div>
 
-        <div className="mt-6 grid gap-8 lg:grid-cols-[260px_1fr]">
+        <div className="mt-6 grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[260px_minmax(0,1fr)]">
           <aside className="hidden lg:block">{sidebar}</aside>
-          <div>
+          <div className="min-w-0">
             {visible.length ? (
               <>
                 <ProductGrid products={visible} listName={path} columns="lg:grid-cols-3" eagerCount={3} />

@@ -113,6 +113,8 @@ export function track(event, payload = {}) {
 
   window.dataLayer = window.dataLayer || [];
   window.dataLayer.push(record);
+  /* Automated browsers (site tests, scrapers) stay out of the store's numbers and the ad pixels. */
+  if (navigator.webdriver) return record;
   forwardToVendors(event, payload);
   queueEvent(record); // first-party copy in the database (no-op in mock mode)
 

@@ -134,7 +134,8 @@ export function StoreProvider({ children }) {
       }
       dispatch({ type: "cart/add", productId: product.id, variantId, quantity, max });
       ecommerce.addToCart(product, quantity);
-      if (!silent) toast(`${product.name} added to your bag.`, { action: { label: "View bag", to: "/cart" } });
+      /* The open bag already shows the new item, so the toast is only for adds that leave the page as it is. */
+      if (!silent && !openDrawer) toast(`${product.name} added to your bag.`, { action: { label: "View bag", to: "/cart" } });
       if (openDrawer) dispatch({ type: "ui/set", patch: { cartOpen: true } });
       return true;
     },

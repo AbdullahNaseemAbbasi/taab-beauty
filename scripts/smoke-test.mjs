@@ -43,7 +43,13 @@ const { data: products, error: productsError } = await db.from("products").selec
 check("read products", !productsError && products.length > 0, productsError?.message || `${products?.length} rows`);
 const simple = products.find((product) => product.slug === "gentle-gel-cleanser");
 const variantProduct = products.find((product) => product.slug === "velvet-matte-lipstick");
-const { data: couponBefore } = service ? await service.from("coupons").select("code, used_count").eq("code", "WELCOME10").single() : { data: null };
+/* The test brings its own coupons (deleted again at the end), so it never depends on the store's real offers. */
+const TEST_COUPONS = [
+  { code: "SMOKE10", type: "percent", value: 10, min_order: 1500, description: "smoke test", creator_id: null, active: true },
+  { code: "SMOKE500", type: "fixed", value: 500, min_order: 4000, description: "smoke test", creator_id: null, active: true },
+  { code: "SMOKE15", type: "percent", value: 15, min_order: 2000, description: "smoke test", creator_id: "smoke-test", active: true },
+];
+const couponsReady = service ? !(await service.from("coupons").upsert(TEST_COUPONS)).error : false;
 const { data: paymentsRow } = await db.from("settings").select("value").eq("key", "payments").single();
 
 let originalPayments = null;
@@ -68,21 +74,20 @@ try {
   const { data: ordersLeak, error: ordersError } = await db.from("orders").select("id").limit(1);
   check("orders table is not readable", Boolean(ordersError) || (ordersLeak || []).length === 0);
 
-  const { data: couponOk } = await db.rpc("validate_coupon", { p_code: "welcome10", p_subtotal: 5000 });
-  check("validate_coupon WELCOME10 on 5000", couponOk?.valid && couponOk.discount === 500, JSON.stringify(couponOk));
-  const { data: couponLow } = await db.rpc("validate_coupon", { p_code: "NAZ500", p_subtotal: 1000 });
-  check("validate_coupon rejects below minimum", couponLow?.valid === false, couponLow?.error);
-
-  const { data: sample } = await db.rpc("get_order", { p_order_id: "NZ-241001-0211", p_phone: "0300 1234567" });
-  check("get_order sample order", sample?.id === "NZ-241001-0211" && sample.lines?.length === 2, `${sample?.status}, ${sample?.lines?.length} lines`);
-  const { data: wrongPhone } = await db.rpc("get_order", { p_order_id: "NZ-241001-0211", p_phone: "0300 0000000" });
-  check("get_order rejects wrong phone", wrongPhone === null);
+  if (couponsReady) {
+    const { data: couponOk } = await db.rpc("validate_coupon", { p_code: "smoke10", p_subtotal: 5000 });
+    check("validate_coupon SMOKE10 on 5000", couponOk?.valid && couponOk.discount === 500, JSON.stringify(couponOk));
+    const { data: couponLow } = await db.rpc("validate_coupon", { p_code: "SMOKE500", p_subtotal: 1000 });
+    check("validate_coupon rejects below minimum", couponLow?.valid === false, couponLow?.error);
+  } else {
+    console.log("      (coupon checks skipped: adding test coupons needs SUPABASE_SERVICE_ROLE_KEY)");
+  }
 
   const variantBefore = variantProduct.variants.options.find((option) => option.id === "rooh").stock;
   const payload = {
     customer: { name: "Smoke Test", phone: TEST_PHONE, email: "", address: "Test street 123, DHA Phase 6", city: "Karachi", province: "Sindh" },
     payment: "bank",
-    couponCode: "WELCOME10",
+    couponCode: couponsReady ? "SMOKE10" : null,
     notes: "automated smoke test",
     attribution: { source: "smoke-test" },
     lines: [
@@ -116,9 +121,13 @@ try {
   check("place_order succeeds", !orderError && order?.id?.startsWith("NZ-"), orderError?.message || order?.id);
   if (order) {
     placedIds.add(order.id);
+    const { data: lookedUp } = await db.rpc("get_order", { p_order_id: order.id, p_phone: TEST_PHONE });
+    check("get_order finds the order with its phone", lookedUp?.id === order.id && lookedUp.lines?.length === 2, `${lookedUp?.status}, ${lookedUp?.lines?.length} lines`);
+    const { data: wrongPhone } = await db.rpc("get_order", { p_order_id: order.id, p_phone: "0300 0000000" });
+    check("get_order rejects wrong phone", wrongPhone === null);
     const expectedSubtotal = 1900 * 2 + 1850;
     check("server-side pricing", order.totals.subtotal === expectedSubtotal, `${order.totals.subtotal} vs ${expectedSubtotal}`);
-    check("coupon applied server-side", order.totals.discount === Math.round(expectedSubtotal * 0.1), `${order.totals.discount}`);
+    check("coupon applied server-side", order.totals.discount === (couponsReady ? Math.round(expectedSubtotal * 0.1) : 0), `${order.totals.discount}`);
     check("shipping fee below threshold", order.totals.shipping === 250, `${order.totals.shipping}`);
     const percent = (originalPayments || paymentsRow?.value)?.advance_percent ?? 50;
     check("order waits for the advance", order.status === "created" && order.paymentStatus === "pending", `${order.status}, ${order.paymentStatus}`);
@@ -169,8 +178,10 @@ try {
   const { error: newsletterError } = await db.from("newsletter_subscribers").insert({ email: "smoke@example.com", source: "test" });
   check("newsletter insert allowed", !newsletterError || newsletterError.code === "23505", newsletterError?.message);
 
-  const { data: offer } = await db.rpc("creator_offer", { p_ref: "hira" });
-  check("creator_offer for ref=hira", offer?.code === "HIRA15", JSON.stringify(offer));
+  if (couponsReady) {
+    const { data: offer } = await db.rpc("creator_offer", { p_ref: "smoke-test" });
+    check("creator_offer for ref=smoke-test", offer?.code === "SMOKE15", JSON.stringify(offer));
+  }
   const { data: noOffer } = await db.rpc("creator_offer", { p_ref: "nobody" });
   check("creator_offer unknown ref returns null", noOffer === null);
 
@@ -372,7 +383,7 @@ try {
     await service.from("contact_messages").delete().eq("email", "smoke@example.com");
     await service.from("checkout_sessions").delete().eq("session_id", "smoke-session");
     await service.from("stock_alerts").delete().eq("contact", TEST_PHONE);
-    if (couponBefore) await service.from("coupons").update({ used_count: couponBefore.used_count }).eq("code", "WELCOME10");
+    if (couponsReady) await service.from("coupons").delete().in("code", TEST_COUPONS.map((coupon) => coupon.code));
     if (customerUserId) await service.auth.admin.deleteUser(customerUserId);
     /* Put the payment settings back exactly as they were (the test account, or anything a failed check changed). */
     if (paymentsRow?.value) await service.from("settings").update({ value: originalPayments || paymentsRow.value }).eq("key", "payments");

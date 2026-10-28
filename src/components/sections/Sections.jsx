@@ -9,7 +9,6 @@ import { imageProps } from "../../lib/images.js";
 import { sortProducts } from "../../lib/catalog.js";
 import { site } from "../../config/site.js";
 import { useCatalog } from "../../catalog/CatalogProvider.jsx";
-import { testimonials } from "../../data/reviews.js";
 import { track } from "../../analytics/tracking.js";
 import { EVENTS } from "../../analytics/events.js";
 
@@ -385,24 +384,43 @@ export function BrandStrip() {
   );
 }
 
-/* ---------- Testimonials ---------- */
-export function Testimonials() {
+/* ---------- Testimonials: the best approved customer reviews, one per product; the section stays hidden until there are some ---------- */
+export function Testimonials({ bg = "white" }) {
+  const { reviews, products } = useCatalog();
+  const productsById = new Map(products.map((product) => [product.id, product]));
+  const picks = [];
+  const used = new Set();
+  for (const review of [...reviews].sort((a, b) => b.rating - a.rating || (b.helpful || 0) - (a.helpful || 0))) {
+    const product = productsById.get(review.productId);
+    if (!product || used.has(product.id) || review.rating < 4 || !review.body?.trim()) continue;
+    used.add(product.id);
+    picks.push({ review, product });
+    if (picks.length === 4) break;
+  }
+  if (!picks.length) return null;
+
   return (
-    <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-      {testimonials.map((item) => (
-        <figure key={item.name} className="flex flex-col rounded-2xl border border-line bg-white p-5 shadow-card">
-          <RatingStars rating={item.rating} size="size-4" />
-          <blockquote className="mt-3 flex-1 text-[15px] leading-[1.65] text-[#33475F]">“{item.quote}”</blockquote>
-          <figcaption className="mt-4 flex items-center gap-3">
-            <img {...imageProps(item.avatar, { width: 120, sizes: "48px", alt: item.name })} className="size-12 rounded-full object-cover" />
-            <span>
-              <span className="block text-[14px] font-bold text-navy">{item.name}</span>
-              <span className="block text-[12px] text-ink-light">{item.city} · {item.product}</span>
-            </span>
-          </figcaption>
-        </figure>
-      ))}
-    </div>
+    <Section eyebrow="Customer reviews" title="What customers say." bg={bg}>
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        {picks.map(({ review, product }) => (
+          <figure key={review.id} className="flex flex-col rounded-2xl border border-line bg-white p-5 shadow-card">
+            <RatingStars rating={review.rating} size="size-4" />
+            <blockquote className="mt-3 line-clamp-6 flex-1 text-[15px] leading-[1.65] text-[#33475F]">“{review.body.trim()}”</blockquote>
+            <figcaption className="mt-4 flex items-center gap-3">
+              <span className="grid size-12 shrink-0 place-items-center rounded-full bg-tint font-display text-[18px] font-extrabold text-navy" aria-hidden="true">
+                {review.author.trim().charAt(0).toUpperCase()}
+              </span>
+              <span className="min-w-0">
+                <span className="block text-[14px] font-bold text-navy">{review.author}</span>
+                <Link to={`/product/${product.slug}`} className="block truncate text-[12px] text-ink-light hover:text-navy">
+                  {[review.city, product.name].filter(Boolean).join(" · ")}
+                </Link>
+              </span>
+            </figcaption>
+          </figure>
+        ))}
+      </div>
+    </Section>
   );
 }
 

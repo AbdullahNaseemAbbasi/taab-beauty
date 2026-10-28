@@ -65,24 +65,31 @@ export default function ReviewSection({ product }) {
     <section id="reviews" className="mt-16">
       <div className="grid gap-8 rounded-2xl border border-line bg-white p-5 sm:p-8 lg:grid-cols-[280px_1fr]">
         <div>
+          <h2 className="font-display text-[22px] font-extrabold text-navy">Customer reviews</h2>
           {/* The score and count come from the reviews listed here, so the page never claims more reviews than it shows. */}
-          <p className="font-display text-[48px] font-extrabold leading-none text-navy">{reviews.length ? average.toFixed(1) : "–"}</p>
-          <RatingStars rating={reviews.length ? average : 0} size="size-5" className="mt-2" />
-          <p className="mt-1 text-[14px] text-ink">{reviews.length ? `Based on ${reviews.length} review${reviews.length === 1 ? "" : "s"}` : "No reviews yet"}</p>
-          <ul className="mt-5 space-y-2">
-            {breakdown.counts.map(({ stars, count }) => {
-              const width = breakdown.total ? Math.round((count / breakdown.total) * 100) : 0;
-              return (
-                <li key={stars} className="flex items-center gap-3 text-[13px] text-ink">
-                  <span className="w-8">{stars}★</span>
-                  <span className="h-2 flex-1 overflow-hidden rounded-full bg-tint">
-                    <span className="block h-full rounded-full bg-gold" style={{ width: `${width}%` }} />
-                  </span>
-                  <span className="w-6 text-right">{count}</span>
-                </li>
-              );
-            })}
-          </ul>
+          {reviews.length ? (
+            <>
+              <p className="mt-4 font-display text-[48px] font-extrabold leading-none text-navy">{average.toFixed(1)}</p>
+              <RatingStars rating={average} size="size-5" className="mt-2" />
+              <p className="mt-1 text-[14px] text-ink">Based on {reviews.length} review{reviews.length === 1 ? "" : "s"}</p>
+              <ul className="mt-5 space-y-2">
+                {breakdown.counts.map(({ stars, count }) => {
+                  const width = breakdown.total ? Math.round((count / breakdown.total) * 100) : 0;
+                  return (
+                    <li key={stars} className="flex items-center gap-3 text-[13px] text-ink">
+                      <span className="w-8">{stars}★</span>
+                      <span className="h-2 flex-1 overflow-hidden rounded-full bg-tint">
+                        <span className="block h-full rounded-full bg-gold" style={{ width: `${width}%` }} />
+                      </span>
+                      <span className="w-6 text-right">{count}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </>
+          ) : (
+            <p className="mt-2 text-[14px] text-ink">No reviews yet.</p>
+          )}
           <Button variant="outline" className="mt-6 w-full" onClick={() => setShowForm((value) => !value)}>
             Write a review
           </Button>
@@ -124,7 +131,7 @@ export default function ReviewSection({ product }) {
               ))}
             </ul>
           ) : (
-            <p className="py-8 text-center text-[15px] text-ink">No written reviews yet. Be the first to share your experience.</p>
+            !showForm && <p className="py-8 text-center text-[15px] text-ink lg:py-16">Bought this? Be the first to share your experience and help other shoppers choose.</p>
           )}
         </div>
       </div>

@@ -222,9 +222,11 @@ export default function ProductPage() {
             {product.brand}
           </Link>
           <h1 className="mt-2 font-display text-[28px] font-extrabold leading-[1.1] tracking-[-0.02em] text-navy sm:text-[38px]">{product.name}</h1>
-          <a href="#reviews" className="mt-3 inline-flex">
-            <RatingStars rating={product.rating} count={product.reviewCount} showValue size="size-4" />
-          </a>
+          {product.reviewCount > 0 && (
+            <a href="#reviews" className="mt-3 inline-flex">
+              <RatingStars rating={product.rating} count={product.reviewCount} showValue size="size-4" />
+            </a>
+          )}
           <div className="mt-4 flex flex-wrap items-center gap-3">
             <Price price={product.price} compareAtPrice={product.compareAtPrice} size="lg" />
             <StockStatus stock={stock} />
@@ -316,7 +318,7 @@ export default function ProductPage() {
       )}
 
       {/* Sticky add-to-cart for mobile */}
-      <div className="fixed inset-x-0 bottom-0 z-30 flex items-center gap-3 border-t border-line bg-white/95 px-4 py-3 backdrop-blur lg:hidden">
+      <div className="fixed inset-x-0 bottom-0 z-30 flex items-center gap-3 border-t border-line bg-white/95 px-4 pt-3 pb-[calc(0.75rem_+_var(--host-badge))] backdrop-blur lg:hidden">
         <div className="min-w-0 flex-1">
           <p className="truncate text-[13px] font-semibold text-navy">{product.name}</p>
           <p className="font-display text-[16px] font-extrabold text-navy">{formatPrice(product.price * quantity)}</p>
@@ -325,7 +327,7 @@ export default function ProductPage() {
           {stock <= 0 ? "Sold out" : "Add to bag"}
         </Button>
       </div>
-      <div className="h-20 lg:hidden" aria-hidden="true" />
+      <div className="h-[calc(5rem_+_var(--host-badge))] lg:hidden" aria-hidden="true" />
     </>
   );
 }

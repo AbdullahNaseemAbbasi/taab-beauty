@@ -36,6 +36,10 @@
 }
 
 @layer base {
+  :root {
+    /* Room for the host's badge in the bottom-right corner, set by src/lib/hostBadge.js. */
+    --host-badge: 0px;
+  }
   html {
     scroll-behavior: smooth;
   }

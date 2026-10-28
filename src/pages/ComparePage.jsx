@@ -18,7 +18,7 @@ export default function ComparePage() {
 
   const rows = [
     { label: "Price", render: (product) => <Price price={product.price} compareAtPrice={product.compareAtPrice} size="sm" /> },
-    { label: "Rating", render: (product) => <RatingStars rating={product.rating} count={product.reviewCount} size="size-3.5" /> },
+    { label: "Rating", render: (product) => (product.reviewCount > 0 ? <RatingStars rating={product.rating} count={product.reviewCount} size="size-3.5" /> : "No reviews yet") },
     { label: "Brand", render: (product) => product.brand },
     { label: "Category", render: (product) => [categoryBySlug[product.category]?.name || product.category, product.subcategory].filter(Boolean).join(" / ") },
     { label: "Size / contents", render: (product) => product.size || "–" },

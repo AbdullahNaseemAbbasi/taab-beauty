@@ -40,12 +40,4 @@ export const images = {
     pink: "blush-makeup-and-candles",
   },
   about: ["young-man-preparing-a-package-for-fulfillment", "small-business-interior", "beauty-products-and-flower"],
-  avatars: [
-    "smiling-brunette-woman",
-    "portrait-of-person-with-long-brown-hair-smiling-in-white",
-    "happy-woman",
-    "blue-eyed-woman",
-    "portrait-of-a-young-adult-looking-straight-at-camera",
-    "under-eye-patches-for-skincare",
-  ],
 };

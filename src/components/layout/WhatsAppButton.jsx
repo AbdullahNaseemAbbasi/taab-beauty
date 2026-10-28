@@ -22,7 +22,7 @@ export default function WhatsAppButton() {
       onClick={() => ecommerce.whatsapp("floating_button")}
       aria-label="Chat with us on WhatsApp"
       className={`fixed left-5 z-40 flex items-center gap-2 rounded-full bg-[#25D366] py-3 pr-5 pl-4 text-[14px] font-semibold text-white shadow-float transition-transform hover:scale-105 print:hidden ${
-        ui.stickyBar ? "bottom-[92px] lg:bottom-5" : "bottom-5"
+        ui.stickyBar ? "bottom-[calc(92px_+_var(--host-badge))] lg:bottom-5" : "bottom-5"
       }`}
     >
       <WhatsAppIcon className="size-5" />

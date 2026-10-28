@@ -53,6 +53,7 @@ async function describe(kind, slug, origin) {
       title: `${row.name}${brand ? ` by ${brand}` : ""} · ${rupees(row.price)}`,
       description: shorten(row.description) || `${row.name}, delivered across Pakistan.`,
       image: imageUrl(row.images?.[0], origin),
+      imageAlt: row.name,
       type: "product",
       price: row.price,
     };
@@ -64,6 +65,7 @@ async function describe(kind, slug, origin) {
     title: `${row.name} · Shop online in Pakistan`,
     description: shorten(row.description || row.tagline) || `${row.name}, delivered across Pakistan.`,
     image: imageUrl(row.image, origin),
+    imageAlt: row.name,
     type: "website",
   };
 }
@@ -114,6 +116,7 @@ export default async (request, context) => {
   if (info.image) {
     html = put(html, metaPattern("property", "og:image"), `<meta property="og:image" content="${escape(info.image)}" />`);
     html = put(html, metaPattern("name", "twitter:image"), `<meta name="twitter:image" content="${escape(info.image)}" />`);
+    html = put(html, metaPattern("property", "og:image:alt"), `<meta property="og:image:alt" content="${escape(info.imageAlt)}" />`);
     /* The default image's size no longer applies. */
     html = html.replace(metaPattern("property", "og:image:width"), "").replace(metaPattern("property", "og:image:height"), "");
   }

@@ -29,27 +29,49 @@ export function Breadcrumbs({ items, className = "" }) {
   );
 }
 
+/* The first and last page, the current one and its neighbours; a gap of two or more pages becomes null ("…"). */
+export function visiblePages(page, pageCount) {
+  const wanted = [...new Set([1, page - 1, page, page + 1, pageCount])].filter((number) => number >= 1 && number <= pageCount).sort((a, b) => a - b);
+  const list = [];
+  let previous = 0;
+  for (const number of wanted) {
+    if (number - previous === 2) list.push(previous + 1);
+    else if (number - previous > 2) list.push(null);
+    list.push(number);
+    previous = number;
+  }
+  return list;
+}
+
+/* At most seven page numbers, so it fits a phone; the arrows join in from tablet width up. */
 export function Pagination({ page, pageCount, onChange, className = "" }) {
   if (pageCount <= 1) return null;
-  const pages = Array.from({ length: pageCount }, (_, index) => index + 1);
-  const base = "grid size-10 place-items-center rounded-full text-[14px] font-semibold transition-colors";
+  const base = "size-10 place-items-center rounded-full text-[14px] font-semibold transition-colors";
+  const arrow = `${base} hidden border border-line text-navy disabled:opacity-40 sm:grid`;
   return (
-    <nav aria-label="Pagination" className={`flex items-center justify-center gap-2 ${className}`}>
-      <button type="button" aria-label="Previous page" title="Previous page" disabled={page === 1} onClick={() => onChange(page - 1)} className={`${base} border border-line text-navy disabled:opacity-40`}>
+    <nav aria-label="Pagination" className={`flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 ${className}`}>
+      <button type="button" aria-label="Previous page" title="Previous page" disabled={page === 1} onClick={() => onChange(page - 1)} className={arrow}>
         <ChevronLeftIcon className="size-4" />
       </button>
-      {pages.map((number) => (
-        <button
-          key={number}
-          type="button"
-          aria-current={number === page ? "page" : undefined}
-          onClick={() => onChange(number)}
-          className={`${base} ${number === page ? "bg-navy text-white" : "border border-line text-navy hover:border-navy"}`}
-        >
-          {number}
-        </button>
-      ))}
-      <button type="button" aria-label="Next page" title="Next page" disabled={page === pageCount} onClick={() => onChange(page + 1)} className={`${base} border border-line text-navy disabled:opacity-40`}>
+      {visiblePages(page, pageCount).map((number, index) =>
+        number === null ? (
+          <span key={`gap-${index}`} className="w-5 text-center text-[14px] text-ink-light" aria-hidden="true">
+            …
+          </span>
+        ) : (
+          <button
+            key={number}
+            type="button"
+            aria-label={`Page ${number}`}
+            aria-current={number === page ? "page" : undefined}
+            onClick={() => onChange(number)}
+            className={`${base} grid ${number === page ? "bg-navy text-white" : "border border-line text-navy hover:border-navy"}`}
+          >
+            {number}
+          </button>
+        )
+      )}
+      <button type="button" aria-label="Next page" title="Next page" disabled={page === pageCount} onClick={() => onChange(page + 1)} className={arrow}>
         <ChevronRightIcon className="size-4" />
       </button>
     </nav>
