@@ -144,8 +144,9 @@ try {
   check("sold-out variant is rejected", Boolean(oversell), oversell?.message);
   const { error: codError } = await db.rpc("place_order", { p_payload: { ...oneItem, payment: "cod" } });
   check("cash on delivery is refused", Boolean(codError), codError?.message);
-  const { error: offMethodError } = await db.rpc("place_order", { p_payload: { ...oneItem, payment: "easypaisa" } });
-  check("a switched-off payment method is refused", Boolean(offMethodError), offMethodError?.message);
+  const offMethod = (originalPayments || paymentsRow?.value)?.methods?.find((method) => !method.enabled)?.id || "card";
+  const { error: offMethodError } = await db.rpc("place_order", { p_payload: { ...oneItem, payment: offMethod } });
+  check(`a switched-off or unknown payment method (${offMethod}) is refused`, Boolean(offMethodError), offMethodError?.message);
 
   const { data: departmentRows } = await db.from("departments").select("id");
   const { data: categoryCheck } = await db.from("categories").select("id, department");

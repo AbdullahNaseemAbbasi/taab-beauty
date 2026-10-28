@@ -2,7 +2,7 @@
 
 ## Live
 
-- Store: **https://nazandco.netlify.app** (Netlify, personal account; deploys from this folder with `netlify deploy --build --prod`). Admin: `/admin`.
+- Store: **https://nazandco.netlify.app** (Netlify, personal account). Every push to `main` on GitHub builds and publishes the site by itself (deploy key + push webhook); `netlify deploy --build --prod` from this folder still works for a manual deploy. Admin: `/admin`.
 - Database: Supabase project `taab-beauty`. On the free plan it pauses after a week with no visits; restore it from the Supabase dashboard if the site ever shows "could not load".
 
 ## Launch hardening (28 October 2026, all tested on the live database)
@@ -29,10 +29,10 @@
 
 ## Before you share the link (your side)
 
-1. **Deploy on Netlify**: done (see Live above). To deploy automatically on every push instead, open the project in Netlify → Site configuration → Build & deploy → Link repository and pick this GitHub repo; the two environment variables are already set.
+1. **Deploy on Netlify**: done, and it deploys automatically from GitHub (see Live above).
 2. **Sign in to the admin panel** at `<your site>/admin`. Email and first password are in `D:\taab-beauty\.env.supabase.local` (`ADMIN_EMAIL`, `ADMIN_PASSWORD`). Change the password in Settings → Your password.
-3. **Settings → Payment**: put in your real bank account, and switch on Easypaisa / JazzCash with your numbers if you use them. Until then checkout says "Online payment is being set up" and nobody can order. Set the advance percentage and the hold time you want.
-4. **Settings → Store details**: your phone and WhatsApp numbers (the sample numbers show a red warning), email, address and social links. Empty fields are simply not shown on the site.
+3. **Settings → Payment**: done on 28 October: Bank Alfalah plus Easypaisa, JazzCash, NayaPay and SadaPay on one mobile number. Change accounts, the advance percentage or the hold time there.
+4. **Settings → Store details**: phone/WhatsApp and email are in. Add the address and the social links when ready; empty fields are simply not shown on the site.
 5. **Settings → Order notifications**: the store address is already the live URL. Install the **ntfy** app on your phone, subscribe to the topic shown there and press "Send test notification".
 6. **Products**: every product, brand, price, specification, warranty line and review on the site is sample data. Replace them in Admin → Products and Admin → Catalogue, or hide them, before customers can order. Reviews, star ratings and the customer quotes on the home page are also samples: showing invented reviews to real customers is misleading, so remove them (Admin → Reviews, and tell the developer to remove the quotes) or replace them with real ones.
 7. **Read the policies** (`/payment-policy`, `/returns`, `/shipping-policy`). They are sensible defaults, not your confirmed rules: 48 hours to pay the advance, advance refunded in full if cancelled before dispatch, courier charges deducted if a parcel is refused, 7-day returns, warranty terms. Tell the developer what to change.

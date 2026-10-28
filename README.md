@@ -65,7 +65,7 @@ Schema: `supabase/migrations/` (applied in order). Main tables: settings, depart
 
 ## Deploy (Netlify)
 
-`netlify.toml` sets the build command and publish folder; `public/_redirects` handles client-side routes. In Netlify add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (Site configuration → Environment variables) before the first build; without them the production build stops with an error (set `VITE_ALLOW_DEMO=true` only for a deliberate demo on sample data). `netlify/edge-functions/social-preview.js` gives product, category and department links their own preview (name, price, photo) on WhatsApp, Facebook, Instagram and X; it reads the same two variables. Then follow `docs/10-launch-checklist.md`.
+The site is **https://nazandco.netlify.app**; every push to `main` deploys it. `netlify.toml` sets the build command, publish folder and content security policy; `public/_redirects` handles client-side routes. In Netlify add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (Site configuration → Environment variables) before the first build; without them the production build stops with an error (set `VITE_ALLOW_DEMO=true` only for a deliberate demo on sample data). `netlify/edge-functions/social-preview.js` gives product, category and department links their own preview (name, price, photo) on WhatsApp, Facebook, Instagram and X; it reads the same two variables. Then follow `docs/10-launch-checklist.md`.
 
 ## Try the demo
 

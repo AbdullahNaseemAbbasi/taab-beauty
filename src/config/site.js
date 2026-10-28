@@ -12,6 +12,8 @@ const paymentDescriptions = {
   bank: "Transfer the advance to our bank account.",
   easypaisa: "Send the advance to our Easypaisa account.",
   jazzcash: "Send the advance to our JazzCash account.",
+  nayapay: "Send the advance to our NayaPay account.",
+  sadapay: "Send the advance to our SadaPay account.",
 };
 
 export const site = {
@@ -48,6 +50,8 @@ export const site = {
       { id: "bank", label: "Bank Transfer", description: paymentDescriptions.bank, enabled: true, bank: "", accountTitle: "", accountNumber: "" },
       { id: "easypaisa", label: "Easypaisa", description: paymentDescriptions.easypaisa, enabled: false, bank: "", accountTitle: "", accountNumber: "" },
       { id: "jazzcash", label: "JazzCash", description: paymentDescriptions.jazzcash, enabled: false, bank: "", accountTitle: "", accountNumber: "" },
+      { id: "nayapay", label: "NayaPay", description: paymentDescriptions.nayapay, enabled: false, bank: "", accountTitle: "", accountNumber: "" },
+      { id: "sadapay", label: "SadaPay", description: paymentDescriptions.sadapay, enabled: false, bank: "", accountTitle: "", accountNumber: "" },
     ],
   },
 

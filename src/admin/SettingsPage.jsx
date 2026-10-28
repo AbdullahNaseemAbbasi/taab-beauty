@@ -69,6 +69,8 @@ const defaultMethods = [
   { id: "bank", label: "Bank Transfer", enabled: true, bank: "", account_title: "", account_number: "" },
   { id: "easypaisa", label: "Easypaisa", enabled: false, bank: "", account_title: "", account_number: "" },
   { id: "jazzcash", label: "JazzCash", enabled: false, bank: "", account_title: "", account_number: "" },
+  { id: "nayapay", label: "NayaPay", enabled: false, bank: "", account_title: "", account_number: "" },
+  { id: "sadapay", label: "SadaPay", enabled: false, bank: "", account_title: "", account_number: "" },
 ];
 
 /* Saved methods merged over the defaults; methods the form doesn't know are kept as they are. */

@@ -67,6 +67,8 @@ const ownerSettings = [
     { id: "bank", label: "Bank Transfer", enabled: true, bank: "Meezan Bank", account_title: "Naz & CO", account_number: "PK00 MEZN 0000 0000 0000 0000" },
     { id: "easypaisa", label: "Easypaisa", enabled: false, bank: "", account_title: "", account_number: "" },
     { id: "jazzcash", label: "JazzCash", enabled: false, bank: "", account_title: "", account_number: "" },
+    { id: "nayapay", label: "NayaPay", enabled: false, bank: "", account_title: "", account_number: "" },
+    { id: "sadapay", label: "SadaPay", enabled: false, bank: "", account_title: "", account_number: "" },
   ] } },
   { key: "contact", value: { phone: "", whatsapp: "", email: "", hours: "Mon to Sat, 10am to 8pm PKT", address: "", instagram: "", facebook: "", tiktok: "", youtube: "", announcement: "" } },
 ];
