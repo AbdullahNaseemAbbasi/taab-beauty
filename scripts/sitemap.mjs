@@ -1,10 +1,7 @@
 /* Generates public/sitemap.xml and public/robots.txt (runs automatically before every build).
- * Products, categories and departments come from the live database when its keys are set,
- * so items added or hidden in the admin are reflected; otherwise the sample data is used. */
+ * Products, categories and departments come from the live database, so items added or hidden
+ * in the admin are reflected. Categories and departments with no products yet are left out. */
 import { readFileSync, existsSync, writeFileSync } from "node:fs";
-import { products as sampleProducts } from "../src/data/products.js";
-import { categories as sampleCategories } from "../src/data/categories.js";
-import { departments as sampleDepartments } from "../src/data/departments.js";
 
 /* Netlify passes its variables in the environment; locally they live in .env. */
 if (existsSync(".env")) {
@@ -38,23 +35,21 @@ async function liveCatalogue() {
     const departmentIds = new Set(departments.map((row) => row.id));
     const visibleCategories = categories.filter((row) => departmentIds.has(row.department));
     const categoryIds = new Set(visibleCategories.map((row) => row.id));
+    const visibleProducts = products.filter((row) => categoryIds.has(row.category_id));
+    const stocked = visibleCategories.filter((row) => visibleProducts.some((product) => product.category_id === row.id));
     return {
-      departments: departments.map((row) => row.id),
-      categories: visibleCategories.map((row) => row.id),
-      products: products.filter((row) => categoryIds.has(row.category_id)).map((row) => ({ slug: row.slug, lastmod: row.updated_at?.slice(0, 10) })),
+      departments: departments.filter((row) => stocked.some((category) => category.department === row.id)).map((row) => row.id),
+      categories: stocked.map((row) => row.id),
+      products: visibleProducts.map((row) => ({ slug: row.slug, lastmod: row.updated_at?.slice(0, 10) })),
     };
   } catch (error) {
-    console.warn(`sitemap: could not read the database (${error.message}); using the sample catalogue.`);
+    console.warn(`sitemap: could not read the database (${error.message}); listing the fixed pages only.`);
     return null;
   }
 }
 
 const live = await liveCatalogue();
-const catalogue = live || {
-  departments: sampleDepartments.map((department) => department.id),
-  categories: sampleCategories.map((category) => category.slug),
-  products: sampleProducts.map((product) => ({ slug: product.slug })),
-};
+const catalogue = live || { departments: [], categories: [], products: [] };
 
 const entries = [
   ["/", "daily", 1.0],
@@ -96,4 +91,4 @@ Disallow: /admin
 Sitemap: ${base}/sitemap.xml
 `;
 writeFileSync("public/robots.txt", robots);
-console.log(`sitemap.xml: ${entries.length} URLs from the ${live ? "database" : "sample data"} (${base})`);
+console.log(`sitemap.xml: ${entries.length} URLs${live ? " from the database" : ""} (${base})`);

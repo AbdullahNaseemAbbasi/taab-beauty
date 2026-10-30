@@ -1,7 +1,6 @@
 /*
- * Supabase client. When VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set
- * the app runs in "live" mode against the database; otherwise every API
- * module falls back to the mock data in src/data so the site still works.
+ * Supabase client. The store's data lives in the database, so without
+ * VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY it opens empty and takes no orders.
  */
 import { createClient } from "@supabase/supabase-js";
 

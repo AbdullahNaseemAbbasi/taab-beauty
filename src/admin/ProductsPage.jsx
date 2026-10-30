@@ -286,7 +286,7 @@ function ProductEditor({ row, brands, categories, onClose, onSaved }) {
                 {form.options.map((option, index) => (
                   <div key={option.key} className={`grid items-end gap-2 ${form.variantDisplay === "text" ? "grid-cols-[1fr_90px_36px]" : "grid-cols-[44px_1fr_90px_36px]"}`}>
                     {form.variantDisplay !== "text" && <input type="color" aria-label="Colour" value={option.hex || "#cccccc"} onChange={(event) => setOption(index, { hex: event.target.value })} className="h-[50px] w-11 cursor-pointer rounded-xl border border-line bg-white p-1" />}
-                    <Input aria-label="Option name" value={option.name} onChange={(event) => setOption(index, { name: event.target.value })} placeholder={form.variantDisplay === "text" ? "e.g. M" : "e.g. Rooh (true red)"} />
+                    <Input aria-label="Option name" value={option.name} onChange={(event) => setOption(index, { name: event.target.value })} placeholder={form.variantDisplay === "text" ? "e.g. M" : "e.g. True red"} />
                     <Input aria-label="Stock" type="number" min="0" value={option.stock} onChange={(event) => setOption(index, { stock: event.target.value, stockTouched: true })} />
                     <button type="button" aria-label="Remove option" title="Remove option" onClick={() => setForm({ ...form, options: form.options.filter((_, position) => position !== index) })} className="grid h-[50px] place-items-center rounded-xl text-ink-light hover:text-danger">
                       <TrashIcon className="size-4" />
@@ -416,7 +416,7 @@ export default function ProductsPage() {
                 <img src={img(row.images?.[0], 120)} alt="" className="size-14 shrink-0 rounded-lg bg-tint object-cover" />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-semibold">{row.name}</span>
-                  <span className="block truncate text-[12px] text-ink-light">{row.sku} · {row.brands?.name}</span>
+                  <span className="block truncate text-[12px] text-ink-light">{[row.sku, row.brands?.name].filter(Boolean).join(" · ")}</span>
                   <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
                     <strong>{formatPrice(row.price)}</strong>
                     <span className={`text-[13px] font-bold ${stockTone(row)}`}>{row.stock} in stock</span>
@@ -434,7 +434,7 @@ export default function ProductsPage() {
                     <img src={img(row.images?.[0], 120)} alt="" className="size-12 shrink-0 rounded-lg bg-tint object-cover" />
                     <span>
                       <span className="block font-semibold">{row.name}</span>
-                      <span className="block text-[12px] text-ink-light">{row.sku} · {row.brands?.name}</span>
+                      <span className="block text-[12px] text-ink-light">{[row.sku, row.brands?.name].filter(Boolean).join(" · ")}</span>
                     </span>
                   </span>
                 ),

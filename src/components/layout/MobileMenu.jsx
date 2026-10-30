@@ -10,7 +10,7 @@ import { ecommerce } from "../../analytics/ecommerce.js";
 
 export default function MobileMenu() {
   const { ui, setUI } = useStore();
-  const { departments, categories, collections } = useCatalog();
+  const { departments, stockedCategories, collections } = useCatalog();
   const close = () => setUI({ menuOpen: false });
 
   return (
@@ -33,7 +33,7 @@ export default function MobileMenu() {
                       All {department.name}
                     </Link>
                   </li>
-                  {departmentLinks(department, categories).map((link) => (
+                  {departmentLinks(department, stockedCategories).map((link) => (
                     <li key={link.to}>
                       <Link to={link.to} onClick={close} className="block py-2 text-[15px] text-ink">
                         {link.label}

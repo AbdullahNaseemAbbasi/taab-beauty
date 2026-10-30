@@ -77,7 +77,7 @@ export function sortProducts(list, sort = "featured") {
     case "rating":
       return copy.sort((a, b) => b.rating - a.rating || b.reviewCount - a.reviewCount);
     case "newest":
-      /* New-arrival flag first, then the date the product was added (live data), then id for sample data. */
+      /* New-arrival flag first, then the date the product was added, then id. */
       return copy.sort((a, b) => Number(b.newArrival) - Number(a.newArrival) || String(b.createdAt || "").localeCompare(String(a.createdAt || "")) || b.id.localeCompare(a.id));
     case "bestselling":
       return copy.sort((a, b) => Number(b.bestSeller) - Number(a.bestSeller) || b.reviewCount - a.reviewCount);
@@ -127,24 +127,6 @@ export function relatedProducts(products, product, limit = 4) {
   return products
     .filter((candidate) => candidate.id !== product.id && candidate.category === product.category)
     .sort((a, b) => b.rating - a.rating)
-    .slice(0, limit);
-}
-
-/* Simple "frequently bought together" rules until real co-purchase data exists. */
-const bundleRules = {
-  makeup: ["essential-12-piece-brush-set", "airbrush-loose-setting-powder", "glass-shine-lip-gloss"],
-  skincare: ["gentle-gel-cleanser", "glow-boost-vitamin-c-serum", "overnight-recovery-cream"],
-  haircare: ["argan-and-amla-hair-oil", "neem-wood-detangling-comb", "ceramic-round-blow-dry-brush"],
-  fragrance: ["bath-bomb-trio", "sandalwood-spa-candle-set", "rich-repair-hand-and-body-cream"],
-  tools: ["skin-fit-serum-foundation", "soft-flush-blush-duo", "glow-boost-vitamin-c-serum"],
-  electronics: ["20w-fast-wall-charger", "cork-wireless-charging-pad", "brick-portable-bluetooth-speaker"],
-  kitchen: ["4-piece-cooking-utensil-set", "wooden-mortar-and-pestle", "glass-storage-jars-set-of-3"],
-};
-
-export function frequentlyBoughtTogether(productBySlug, product, limit = 3) {
-  return (bundleRules[product.category] || [])
-    .map((slug) => productBySlug[slug])
-    .filter((candidate) => candidate && candidate.id !== product.id && candidate.stock > 0 && !candidate.variants)
     .slice(0, limit);
 }
 

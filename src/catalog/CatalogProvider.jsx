@@ -1,13 +1,12 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
-import { fetchCatalog, mockCatalog, emptyCatalog, subscribeToCatalogChanges, stockOnlyUpdate } from "../api/catalog.js";
+import { fetchCatalog, emptyCatalog, subscribeToCatalogChanges, stockOnlyUpdate } from "../api/catalog.js";
 import { isLive } from "../api/client.js";
 import { collections } from "../lib/collections.js";
 
 /*
- * Loads the storefront dataset once and exposes it to every page. In mock
- * mode the data is available synchronously; in live mode pages see a loading
- * state (handled in Layout) until Supabase responds. In live mode the data
- * also refreshes by itself whenever an admin changes a product, category,
+ * Loads the storefront dataset once and exposes it to every page. Pages see a
+ * loading state (handled in Layout) until Supabase responds. The data also
+ * refreshes by itself whenever an admin changes a product, category,
  * department, brand, review or setting (Supabase Realtime).
  */
 const CatalogContext = createContext(null);
@@ -20,7 +19,7 @@ function index(list, key = "id") {
 const reloadDelay = () => 2500 + Math.round(Math.random() * 1500);
 
 export function CatalogProvider({ children }) {
-  const [state, setState] = useState(() => (isLive ? { status: "loading", data: null, error: null } : { status: "ready", data: mockCatalog(), error: null }));
+  const [state, setState] = useState(() => (isLive ? { status: "loading", data: null, error: null } : { status: "ready", data: emptyCatalog(), error: null }));
   const refreshTimer = useRef(null);
   const dataRef = useRef(null);
   dataRef.current = state.data;
@@ -68,9 +67,16 @@ export function CatalogProvider({ children }) {
   }, []);
 
   const value = useMemo(() => {
-    /* Live pages never fall back to the sample catalogue: until the store loads, lists are empty. */
-    const data = state.data || (isLive ? emptyCatalog() : mockCatalog());
+    /* Until the store loads, lists are empty. */
+    const data = state.data || emptyCatalog();
     const categoryBySlug = index(data.categories, "slug");
+    /* Menus list only what can be bought: categories with products, and the product types in use inside them. */
+    const stockedCategories = data.categories
+      .map((category) => {
+        const own = data.products.filter((product) => product.category === category.slug);
+        return own.length ? { ...category, subcategories: category.subcategories.filter((sub) => own.some((product) => product.subcategory === sub)) } : null;
+      })
+      .filter(Boolean);
     return {
       status: state.status,
       error: state.error,
@@ -80,6 +86,7 @@ export function CatalogProvider({ children }) {
       productById: index(data.products),
       productBySlug: index(data.products, "slug"),
       categories: data.categories,
+      stockedCategories,
       categoryBySlug,
       departments: data.departments,
       departmentById: index(data.departments),

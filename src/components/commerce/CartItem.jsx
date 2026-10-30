@@ -21,7 +21,7 @@ export default function CartItem({ line, compact = false }) {
       <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <span className="block text-[11px] uppercase tracking-wide text-ink-light">{product.brand}</span>
+            {product.brand && <span className="block text-[11px] uppercase tracking-wide text-ink-light">{product.brand}</span>}
             <Link to={`/product/${product.slug}`} onClick={() => setUI({ cartOpen: false })} className="block text-[15px] font-semibold text-navy hover:text-coral">
               {product.name}
             </Link>

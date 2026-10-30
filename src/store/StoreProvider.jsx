@@ -217,7 +217,8 @@ export function StoreProvider({ children }) {
       applyCoupon,
       revalidateCoupon,
       removeCoupon: () => dispatch({ type: "cart/coupon", coupon: null }),
-      wishlist: state.wishlist,
+      /* Products removed from the store stop counting, even if a browser still has them saved. */
+      wishlist: state.wishlist.filter((id) => productById[id]),
       isWishlisted: (productId) => state.wishlist.includes(productId),
       toggleWishlist: (product) => {
         const added = !state.wishlist.includes(product.id);
@@ -225,7 +226,7 @@ export function StoreProvider({ children }) {
         ecommerce.wishlist(product, added);
         toast(added ? `${product.name} saved to your wishlist.` : `${product.name} removed from your wishlist.`, { action: added ? { label: "View", to: "/wishlist" } : null });
       },
-      compare: state.compare,
+      compare: state.compare.filter((id) => productById[id]),
       isCompared: (productId) => state.compare.includes(productId),
       toggleCompare: (product) => {
         const adding = !state.compare.includes(product.id);

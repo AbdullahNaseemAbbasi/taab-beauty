@@ -62,7 +62,7 @@ export default function ProductCard({ product, listName = "product_grid", eager 
       </div>
 
       <div className="mt-3 flex flex-1 flex-col px-1">
-        <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-light">{product.brand}</span>
+        {product.brand && <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-light">{product.brand}</span>}
         <h3 className="mt-1 line-clamp-2 text-[15px] font-semibold leading-snug text-navy">
           <Link to={href} onClick={() => ecommerce.selectItem(product, listName)} className="hover:text-coral">
             {product.name}

@@ -207,7 +207,7 @@ export default function CouponsPage() {
                 <Field label="Starts" hint="Optional"><Input type="date" value={form.starts_at} onChange={set("starts_at")} /></Field>
                 <Field label="Ends" hint="Optional, last day included"><Input type="date" value={form.ends_at} onChange={set("ends_at")} /></Field>
               </div>
-              <Field label="Creator name (optional)" hint={`Creates the link /?ref=${toSlug(form.creator_id) || "name"} and credits their sales`}><Input value={form.creator_id} onChange={set("creator_id")} placeholder="e.g. hira" /></Field>
+              <Field label="Creator name (optional)" hint={`Creates the link /?ref=${toSlug(form.creator_id) || "name"} and credits their sales`}><Input value={form.creator_id} onChange={set("creator_id")} placeholder="Their name" /></Field>
               <Field label="Description"><Input value={form.description} onChange={set("description")} placeholder="Shown in reports" /></Field>
               {error && <p role="alert" className="rounded-xl bg-coral-50 px-4 py-3 text-[14px] text-navy">{error}</p>}
               <div className="flex gap-3">

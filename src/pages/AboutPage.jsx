@@ -41,7 +41,7 @@ export default function AboutPage() {
         description="Naz means pride. We started in Karachi in 2026 to make it easy to buy good clothing, beauty and appliances from one store you can trust."
         image={images.hero.about}
         imageAlt={images.hero.aboutAlt}
-        primary={{ label: "Shop best sellers", to: "/best-sellers" }}
+        primary={{ label: "Shop all products", to: "/shop" }}
         secondary={{ label: "How payment works", to: "/payment-policy" }}
       />
 
@@ -103,7 +103,7 @@ export default function AboutPage() {
       <section className="bg-white py-14">
         <div className="wrap flex flex-col items-center gap-5 text-center">
           <h2 className="font-display text-[28px] font-extrabold text-navy sm:text-[34px]">Ready to try {site.name}?</h2>
-          <p className="max-w-xl text-[16px] text-ink">{percent >= 100 ? "Start with a best seller from any department, paid in advance and delivered to your door." : percent <= 0 ? "Start with a best seller from any department, and pay when it arrives." : `Start with a best seller from any department: pay ${percent}% in advance and the rest when it arrives.`}</p>
+          <p className="max-w-xl text-[16px] text-ink">{percent >= 100 ? "Pick anything from any department, paid in advance and delivered to your door." : percent <= 0 ? "Pick anything from any department, and pay when it arrives." : `Pick anything from any department: pay ${percent}% in advance and the rest when it arrives.`}</p>
           <Button to="/shop" arrow>
             Shop all products
           </Button>

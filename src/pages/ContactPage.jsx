@@ -56,7 +56,7 @@ export default function ContactPage() {
             {whatsapp && (
               <li className="flex items-start gap-4">
                 <span className="grid size-12 shrink-0 place-items-center rounded-full bg-[#25D366]/15 text-[#128C4A]"><WhatsAppIcon className="size-6" /></span>
-                <span><span className="block font-semibold text-navy">WhatsApp</span><a href={whatsapp} target="_blank" rel="noreferrer" onClick={() => ecommerce.whatsapp("contact_page")} className="text-teal hover:underline">{phone || "Chat with us"}</a><span className="block text-[13px] text-ink">Fastest. Typical reply under 15 minutes in business hours.</span></span>
+                <span><span className="block font-semibold text-navy">WhatsApp</span><a href={whatsapp} target="_blank" rel="noreferrer" onClick={() => ecommerce.whatsapp("contact_page")} className="text-teal hover:underline">{phone || "Chat with us"}</a><span className="block text-[13px] text-ink">The fastest way to reach us.</span></span>
               </li>
             )}
             {email && (

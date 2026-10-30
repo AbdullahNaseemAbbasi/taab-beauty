@@ -6,7 +6,7 @@ Everything a customer sees comes from the database and can be changed from the a
 
 There is **no cash on delivery**. An order is confirmed by an advance payment (50% by default, set in Admin → Settings) and the balance is collected on delivery. Prices, stock, coupons and the advance are all calculated server-side when the order is placed.
 
-Without Supabase keys the same storefront runs on the built-in mock data (the admin panel needs the database).
+The store needs its Supabase keys: all of its data lives in the database, and without them it opens empty and takes no orders.
 
 ## Run
 
@@ -23,8 +23,8 @@ Copy `.env.example` to `.env`.
 
 | Variable | Purpose |
 |----------|---------|
-| `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` | Frontend connection to the database. Empty = mock mode. |
-| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Server-side only, used by `npm run seed`, `create-admin` and `smoke-test`. Never ship to the browser. |
+| `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` | Frontend connection to the database. Required. |
+| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Server-side only, used by `create-admin` and `smoke-test`. Never ship to the browser. |
 | `VITE_SITE_URL` | Canonical address for SEO tags and links in messages. Empty = the address the site is opened on (on Netlify the build uses the site URL). |
 | `VITE_META_PIXEL_ID`, `VITE_TIKTOK_PIXEL_ID`, `VITE_GA_ID`, `VITE_GTM_ID` | Vendor tracking (optional; events always reach `window.dataLayer` and the `events` table) |
 | `VITE_ANALYTICS_DEBUG` | Log events to the console in production |
@@ -37,8 +37,6 @@ The brand name and defaults live in `src/config/site.js`. Contact details, socia
 npx supabase login                       # once, opens the browser
 npx supabase link --project-ref <ref>    # once per machine
 npm run db:push                          # applies supabase/migrations/*
-npm run seed                             # loads the sample catalogue into an EMPTY database (refuses once products exist; --force only on a test database)
-npm run seed -- --reset-settings         # also puts the sample payment account back and empties the contact details
 ```
 
 Schema: `supabase/migrations/` (applied in order). Main tables: settings, departments, categories, brands, concerns, products, product_costs, reviews, faqs, coupons, customers, profiles, admins, orders, order_items, events, newsletter_subscribers, contact_messages, stock_alerts, checkout_sessions.
@@ -65,16 +63,15 @@ Schema: `supabase/migrations/` (applied in order). Main tables: settings, depart
 
 ## Deploy (Netlify)
 
-The site is **https://nazandco.netlify.app**; every push to `main` deploys it. `netlify.toml` sets the build command, publish folder and content security policy; `public/_redirects` handles client-side routes. In Netlify add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (Site configuration → Environment variables) before the first build; without them the production build stops with an error (set `VITE_ALLOW_DEMO=true` only for a deliberate demo on sample data). `netlify/edge-functions/social-preview.js` gives product, category and department links their own preview (name, price, photo) on WhatsApp, Facebook, Instagram and X; it reads the same two variables. Then follow `docs/10-launch-checklist.md`.
+The site is **https://nazandco.netlify.app**; every push to `main` deploys it. `netlify.toml` sets the build command, publish folder and content security policy; `public/_redirects` handles client-side routes. In Netlify add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (Site configuration → Environment variables) before the first build; without them the production build stops with an error. `netlify/edge-functions/social-preview.js` gives product, category and department links their own preview (name, price, photo) on WhatsApp, Facebook, Instagram and X; it reads the same two variables. Then follow `docs/10-launch-checklist.md`.
 
-## Try the demo
+## How the store works
 
-- Browse the departments from the menu (`/department/beauty`, `/department/appliances`, `/department/clothes`). Beauty pages show ingredients; appliances show specifications and warranty; clothes have size buttons.
-- Add products to the bag, apply code `WELCOME10`, `NAZ500` or creator code `HIRA15`, and place the order. The confirmation page shows the advance to send and the account to send it to.
-- Sign in at `/admin`, open the order and press "Advance received, confirm order"; the customer's Tracking page updates at once. Mark it delivered and the balance is recorded as paid.
-- Track the sample order `NZ-241001-0211` with phone `0300 1234567`.
-- In Admin → Catalogue add a department or rename a category while the store is open in another tab: the menu and home page change without a refresh.
-- Land on any page with `?utm_source=instagram&utm_campaign=test&ref=hira`: the creator link shows a banner and auto-applies `HIRA15`, and the order carries the attribution.
+- The site shows only real data. Until products are added, the home page says they are coming and empty sections stay hidden; a category appears in the menus once it has a product.
+- Add products in Admin → Products. A product can have no brand. Brands, categories and departments are in Admin → Catalogue, coupons in Admin → Coupons.
+- Beauty pages show ingredients; appliances show specifications and warranty; clothes have size buttons.
+- The order confirmation page shows the advance to send and the account to send it to. In `/admin`, open the order and press "Advance received, confirm order"; the customer's Tracking page updates at once. Mark it delivered and the balance is recorded as paid.
+- A creator link (`?ref=name`) shows a banner and auto-applies that creator's coupon, and the order carries the attribution.
 
 ## Documentation
 

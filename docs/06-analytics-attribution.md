@@ -26,7 +26,7 @@ Every event carries: `session_id`, `source`, `campaign`, `ad_content`, `creator_
 
 ## Attribution flow
 
-1. Visitor lands on `/product/velvet-matte-lipstick?utm_source=instagram&utm_medium=paid_social&utm_campaign=summer_sale&utm_content=foundation_video_01`.
+1. Visitor lands on `/product/some-product?utm_source=instagram&utm_medium=paid_social&utm_campaign=summer_sale&utm_content=foundation_video_01`.
 2. `captureAttribution()` stores the touch. If no first touch exists it becomes both first and last touch.
 3. The visitor browses; each event is stamped with the last-touch campaign.
 4. At checkout, `createOrder()` embeds `attribution { sessionId, firstTouch, lastTouch, creatorRef, device }` in the order record.

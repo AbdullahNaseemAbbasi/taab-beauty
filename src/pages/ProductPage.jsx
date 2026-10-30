@@ -11,7 +11,6 @@ import ProductGallery from "../components/product/ProductGallery.jsx";
 import ReviewSection from "../components/product/ReviewSection.jsx";
 import StockAlertForm from "../components/product/StockAlertForm.jsx";
 import DispatchCountdown from "../components/commerce/DispatchCountdown.jsx";
-import ProductCard from "../components/product/ProductCard.jsx";
 import { ProductCarousel } from "../components/product/ProductGrid.jsx";
 import { Section } from "../components/sections/Sections.jsx";
 import { whatsappLink } from "../components/layout/WhatsAppButton.jsx";
@@ -21,7 +20,7 @@ import { isLive } from "../api/client.js";
 import { site } from "../config/site.js";
 import { formatPrice } from "../lib/format.js";
 import { img } from "../lib/images.js";
-import { variantStock, relatedProducts, frequentlyBoughtTogether, reviewsForProduct } from "../lib/catalog.js";
+import { variantStock, relatedProducts, reviewsForProduct } from "../lib/catalog.js";
 import { MAX_LINE_QUANTITY } from "../lib/cart.js";
 import { productSchema, breadcrumbSchema } from "../lib/schema.js";
 import { useStore } from "../store/StoreProvider.jsx";
@@ -95,7 +94,7 @@ export default function ProductPage() {
   useSeo(
     product
       ? {
-          title: `${product.name} by ${product.brand}`,
+          title: product.brand ? `${product.name} by ${product.brand}` : product.name,
           description: product.description,
           path: `/product/${slug}`,
           type: "product",
@@ -127,7 +126,6 @@ export default function ProductPage() {
   }, [found, setUI]);
 
   const stock = product ? variantStock(product, variantId) : 0;
-  const bundle = useMemo(() => (product ? frequentlyBoughtTogether(productBySlug, product) : []), [product?.id, productBySlug]);
   const related = useMemo(() => (product ? relatedProducts(products, product) : []), [product?.id, products]);
   const recentOthers = recent.filter((entry) => entry.id !== product?.id).slice(0, 4);
 
@@ -158,12 +156,6 @@ export default function ProductPage() {
       /* user cancelled */
     }
   };
-  const addBundle = () => {
-    if (!add(false)) return;
-    bundle.forEach((item) => addToCart(item, { openDrawer: false, silent: true }));
-    toast("Bundle added to your bag.", { action: { label: "View bag", to: "/cart" } });
-  };
-  const bundleTotal = product.price + bundle.reduce((sum, item) => sum + item.price, 0);
 
   /* Beauty products list ingredients; electronics and kitchen items list specifications and warranty. */
   const isBeauty = (category?.department || "beauty") === "beauty";
@@ -183,7 +175,7 @@ export default function ProductPage() {
           ))}
           {product.size && (<><dt className="font-semibold text-navy">{isBeauty ? "Size" : "In the box"}</dt><dd>{product.size}</dd></>)}
           <dt className="font-semibold text-navy">SKU</dt><dd>{product.sku}</dd>
-          <dt className="font-semibold text-navy">Brand</dt><dd>{product.brand}</dd>
+          {product.brand && (<><dt className="font-semibold text-navy">Brand</dt><dd>{product.brand}</dd></>)}
           <dt className="font-semibold text-navy">Category</dt><dd>{category?.name || product.category}{product.subcategory ? ` / ${product.subcategory}` : ""}</dd>
         </dl>
       ),
@@ -192,9 +184,9 @@ export default function ProductPage() {
     {
       title: "Authenticity",
       content: isBeauty ? (
-        <p>Sourced directly from {product.brand} or its authorised distributor. Every unit ships sealed with an intact batch code, and we can share the batch certificate on request.</p>
+        <p>Sourced directly from {product.brand || "the maker"} or its authorised distributor. Every unit ships sealed with an intact batch code, and we can share the batch certificate on request.</p>
       ) : (
-        <p>Sourced directly from {product.brand} or its authorised distributor. Every unit is new, checked before dispatch and shipped in its original packaging.</p>
+        <p>Sourced directly from {product.brand || "the maker"} or its authorised distributor. Every unit is new, checked before dispatch and shipped in its original packaging.</p>
       ),
     },
     {
@@ -218,9 +210,11 @@ export default function ProductPage() {
         <ProductGallery key={product.id} product={product} />
 
         <div>
-          <Link to={`/shop?brand=${encodeURIComponent(product.brand)}`} className="text-[12px] font-bold uppercase tracking-[0.2em] text-teal hover:underline">
-            {product.brand}
-          </Link>
+          {product.brand && (
+            <Link to={`/shop?brand=${encodeURIComponent(product.brand)}`} className="text-[12px] font-bold uppercase tracking-[0.2em] text-teal hover:underline">
+              {product.brand}
+            </Link>
+          )}
           <h1 className="mt-2 font-display text-[28px] font-extrabold leading-[1.1] tracking-[-0.02em] text-navy sm:text-[38px]">{product.name}</h1>
           {product.reviewCount > 0 && (
             <a href="#reviews" className="mt-3 inline-flex">
@@ -279,27 +273,6 @@ export default function ProductPage() {
           <Accordion items={accordion} className="mt-7" />
         </div>
       </section>
-
-      {bundle.length > 0 && (
-        <Section eyebrow={isBeauty ? "Complete your routine" : "Goes well with"} title="Frequently bought together." bg="tint" align="left">
-          <div className="grid gap-6 lg:grid-cols-[1fr_300px] lg:items-start">
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-              <ProductCard product={product} listName="fbt_anchor" />
-              {bundle.map((item) => (
-                <ProductCard key={item.id} product={item} listName="fbt" />
-              ))}
-            </div>
-            <div className="rounded-2xl border border-line bg-white p-5">
-              <p className="text-[14px] text-ink">Bundle price</p>
-              <p className="font-display text-[28px] font-extrabold text-navy">{formatPrice(bundleTotal)}</p>
-              <p className="mt-1 text-[13px] text-ink">{bundle.length + 1} items, {bundleTotal >= settings.shipping.freeShippingThreshold ? "free delivery included" : "delivery calculated at checkout"}</p>
-              <Button variant="navy" className="mt-4 w-full" onClick={addBundle} disabled={stock <= 0}>
-                Add all {bundle.length + 1} to bag
-              </Button>
-            </div>
-          </div>
-        </Section>
-      )}
 
       <div className="wrap">
         <ReviewSection product={product} />

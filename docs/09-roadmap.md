@@ -6,7 +6,7 @@ Multi-department storefront on a Supabase backend: departments, categories and b
 
 ## Phase 1 · Operations (2 to 3 weeks)
 
-- Replace the seeded mock data with real products, photography, prices and stock (Admin → Products).
+- Add the real products, photography, prices and stock (Admin → Products).
 - Mail provider (SMTP) for password-reset and order emails; then switch email confirmation on.
 - SMS confirmation via a local gateway and a WhatsApp template message, triggered by a database webhook on `orders` insert (Supabase Edge Function).
 - Courier integration: TCS / Leopards API for booking and tracking numbers, written back to `orders.courier` and `orders.tracking_code`; status updates append to `timeline`.

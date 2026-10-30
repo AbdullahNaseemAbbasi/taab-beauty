@@ -10,7 +10,7 @@ export const collections = {
   "best-sellers": {
     slug: "best-sellers",
     name: "Best Sellers",
-    tagline: "The products our customers reorder.",
+    tagline: "Our most popular picks.",
     description: "Our most popular products from every department.",
     filter: (product) => product.bestSeller,
   },

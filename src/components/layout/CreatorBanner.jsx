@@ -46,7 +46,7 @@ export default function CreatorBanner() {
           </span>
         </p>
         <div className="flex shrink-0 items-center gap-2">
-          <Link to="/best-sellers" className="hidden rounded-full bg-white/15 px-3 py-1 font-semibold hover:bg-white/25 sm:inline">
+          <Link to="/shop" className="hidden rounded-full bg-white/15 px-3 py-1 font-semibold hover:bg-white/25 sm:inline">
             Shop now
           </Link>
           <button

@@ -21,7 +21,7 @@ export default function CartDrawer() {
     <Overlay open={ui.cartOpen} onClose={close} side="right" title={`Your Bag (${cart.totals.itemCount})`}>
       {cart.lines.length === 0 ? (
         <div className="flex flex-1 items-center p-5">
-          <EmptyState icon={BagIcon} title="Your bag is empty" text="Add a few favourites and they will show up here." action={{ label: "Shop best sellers", to: "/best-sellers" }} className="w-full" />
+          <EmptyState icon={BagIcon} title="Your bag is empty" text="Add a few favourites and they will show up here." action={{ label: "Shop all products", to: "/shop" }} className="w-full" />
         </div>
       ) : (
         <>

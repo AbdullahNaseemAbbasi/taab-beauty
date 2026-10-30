@@ -1,25 +1,9 @@
 /*
- * Catalogue loader. Returns the full storefront dataset in the shape the UI
- * expects (camelCase, same as src/data). Live mode reads Supabase; mock mode
- * returns the local data instantly.
+ * Catalogue loader. Reads the full storefront dataset from Supabase and returns
+ * it in the shape the UI expects (camelCase).
  */
 import { supabase, isLive, toError } from "./client.js";
-import { products as mockProducts } from "../data/products.js";
-import { categories as mockCategories } from "../data/categories.js";
-import { departments as mockDepartments } from "../data/departments.js";
-import { brands as mockBrands } from "../data/brands.js";
-import { concerns as mockConcerns } from "../data/concerns.js";
-import { reviews as mockReviews } from "../data/reviews.js";
-import { faqs as mockFaqs } from "../data/faqs.js";
 import { site, applyStoreSettings } from "../config/site.js";
-
-/* Mock mode has no settings table, so give the demo checkout a bank account to show (marked demo so it is allowed). */
-if (!isLive) {
-  applyStoreSettings({
-    payments: { advance_percent: 50, methods: [{ id: "bank", label: "Bank Transfer", enabled: true, bank: "Demo Bank", account_title: site.name, account_number: "PK00 DEMO 0000 0000 0000 0000" }] },
-  });
-  site.payments.demo = true;
-}
 
 function buildSettings(shipping = {}) {
   return {
@@ -99,27 +83,13 @@ function groupFaqs(rows) {
   return [...groups.values()];
 }
 
-/* What live pages see before the first load finishes (or after it fails): nothing, rather than sample data. */
+/* What pages see before the first load finishes, or after it fails. */
 export function emptyCatalog() {
   return { products: [], categories: [], departments: [], brands: [], concerns: [], reviews: [], faqs: [], settings: buildSettings(), source: "empty" };
 }
 
-export function mockCatalog() {
-  return {
-    products: mockProducts,
-    categories: mockCategories,
-    departments: mockDepartments,
-    brands: mockBrands,
-    concerns: mockConcerns,
-    reviews: mockReviews,
-    faqs: mockFaqs,
-    settings: buildSettings(),
-    source: "mock",
-  };
-}
-
 export async function fetchCatalog() {
-  if (!isLive) return mockCatalog();
+  if (!isLive) return emptyCatalog();
 
   const [products, categories, departments, brands, concerns, reviews, faqs, settings] = await Promise.all([
     supabase.from("products").select("*, brands(name)").eq("active", true).order("created_at", { ascending: true }),
@@ -158,7 +128,7 @@ export async function fetchCatalog() {
 
 /* Re-reads one product (fresh stock) after an order or when a product page opens. */
 export async function fetchProductBySlug(slug) {
-  if (!isLive) return mockProducts.find((product) => product.slug === slug) || null;
+  if (!isLive) return null;
   const { data, error } = await supabase.from("products").select("*, brands(name)").eq("slug", slug).eq("active", true).maybeSingle();
   if (error) throw toError(error);
   return data ? mapProduct(data) : null;

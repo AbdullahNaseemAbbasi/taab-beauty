@@ -26,7 +26,7 @@ export default function SearchPage() {
 
   return (
     <>
-      <PageHeader title={query ? `Results for “${query}”` : "Search"} description={query ? `${results.length} product${results.length === 1 ? "" : "s"} found` : "Type a product, brand or concern to search."} />
+      <PageHeader title={query ? `Results for “${query}”` : "Search"} description={query ? `${results.length} product${results.length === 1 ? "" : "s"} found` : "Type a product or brand to search."} />
       <section className="wrap py-10">
         {results.length ? (
           <ProductGrid products={results} listName="search_results" eagerCount={4} />
@@ -35,16 +35,20 @@ export default function SearchPage() {
             <EmptyState
               icon={SearchIcon}
               title={query ? `Nothing found for “${query}”` : "Start a search"}
-              text="Check the spelling, try a broader word like “serum”, “earbuds” or “pan”, or browse the best sellers below."
+              text={fallback.length ? "Check the spelling, try a broader word, or browse the best sellers below." : "Check the spelling or try a broader word."}
               action={{ label: "Browse all products", to: "/shop" }}
             />
             <button type="button" onClick={() => setUI({ searchOpen: true })} className="mx-auto mt-4 block text-[14px] font-semibold text-teal hover:underline">
               Try another search
             </button>
-            <h2 className="mt-12 font-display text-[24px] font-extrabold text-navy">Best sellers</h2>
-            <div className="mt-6">
-              <ProductGrid products={fallback} listName="search_fallback" />
-            </div>
+            {fallback.length > 0 && (
+              <>
+                <h2 className="mt-12 font-display text-[24px] font-extrabold text-navy">Best sellers</h2>
+                <div className="mt-6">
+                  <ProductGrid products={fallback} listName="search_fallback" />
+                </div>
+              </>
+            )}
           </>
         )}
       </section>

@@ -15,18 +15,20 @@ export function announcementText(settings) {
 }
 
 export default function AnnouncementBar() {
-  const { settings } = useCatalog();
+  const { settings, products } = useCatalog();
   return (
     <div className="bg-navy text-white print:hidden">
       <div className="wrap flex min-h-10 items-center justify-center gap-3 py-2 text-center text-[13px] leading-snug">
         <span>{announcementText(settings)}</span>
-        <Link
-          to={site.announcement.link.to}
-          onClick={() => track(EVENTS.PROMO_CLICK, { promotion_name: "announcement_bar" })}
-          className="hidden shrink-0 font-semibold text-cyan underline-offset-2 hover:underline sm:inline"
-        >
-          {site.announcement.link.label}
-        </Link>
+        {products.some((product) => product.newArrival) && (
+          <Link
+            to={site.announcement.link.to}
+            onClick={() => track(EVENTS.PROMO_CLICK, { promotion_name: "announcement_bar" })}
+            className="hidden shrink-0 font-semibold text-cyan underline-offset-2 hover:underline sm:inline"
+          >
+            {site.announcement.link.label}
+          </Link>
+        )}
       </div>
     </div>
   );

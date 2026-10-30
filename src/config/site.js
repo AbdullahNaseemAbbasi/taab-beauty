@@ -44,8 +44,6 @@ export const site = {
     advancePercent: 50,
     /* Hours an unpaid order holds its stock before the database cancels it. */
     holdHours: 48,
-    /* Mock mode only: lets the demo account show at checkout. */
-    demo: false,
     methods: [
       { id: "bank", label: "Bank Transfer", description: paymentDescriptions.bank, enabled: true, bank: "", accountTitle: "", accountNumber: "" },
       { id: "easypaisa", label: "Easypaisa", description: paymentDescriptions.easypaisa, enabled: false, bank: "", accountTitle: "", accountNumber: "" },
@@ -79,7 +77,7 @@ export function isPlaceholderAccount(number) {
 
 /* Payment methods a customer can actually use: switched on and with a real account to pay into. */
 export const availablePaymentMethods = () =>
-  site.payments.methods.filter((method) => method.enabled && method.accountNumber.trim() && (site.payments.demo || !isPlaceholderAccount(method.accountNumber)));
+  site.payments.methods.filter((method) => method.enabled && method.accountNumber.trim() && !isPlaceholderAccount(method.accountNumber));
 
 /* WhatsApp wants the international form: 0300 1234567, +92 300 1234567 and 3001234567 all become 923001234567. */
 export function normalizeWhatsApp(value) {

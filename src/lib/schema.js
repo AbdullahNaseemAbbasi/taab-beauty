@@ -41,7 +41,7 @@ export function productSchema(product, reviews = []) {
     image: product.images.map((slug) => img(slug, 1200)),
     description: product.description,
     sku: product.sku,
-    brand: { "@type": "Brand", name: product.brand },
+    brand: product.brand ? { "@type": "Brand", name: product.brand } : undefined,
     category: product.category,
     aggregateRating: reviews.length ? { "@type": "AggregateRating", ratingValue: average, reviewCount: reviews.length } : undefined,
     review: reviews.slice(0, 5).map((review) => ({

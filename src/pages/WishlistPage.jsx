@@ -32,7 +32,7 @@ export default function WishlistPage() {
         {items.length ? (
           <ProductGrid products={items} listName="wishlist" />
         ) : (
-          <EmptyState icon={HeartIcon} title="Your wishlist is empty" text="Tap the heart on any product to save it here for later." action={{ label: "Discover best sellers", to: "/best-sellers" }} />
+          <EmptyState icon={HeartIcon} title="Your wishlist is empty" text="Tap the heart on any product to save it here for later." action={{ label: "Shop all products", to: "/shop" }} />
         )}
       </section>
     </>

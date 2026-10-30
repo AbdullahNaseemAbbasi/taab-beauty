@@ -7,7 +7,6 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "seed": "node scripts/seed.mjs",
     "db:push": "supabase db push",
     "prebuild": "node scripts/sitemap.mjs",
     "create-admin": "node scripts/create-admin.mjs",

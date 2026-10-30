@@ -1,4 +1,4 @@
-/* Newsletter and contact submissions. Live: Supabase tables. Mock: Netlify Forms. */
+/* Newsletter and contact submissions go to Supabase tables; Netlify Forms catches them if the database keys are missing. */
 import { supabase, isLive, toError } from "./client.js";
 
 async function postNetlifyForm(name, fields) {

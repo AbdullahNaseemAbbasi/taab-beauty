@@ -330,12 +330,12 @@ export function CategoryCollage() {
 
 /* ---------- Departments ---------- */
 export function DepartmentGrid() {
-  const { departments, categories, departmentOf, products } = useCatalog();
+  const { departments, stockedCategories, departmentOf, products } = useCatalog();
   return (
     <div className={`grid gap-4 sm:gap-5 md:grid-cols-2 ${departments.length >= 3 ? "lg:grid-cols-3" : ""}`}>
       {departments.map((department) => {
         const count = products.filter((product) => departmentOf(product) === department.id).length;
-        const chips = departmentLinks(department, categories);
+        const chips = departmentLinks(department, stockedCategories);
         const to = `/department/${department.id}`;
         return (
           <article key={department.id} className="group flex flex-col overflow-hidden rounded-2xl border border-line bg-white">
@@ -357,7 +357,7 @@ export function DepartmentGrid() {
                 ))}
               </ul>
               <Link to={to} className="mt-auto flex items-center gap-2 pt-5 text-[14px] font-semibold text-teal hover:underline">
-                Shop all {count} products <ArrowIcon className="size-4" />
+                {count ? `Shop all ${count} product${count === 1 ? "" : "s"}` : "Coming soon"} <ArrowIcon className="size-4" />
               </Link>
             </div>
           </article>

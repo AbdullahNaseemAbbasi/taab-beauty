@@ -41,8 +41,15 @@ const stockOf = async (id) => (await db.from("products").select("stock, variants
 
 const { data: products, error: productsError } = await db.from("products").select("id, slug, sku, name, stock, variants, rating, review_count, category_id, specs, warranty, brands(name)").eq("active", true);
 check("read products", !productsError && products.length > 0, productsError?.message || `${products?.length} rows`);
-const simple = products.find((product) => product.slug === "gentle-gel-cleanser");
-const variantProduct = products.find((product) => product.slug === "velvet-matte-lipstick");
+/* It orders real products and puts their stock back at the end, so the store needs a plain product and one with both an in-stock and a sold-out option. */
+const simple = (products || []).find((product) => !product.variants && product.stock >= 15);
+const variantProduct = (products || []).find((product) => product.variants?.options?.some((option) => option.stock > 0) && product.variants.options.some((option) => option.stock <= 0));
+if (!simple || !variantProduct) {
+  console.error("The test needs one active product without options and at least 15 in stock, and one with an in-stock option and a sold-out option. Nothing was changed.");
+  process.exit(1);
+}
+const stockedOption = variantProduct.variants.options.find((option) => option.stock > 0).id;
+const soldOutOption = variantProduct.variants.options.find((option) => option.stock <= 0).id;
 /* The test brings its own coupons (deleted again at the end), so it never depends on the store's real offers. */
 const TEST_COUPONS = [
   { code: "SMOKE10", type: "percent", value: 10, min_order: 1500, description: "smoke test", creator_id: null, active: true },
@@ -58,13 +65,9 @@ let customerUserId = null;
 const placedIds = new Set();
 
 try {
-  check("brand join works", products?.[0]?.brands?.name != null, products?.[0]?.brands?.name);
-
   const { data: categoryRows } = await db.from("categories").select("id, department").eq("active", true);
   const departmentsFound = [...new Set((categoryRows || []).map((row) => row.department))].sort();
   check("categories carry a department", (categoryRows || []).length > 0 && categoryRows.every((row) => Boolean(row.department)), departmentsFound.join(","));
-  const gadget = (products || []).find((row) => row.category_id === "electronics" && row.warranty);
-  check("electronics carry specifications and warranty", Boolean(gadget) && Array.isArray(gadget.specs) && gadget.specs.length > 0, gadget ? `${gadget.name}: ${gadget.specs.length} specs` : "none found");
 
   const { data: reviews } = await db.from("reviews").select("id, status");
   check("only approved reviews visible", reviews?.every((review) => review.status === "approved"), `${reviews?.length} rows`);
@@ -83,7 +86,7 @@ try {
     console.log("      (coupon checks skipped: adding test coupons needs SUPABASE_SERVICE_ROLE_KEY)");
   }
 
-  const variantBefore = variantProduct.variants.options.find((option) => option.id === "rooh").stock;
+  const variantBefore = variantProduct.variants.options.find((option) => option.id === stockedOption).stock;
   const payload = {
     customer: { name: "Smoke Test", phone: TEST_PHONE, email: "", address: "Test street 123, DHA Phase 6", city: "Karachi", province: "Sindh" },
     payment: "bank",
@@ -92,7 +95,7 @@ try {
     attribution: { source: "smoke-test" },
     lines: [
       { productId: simple.id, quantity: 2 },
-      { productId: variantProduct.id, variantId: "rooh", quantity: 1 },
+      { productId: variantProduct.id, variantId: stockedOption, quantity: 1 },
     ],
   };
   const oneItem = { ...payload, couponCode: null, lines: [{ productId: simple.id, quantity: 1 }] };
@@ -142,14 +145,14 @@ try {
     const simpleAfter = await stockOf(simple.id);
     const variantAfter = await stockOf(variantProduct.id);
     check("simple stock decremented", simpleAfter.stock === simple.stock - 2, `${simple.stock} -> ${simpleAfter.stock}`);
-    const roohAfter = variantAfter.variants.options.find((option) => option.id === "rooh").stock;
-    check("variant stock decremented", roohAfter === variantBefore - 1, `${variantBefore} -> ${roohAfter}`);
+    const optionAfter = variantAfter.variants.options.find((option) => option.id === stockedOption).stock;
+    check("variant stock decremented", optionAfter === variantBefore - 1, `${variantBefore} -> ${optionAfter}`);
 
     const { data: lookup } = await db.rpc("get_order", { p_order_id: order.id.toLowerCase(), p_phone: "+92 300 9998877" });
     check("placed order retrievable by phone (any format, any case)", lookup?.id === order.id);
   }
 
-  const { error: oversell } = await db.rpc("place_order", { p_payload: { ...payload, lines: [{ productId: variantProduct.id, variantId: "mitti", quantity: 1 }] } });
+  const { error: oversell } = await db.rpc("place_order", { p_payload: { ...payload, lines: [{ productId: variantProduct.id, variantId: soldOutOption, quantity: 1 }] } });
   check("sold-out variant is rejected", Boolean(oversell), oversell?.message);
   const { error: codError } = await db.rpc("place_order", { p_payload: { ...oneItem, payment: "cod" } });
   check("cash on delivery is refused", Boolean(codError), codError?.message);

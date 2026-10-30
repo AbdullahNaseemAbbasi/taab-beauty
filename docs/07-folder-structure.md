@@ -13,7 +13,6 @@ taab-beauty/                   (folder and repository keep the working name; the
 │   ├── config.toml            Supabase CLI config
 │   └── migrations/            SQL schema, functions, RLS (applied with npm run db:push)
 ├── scripts/
-│   ├── seed.mjs               Loads src/data into the database (npm run seed)
 │   ├── create-admin.mjs       Creates an admin user or resets its password (npm run create-admin)
 │   ├── smoke-test.mjs         End-to-end backend check (npm run smoke-test)
 │   └── sitemap.mjs            Writes public/sitemap.xml before each build
@@ -30,11 +29,11 @@ taab-beauty/                   (folder and repository keep the working name; the
     ├── index.css              Tailwind theme tokens and base styles
     ├── config/
     │   └── site.js            Brand, contact, social, payments, departments, nav (static config)
-    ├── api/                   The only modules that talk to Supabase; each falls back to mock data
+    ├── api/                   The only modules that talk to Supabase
     │   ├── client.js          createClient() or null; isLive flag
     │   ├── catalog.js         fetchCatalog(), fetchProductBySlug(), submitReview()
     │   ├── orders.js          validateCoupon(), placeOrder(), getOrder(), getMyOrders()
-    │   ├── admin.js           Everything the admin panel reads and writes (no mock fallback)
+    │   ├── admin.js           Everything the admin panel reads and writes
     │   ├── forms.js           subscribeNewsletter(), sendContactMessage()
     │   └── events.js          Batched insert of analytics events
     ├── catalog/
@@ -45,12 +44,10 @@ taab-beauty/                   (folder and repository keep the working name; the
     │   ├── attribution.js     UTM / ref capture, first and last touch
     │   ├── ecommerce.js       Typed ecommerce helpers
     │   └── experiments.js     A/B assignment
-    ├── data/                  Mock dataset (also the seed source)
-    │   ├── images.js          Photo slug map
-    │   ├── categories.js · brands.js · concerns.js · products.js (beauty) · products-home.js (electronics, kitchen)
-    │   ├── departments.js · products-clothes.js (clothes)
-    │   ├── reviews.js · faqs.js · policies.js
-    │   └── misc.js            Coupons, sample orders, order statuses, cities, Instagram
+    ├── data/                  Fixed site content (the catalogue itself is in the database)
+    │   ├── images.js          Page photo map
+    │   ├── faqs.js · policies.js
+    │   └── misc.js            Order statuses, cities
     ├── lib/
     │   ├── images.js          CDN URL and srcset builders
     │   ├── format.js          Price, date, slug helpers
@@ -83,4 +80,4 @@ Supabase (Postgres)  ──fetchCatalog()──▶  CatalogProvider  ──useCa
         └── events (batched inserts) ◀── analytics/tracking.js ◀── every tracked interaction
 ```
 
-Mock mode (no Supabase keys): `api/*` return the data in `src/data` and keep orders in localStorage, so the UI code never branches on the data source.
+Without Supabase keys `api/*` return nothing, so the store opens empty and takes no orders; production builds stop with an error instead.

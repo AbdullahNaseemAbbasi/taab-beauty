@@ -116,7 +116,7 @@ export function track(event, payload = {}) {
   /* Automated browsers (site tests, scrapers) stay out of the store's numbers and the ad pixels. */
   if (navigator.webdriver) return record;
   forwardToVendors(event, payload);
-  queueEvent(record); // first-party copy in the database (no-op in mock mode)
+  queueEvent(record); // first-party copy in the database
 
   if (analytics.debug) {
     // eslint-disable-next-line no-console

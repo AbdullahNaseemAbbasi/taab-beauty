@@ -33,7 +33,7 @@ export const faqs = [
     category: "Beauty",
     items: [
       { question: "Are your beauty products authentic?", answer: "Every product is sourced directly from the brand or its authorised distributor and arrives sealed. We share batch numbers on request." },
-      { question: "Are the products suitable for sensitive skin?", answer: "The Saaf Skin Lab range is fragrance-free and formulated for sensitive, acne-prone skin. Each product page lists full ingredients so you can check for anything you react to." },
+      { question: "Are the products suitable for sensitive skin?", answer: "Each product page lists the ingredients so you can check for anything you react to. If you are not sure, message us before you order." },
       { question: "How do I choose my foundation shade?", answer: "Send us a daylight photo of your jawline on WhatsApp and we will recommend a shade. Wrong shades can be exchanged within 7 days if unopened." },
     ],
   },

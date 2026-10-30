@@ -33,7 +33,7 @@ export default function CartPage() {
       <PageHeader title={`Your Bag (${cart.totals.itemCount})`} description="Review your items, add a code and head to checkout. You pay part in advance and the rest on delivery." />
       <section className="wrap py-8 sm:py-10">
         {cart.lines.length === 0 ? (
-          <EmptyState icon={BagIcon} title="Your bag is empty" text="Browse the best sellers or pick up where you left off." action={{ label: "Shop best sellers", to: "/best-sellers" }} secondary={{ label: "View wishlist", to: "/wishlist" }} />
+          <EmptyState icon={BagIcon} title="Your bag is empty" text="Browse the store or pick up where you left off." action={{ label: "Shop all products", to: "/shop" }} secondary={{ label: "View wishlist", to: "/wishlist" }} />
         ) : (
           <div className="grid gap-8 lg:grid-cols-[1fr_380px] lg:items-start">
             <div>

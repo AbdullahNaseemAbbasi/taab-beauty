@@ -5,7 +5,7 @@ import Overlay from "../components/ui/Modal.jsx";
 import { Select } from "../components/ui/Form.jsx";
 import { Breadcrumbs, Pagination } from "../components/ui/Navigation.jsx";
 import { EmptyState } from "../components/ui/Feedback.jsx";
-import { FilterIcon, SearchIcon } from "../components/ui/Icons.jsx";
+import { BagIcon, FilterIcon, SearchIcon } from "../components/ui/Icons.jsx";
 import { ProductGrid } from "../components/product/ProductGrid.jsx";
 import FilterSidebar from "../components/product/FilterSidebar.jsx";
 import { PageHero, PageHeader } from "../components/sections/Sections.jsx";
@@ -71,6 +71,8 @@ export default function ShopPage({ mode = "all", collection }) {
     return products;
   }, [products, category, collectionDef, departmentCategories]);
 
+  /* Nothing in this category, department or collection at all (as opposed to filters hiding everything). */
+  const nothingHere = base.length === 0;
   const filtered = useMemo(() => sortProducts(filterProducts(base, { ...filters, category: category ? null : filters.category }), sort), [base, filterKey, sort, category]);
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const visible = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -87,7 +89,7 @@ export default function ShopPage({ mode = "all", collection }) {
 
   const notFound = (mode === "category" && !category) || (mode === "collection" && !collectionDef) || (mode === "department" && !departmentDef);
   /* This page's tags are applied after NotFoundPage's, so an unknown slug must be noindex here as well. */
-  useSeo(notFound ? { title: "Page Not Found", noindex: true } : { title: `${title} in Pakistan`, description, path, jsonLd: [breadcrumbSchema(crumbs)] });
+  useSeo(notFound ? { title: "Page Not Found", noindex: true } : { title: `${title} in Pakistan`, description, path, noindex: nothingHere, jsonLd: [breadcrumbSchema(crumbs)] });
 
   useEffect(() => {
     if (category) track(EVENTS.SELECT_CATEGORY, { category: category.slug, placement: "category_page" });
@@ -129,40 +131,51 @@ export default function ShopPage({ mode = "all", collection }) {
       )}
 
       <section className="wrap py-8 lg:py-12">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-[14px] text-ink">
-            Showing <strong className="text-navy">{visible.length}</strong> of <strong className="text-navy">{filtered.length}</strong> products
-          </p>
-          <div className="flex items-center gap-2 sm:gap-3">
-            <button type="button" onClick={() => setDrawerOpen(true)} className="inline-flex h-11 items-center gap-2 rounded-full border border-line px-4 text-[14px] font-semibold text-navy lg:hidden">
-              <FilterIcon className="size-4" /> Filters
-            </button>
-            <label className="flex items-center gap-2 text-[14px] text-ink">
-              <span className="hidden sm:inline">Sort by</span>
-              <Select value={sort} onChange={(event) => updateSort(event.target.value)} aria-label="Sort products" className="h-11 w-40 py-0 sm:w-44">
-                {sortOptions.map((option) => (
-                  <option key={option.id} value={option.id}>
-                    {option.label}
-                  </option>
-                ))}
-              </Select>
-            </label>
-          </div>
-        </div>
+        {nothingHere ? (
+          <EmptyState
+            icon={BagIcon}
+            title="Products coming soon"
+            text={products.length ? "Nothing here yet. Have a look at the rest of the store." : "We are adding our products to the store now. Message us if you are looking for something."}
+            action={products.length ? { label: "Shop all products", to: "/shop" } : { label: "Contact us", to: "/contact" }}
+          />
+        ) : (
+          <>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-[14px] text-ink">
+                Showing <strong className="text-navy">{visible.length}</strong> of <strong className="text-navy">{filtered.length}</strong> products
+              </p>
+              <div className="flex items-center gap-2 sm:gap-3">
+                <button type="button" onClick={() => setDrawerOpen(true)} className="inline-flex h-11 items-center gap-2 rounded-full border border-line px-4 text-[14px] font-semibold text-navy lg:hidden">
+                  <FilterIcon className="size-4" /> Filters
+                </button>
+                <label className="flex items-center gap-2 text-[14px] text-ink">
+                  <span className="hidden sm:inline">Sort by</span>
+                  <Select value={sort} onChange={(event) => updateSort(event.target.value)} aria-label="Sort products" className="h-11 w-40 py-0 sm:w-44">
+                    {sortOptions.map((option) => (
+                      <option key={option.id} value={option.id}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </Select>
+                </label>
+              </div>
+            </div>
 
-        <div className="mt-6 grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[260px_minmax(0,1fr)]">
-          <aside className="hidden lg:block">{sidebar}</aside>
-          <div className="min-w-0">
-            {visible.length ? (
-              <>
-                <ProductGrid products={visible} listName={path} columns="lg:grid-cols-3" eagerCount={3} />
-                <Pagination page={page} pageCount={pageCount} onChange={updatePage} className="mt-10" />
-              </>
-            ) : (
-              <EmptyState icon={SearchIcon} title="No products match these filters" text="Try removing a filter or two, or browse the full range." action={{ label: "Clear filters", to: path }} />
-            )}
-          </div>
-        </div>
+            <div className="mt-6 grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[260px_minmax(0,1fr)]">
+              <aside className="hidden lg:block">{sidebar}</aside>
+              <div className="min-w-0">
+                {visible.length ? (
+                  <>
+                    <ProductGrid products={visible} listName={path} columns="lg:grid-cols-3" eagerCount={3} />
+                    <Pagination page={page} pageCount={pageCount} onChange={updatePage} className="mt-10" />
+                  </>
+                ) : (
+                  <EmptyState icon={SearchIcon} title="No products match these filters" text="Try removing a filter or two, or browse the full range." action={{ label: "Clear filters", to: path }} />
+                )}
+              </div>
+            </div>
+          </>
+        )}
       </section>
 
       <Overlay open={drawerOpen} onClose={() => setDrawerOpen(false)} side="left" title="Filters">

@@ -1,14 +1,10 @@
 /*
- * Orders and coupons. Live mode calls the SECURITY DEFINER functions in the
- * database (prices, stock and coupons are validated server-side). Mock mode
- * keeps orders in localStorage so the whole flow works without a backend.
+ * Orders and coupons. These call the SECURITY DEFINER functions in the
+ * database, where prices, stock and coupons are validated.
  */
 import { supabase, isLive, toError } from "./client.js";
-import { coupons, findCoupon, sampleOrders } from "../data/misc.js";
 import { attributionForOrder, getCreatorRef } from "../analytics/attribution.js";
-import { splitPayment } from "../config/site.js";
 
-const ORDERS_KEY = "naz:orders";
 const PLACED_KEY = "naz:orders:placed"; // [{ id, phone }] for orders placed on this device
 
 function readJson(key, fallback) {
@@ -43,74 +39,26 @@ export function phoneForOrder(id) {
 
 /* ------------------------------------------------------------- coupons */
 export async function validateCoupon(code, subtotal) {
-  if (!isLive) {
-    const coupon = findCoupon(code);
-    if (!coupon) return { valid: false, error: "That code is not valid." };
-    if (subtotal < coupon.minOrder) return { valid: false, error: `This code needs a minimum order of Rs. ${coupon.minOrder.toLocaleString()}.` };
-    const discount = coupon.type === "percent" ? Math.round((subtotal * coupon.value) / 100) : coupon.type === "fixed" ? Math.min(coupon.value, subtotal) : 0;
-    return { valid: true, ...coupon, discount };
-  }
+  if (!isLive) return { valid: false, error: "That code is not valid." };
   const { data, error } = await supabase.rpc("validate_coupon", { p_code: code, p_subtotal: Math.round(subtotal) });
   if (error) throw toError(error, "Could not check that code right now.");
   return data;
 }
 
 /* ---------------------------------------------------------- place order */
-function orderId(date = new Date()) {
-  const stamp = date.toISOString().slice(2, 10).replace(/-/g, "");
-  return `NZ-${stamp}-${Math.floor(Math.random() * 9000) + 1000}`;
-}
-
-function mockPlaceOrder({ customer, lines, coupon, payment, notes, totals }) {
-  const now = new Date().toISOString();
-  const order = {
-    id: orderId(),
-    placedAt: now,
-    status: "created",
-    payment,
-    paymentStatus: "pending",
-    advance: (({ percent, advance, balance }) => ({ percent, amount: advance, balance }))(splitPayment(totals.total)),
-    notes: notes || "",
+/* lines: enriched cart lines. */
+export async function placeOrder({ customer, lines, coupon, payment, notes }) {
+  if (!isLive) throw new Error("We could not place your order. Please try again or message us on WhatsApp.");
+  const payload = {
     customer,
-    phone: customer.phone,
-    coupon: coupon ? { code: coupon.code, creatorId: coupon.creatorId || null } : null,
-    lines: lines.map((line) => ({
-      productId: line.product.id,
-      sku: line.product.sku,
-      slug: line.product.slug,
-      name: line.product.name,
-      variantId: line.variantId || null,
-      variant: line.variant?.name || null,
-      quantity: line.quantity,
-      unitPrice: line.unitPrice,
-      lineTotal: line.lineTotal,
-    })),
-    totals,
+    payment,
+    notes: notes || "",
+    couponCode: coupon?.code || null,
     attribution: attributionForOrder(),
-    timeline: [{ status: "created", label: "Order placed, awaiting advance payment", at: now }],
+    lines: lines.map((line) => ({ productId: line.product.id, variantId: line.variantId || null, quantity: line.quantity })),
   };
-  writeJson(ORDERS_KEY, [order, ...readJson(ORDERS_KEY, [])]);
-  return order;
-}
-
-/* lines: enriched cart lines; totals: from computeTotals (used only in mock mode). */
-export async function placeOrder({ customer, lines, coupon, payment, notes, totals }) {
-  let order;
-  if (!isLive) {
-    order = mockPlaceOrder({ customer, lines, coupon, payment, notes, totals });
-  } else {
-    const payload = {
-      customer,
-      payment,
-      notes: notes || "",
-      couponCode: coupon?.code || null,
-      attribution: attributionForOrder(),
-      lines: lines.map((line) => ({ productId: line.product.id, variantId: line.variantId || null, quantity: line.quantity })),
-    };
-    const { data, error } = await supabase.rpc("place_order", { p_payload: payload });
-    if (error) throw toError(error, "We could not place your order. Please try again or message us on WhatsApp.");
-    order = data;
-  }
+  const { data: order, error } = await supabase.rpc("place_order", { p_payload: payload });
+  if (error) throw toError(error, "We could not place your order. Please try again or message us on WhatsApp.");
   rememberPlacedOrder(order.id, customer.phone);
   return order;
 }
@@ -120,18 +68,8 @@ function digits(value) {
   return String(value || "").replace(/\D/g, "").slice(-10);
 }
 
-function mockGetOrder(id, phone) {
-  const wanted = String(id || "").trim().toUpperCase();
-  const all = [...readJson(ORDERS_KEY, []), ...sampleOrders];
-  const order = all.find((entry) => entry.id === wanted);
-  if (!order) return null;
-  if (phone && digits(order.phone || order.customer?.phone) !== digits(phone)) return null;
-  return order;
-}
-
 export async function getOrder(id, phone) {
-  if (!isLive) return mockGetOrder(id, phone);
-  if (!phone) return null;
+  if (!isLive || !phone) return null;
   const { data, error } = await supabase.rpc("get_order", { p_order_id: String(id || "").trim(), p_phone: phone });
   if (error) throw toError(error, "Could not look up that order.");
   return data || null;
@@ -149,10 +87,7 @@ export async function fetchCreatorOffer(ref) {
     /* ignore */
   }
   let offer = null;
-  if (!isLive) {
-    const match = coupons.find((coupon) => coupon.creatorId && coupon.creatorId.toLowerCase() === ref.toLowerCase());
-    offer = match ? { code: match.code, description: match.description, type: match.type, value: match.value, minOrder: match.minOrder, creatorId: match.creatorId } : null;
-  } else {
+  if (isLive) {
     const { data } = await supabase.rpc("creator_offer", { p_ref: ref });
     offer = data || null;
   }
@@ -201,9 +136,7 @@ export async function saveCheckout(payload) {
  * account's phone number. Orders someone else placed on a shared device stay out of the list.
  */
 export async function getMyOrders(accountPhone = "") {
-  if (!isLive) {
-    return [...readJson(ORDERS_KEY, []), ...sampleOrders];
-  }
+  if (!isLive) return [];
   const { data: sessionData } = await supabase.auth.getSession();
   const own = digits(accountPhone);
   const devicePlaced = own ? placedOrders().filter((entry) => digits(entry.phone) === own) : [];

@@ -73,7 +73,7 @@ export default function TrackOrderPage() {
           className="mx-auto grid max-w-2xl gap-4 rounded-2xl border border-line bg-white p-5 sm:grid-cols-[1fr_1fr_auto] sm:items-end sm:p-6"
         >
           <Field label="Order number" required>
-            <Input value={form.id} onChange={(event) => setForm({ ...form, id: event.target.value.toUpperCase() })} placeholder="NZ-241001-0211" required />
+            <Input value={form.id} onChange={(event) => setForm({ ...form, id: event.target.value.toUpperCase() })} placeholder="NZ-000000-0000" required />
           </Field>
           <Field label="Phone number" required>
             <Input type="tel" inputMode="tel" value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} placeholder="0300 1234567" required />
@@ -84,11 +84,6 @@ export default function TrackOrderPage() {
           {error && (
             <p role="alert" className="text-[13px] font-medium text-danger sm:col-span-3">
               {error}
-            </p>
-          )}
-          {import.meta.env.DEV && (
-            <p className="text-[12px] text-ink-light sm:col-span-3">
-              Demo tip (only shown while developing): try order <button type="button" onClick={() => setForm({ id: "NZ-241001-0211", phone: "03001234567" })} className="font-semibold text-teal underline">NZ-241001-0211</button> with phone 0300 1234567.
             </p>
           )}
         </form>
